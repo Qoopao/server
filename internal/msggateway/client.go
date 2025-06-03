@@ -12,16 +12,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"google.golang.org/protobuf/proto"
-
-	// "github.com/openimsdk/open-im-server/v3/pkg/msgprocessor"
 	"github.com/openimsdk/tools/apiresp"
 	"github.com/openimsdk/tools/errs"
 	"github.com/openimsdk/tools/log"
 	"github.com/openimsdk/tools/mcontext"
 	"github.com/openimsdk/tools/utils/stringutil"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
-	messageutil "github.com/roc/roc-im-server/pkg/messageUtil"
+	"github.com/roc/roc-im-server/pkg/messageUtil"
 	"github.com/roc/roc-im-server/protocol/constant"
 )
 
@@ -291,7 +288,7 @@ func (c *Client) PushMessage(ctx context.Context, msgData *sdkws.MsgData) error 
 		msg.Msgs = m
 	}
 	log.ZDebug(ctx, "PushMessage", "msg", &msg)
-	data, err := proto.Marshal(&msg)
+	data, err := msgData.Marshal(nil)
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,7 @@ syntax = "proto3";
 package msg;
 
 import "sdkws.proto";
-import "conversation.proto";
+// import "conversation.proto";
 
 option go_package = "github.com/roc/roc-im-server/internal/kitex_gen/msg";
 
@@ -307,7 +307,7 @@ message GetServerTimeResp {
 }
 
 message ClearMsgReq {
-  repeated conversation.Conversation conversations = 1;
+  repeated string conversations = 1;
 }
 
 message ClearMsgResp {}
