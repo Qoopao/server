@@ -13,11 +13,11 @@ import (
 	"github.com/go-playground/validator/v10"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/openimsdk/protocol/msg"
-	"github.com/openimsdk/protocol/push"
-	"github.com/openimsdk/protocol/sdkws"
+	"github.com/roc/roc-im-server/protocol/msg"
+	// "github.com/roc/roc-im-server/protocol/push"
 	"github.com/openimsdk/tools/errs"
 	"github.com/openimsdk/tools/utils/jsonutil"
+	"github.com/roc/roc-im-server/protocol/sdkws"
 )
 
 const (

@@ -13,9 +13,9 @@
 // limitations under the License.
 
 syntax = "proto3";
-package openim.sdkws;
+package sdkws;
 
-option go_package = "github.com/roc/roc-im-server/protocol/sdkws";
+option go_package = "github.com/roc/roc-im-server/kitex_gen/protocol/sdkws";
 
 ////////////////////////////////base///////////////////////////////
 

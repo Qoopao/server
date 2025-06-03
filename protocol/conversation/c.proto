@@ -1,0 +1,14 @@
+syntax = "proto3";
+package c;
+
+import "msg/m.proto";
+
+option go_package = "github.com/roc/roc-im-server/kitex_gen/protocol/c";
+
+message Cmm {
+    m.Mss ms = 1;
+}
+
+message Cxx {
+    m.Mss ms = 1;
+}
