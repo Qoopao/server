@@ -15,7 +15,7 @@
 syntax = "proto3";
 package sdkws;
 
-option go_package = "github.com/roc/roc-im-server/kitex_gen/protocol/sdkws";
+option go_package = "github.com/roc/roc-im-server/internal/kitex_gen/sdkws";
 
 ////////////////////////////////base///////////////////////////////
 

@@ -20,9 +20,9 @@ import (
 	"github.com/openimsdk/tools/log"
 	"github.com/openimsdk/tools/mcontext"
 	"github.com/openimsdk/tools/utils/stringutil"
+	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	messageutil "github.com/roc/roc-im-server/pkg/messageUtil"
 	"github.com/roc/roc-im-server/protocol/constant"
-	"github.com/roc/roc-im-server/protocol/sdkws"
 )
 
 var (

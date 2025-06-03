@@ -5,10 +5,10 @@
 syntax = "proto3";
 package msg;
 
-import "sdkws/sdkws.proto";
-import "conversation/conversation.proto";
+import "sdkws.proto";
+import "conversation.proto";
 
-option go_package = "github.com/roc/roc-im-server/kitex_gen/protocol/msg";
+option go_package = "github.com/roc/roc-im-server/internal/kitex_gen/msg";
 
 message MsgDataToMQ {
   string token = 1;
@@ -391,7 +391,7 @@ message GetLastMessageResp {
   map<string,sdkws.MsgData> msgs = 1;
 }
 
-service msg {
+service MessageService {
   //获取最小最大seq（包括用户的，以及指定群组的）
   rpc GetMaxSeq(sdkws.GetMaxSeqReq) returns (sdkws.GetMaxSeqResp);
   //获取会话列表的最大seq

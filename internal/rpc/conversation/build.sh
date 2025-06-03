@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-RUN_NAME="example_service"
+RUN_NAME="conversationservice"
 
 mkdir -p output/bin
 cp script/* output/

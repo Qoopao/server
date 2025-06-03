@@ -15,9 +15,9 @@
 syntax = "proto3";
 package conversation;
 
-import "sdkws/sdkws.proto";
+import "sdkws.proto";
 
-option go_package = "github.com/roc/roc-im-server/service/conversation_rpc/kitex_gen/protocol/conversation";
+option go_package = "github.com/roc/roc-im-server/internal/kitex_gen/conversation";
 
 message Conversation {
   string ownerUserID = 1;
@@ -310,7 +310,7 @@ message UpdateConversationsByUserReq{
 
 message UpdateConversationsByUserResp{}
 
-service conversation_api {
+service ConversationService {
   rpc GetConversation(GetConversationReq) returns (GetConversationResp);
   rpc GetSortedConversationList(GetSortedConversationListReq) returns (GetSortedConversationListResp);
   rpc GetAllConversations(GetAllConversationsReq) returns (GetAllConversationsResp);
