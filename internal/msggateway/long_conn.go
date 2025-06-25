@@ -21,18 +21,18 @@ const (
 	MessageText = iota + 1
 	// MessageBinary is for binary messages like protobufs.
 	MessageBinary
-	// CloseMessage denotes a close control message. The optional message
+	// MessageClose denotes a close control message. The optional message
 	// payload contains a numeric code and text. Use the FormatCloseMessage
 	// function to format a close message payload.
-	CloseMessage = 8
+	MessageClose = 8
 
-	// PingMessage denotes a ping control message. The optional message payload
+	// MessagePing denotes a ping control message. The optional message payload
 	// is UTF-8 encoded text.
-	PingMessage = 9
+	MessagePing = 9
 
-	// PongMessage denotes a pong control message. The optional message payload
+	// MessagePong denotes a pong control message. The optional message payload
 	// is UTF-8 encoded text.
-	PongMessage = 10
+	MessagePong = 10
 )
 
 type PingPongHandler func(string) error

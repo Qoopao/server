@@ -101,23 +101,21 @@ type MessageHandler interface {
 	GetLastMessage(ctx context.Context, data *Req) ([]byte, error)
 }
 
-var _ MessageHandler = (*GrpcHandler)(nil)
-
-type GrpcHandler struct {
+type messageHandler struct {
 	validate   *validator.Validate
 	msgClient  messageservice.Client
 	pushClient pushservice.Client
 }
 
-func NewGrpcHandler(validate *validator.Validate, msgClient messageservice.Client, pushClient pushservice.Client) *GrpcHandler {
-	return &GrpcHandler{
+func NewMessageHandler(validate *validator.Validate, msgClient messageservice.Client, pushClient pushservice.Client) *messageHandler {
+	return &messageHandler{
 		validate:   validate,
 		msgClient:  msgClient,
 		pushClient: pushClient,
 	}
 }
 
-func (g *GrpcHandler) GetSeq(ctx context.Context, data *Req) ([]byte, error) {
+func (g *messageHandler) GetSeq(ctx context.Context, data *Req) ([]byte, error) {
 	req := sdkws.GetMaxSeqReq{}
 	if err := req.Unmarshal(data.Data); err != nil {
 		return nil, errs.WrapMsg(err, "GetSeq: error unmarshaling request", "action", "unmarshal", "dataType", "GetMaxSeqReq")
@@ -139,15 +137,15 @@ func (g *GrpcHandler) GetSeq(ctx context.Context, data *Req) ([]byte, error) {
 
 // SendMessage handles the sending of messages through gRPC. It unmarshals the request data,
 // validates the message, and then sends it using the message RPC client.
-func (g *GrpcHandler) SendMessage(ctx context.Context, data *Req) ([]byte, error) {
+func (g *messageHandler) SendMessage(ctx context.Context, data *Req) ([]byte, error) {
 	var msgData sdkws.MsgData
 	if err := msgData.Unmarshal(data.Data); err != nil {
 		return nil, errs.WrapMsg(err, "SendMessage: error unmarshaling message data", "action", "unmarshal", "dataType", "MsgData")
 	}
 
-	if err := g.validate.Struct(&msgData); err != nil {
-		return nil, errs.WrapMsg(err, "SendMessage: message data validation failed", "action", "validate", "dataType", "MsgData")
-	}
+	// if err := g.validate.Struct(&msgData); err != nil {
+	// 	return nil, errs.WrapMsg(err, "SendMessage: message data validation failed", "action", "validate", "dataType", "MsgData")
+	// }
 
 	req := msg.SendMsgReq{MsgData: &msgData}
 	resp, err := g.msgClient.SendMsg(ctx, &req)
@@ -163,7 +161,7 @@ func (g *GrpcHandler) SendMessage(ctx context.Context, data *Req) ([]byte, error
 	return c, nil
 }
 
-func (g *GrpcHandler) SendSignalMessage(ctx context.Context, data *Req) ([]byte, error) {
+func (g *messageHandler) SendSignalMessage(ctx context.Context, data *Req) ([]byte, error) {
 	resp, err := g.msgClient.SendMsg(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -175,7 +173,7 @@ func (g *GrpcHandler) SendSignalMessage(ctx context.Context, data *Req) ([]byte,
 	return c, nil
 }
 
-func (g *GrpcHandler) PullMessageBySeqList(ctx context.Context, data *Req) ([]byte, error) {
+func (g *messageHandler) PullMessageBySeqList(ctx context.Context, data *Req) ([]byte, error) {
 	req := sdkws.PullMessageBySeqsReq{}
 	if err := req.Unmarshal(data.Data); err != nil {
 		return nil, errs.WrapMsg(err, "err proto unmarshal", "action", "unmarshal", "dataType", "PullMessageBySeqsReq")
@@ -194,7 +192,7 @@ func (g *GrpcHandler) PullMessageBySeqList(ctx context.Context, data *Req) ([]by
 	return c, nil
 }
 
-func (g *GrpcHandler) GetConversationsHasReadAndMaxSeq(ctx context.Context, data *Req) ([]byte, error) {
+func (g *messageHandler) GetConversationsHasReadAndMaxSeq(ctx context.Context, data *Req) ([]byte, error) {
 	req := msg.GetConversationsHasReadAndMaxSeqReq{}
 	if err := req.Unmarshal(data.Data); err != nil {
 		return nil, errs.WrapMsg(err, "err proto unmarshal", "action", "unmarshal", "dataType", "GetConversationsHasReadAndMaxSeq")
@@ -213,7 +211,7 @@ func (g *GrpcHandler) GetConversationsHasReadAndMaxSeq(ctx context.Context, data
 	return c, nil
 }
 
-func (g *GrpcHandler) GetSeqMessage(ctx context.Context, data *Req) ([]byte, error) {
+func (g *messageHandler) GetSeqMessage(ctx context.Context, data *Req) ([]byte, error) {
 	req := msg.GetSeqMessageReq{}
 	if err := req.Unmarshal(data.Data); err != nil {
 		return nil, errs.WrapMsg(err, "error unmarshaling request", "action", "unmarshal", "dataType", "GetSeqMessage")
@@ -232,7 +230,7 @@ func (g *GrpcHandler) GetSeqMessage(ctx context.Context, data *Req) ([]byte, err
 	return c, nil
 }
 
-func (g *GrpcHandler) UserLogout(ctx context.Context, data *Req) ([]byte, error) {
+func (g *messageHandler) UserLogout(ctx context.Context, data *Req) ([]byte, error) {
 	req := push.DelUserPushTokenReq{}
 	if err := req.Unmarshal(data.Data); err != nil {
 		return nil, errs.WrapMsg(err, "error unmarshaling request", "action", "unmarshal", "dataType", "DelUserPushTokenReq")
@@ -248,7 +246,7 @@ func (g *GrpcHandler) UserLogout(ctx context.Context, data *Req) ([]byte, error)
 	return c, nil
 }
 
-func (g *GrpcHandler) SetUserDeviceBackground(ctx context.Context, data *Req) ([]byte, bool, error) {
+func (g *messageHandler) SetUserDeviceBackground(ctx context.Context, data *Req) ([]byte, bool, error) {
 	req := sdkws.SetAppBackgroundStatusReq{}
 	if err := req.Unmarshal(data.Data); err != nil {
 		return nil, false, errs.WrapMsg(err, "error unmarshaling request", "action", "unmarshal", "dataType", "SetAppBackgroundStatusReq")
@@ -259,7 +257,7 @@ func (g *GrpcHandler) SetUserDeviceBackground(ctx context.Context, data *Req) ([
 	return nil, req.IsBackground, nil
 }
 
-func (g *GrpcHandler) GetLastMessage(ctx context.Context, data *Req) ([]byte, error) {
+func (g *messageHandler) GetLastMessage(ctx context.Context, data *Req) ([]byte, error) {
 	var req msg.GetLastMessageReq
 	if err := req.Unmarshal(data.Data); err != nil {
 		return nil, err

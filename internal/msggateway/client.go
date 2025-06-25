@@ -12,13 +12,16 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cloudwego/kitex/client"
+	"github.com/cloudwego/kitex/transport"
 	"github.com/openimsdk/tools/apiresp"
 	"github.com/openimsdk/tools/errs"
 	"github.com/openimsdk/tools/log"
 	"github.com/openimsdk/tools/mcontext"
 	"github.com/openimsdk/tools/utils/stringutil"
+	"github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
-	"github.com/roc/roc-im-server/pkg/messageUtil"
+	messageutil "github.com/roc/roc-im-server/pkg/messageUtil"
 	"github.com/roc/roc-im-server/protocol/constant"
 )
 
@@ -76,6 +79,8 @@ func (c *Client) ResetClient(ctx *UserConnContext, conn LongConn) {
 		c.Encoder = NewJsonEncoder()
 	}
 	c.subUserIDs = make(map[string]struct{})
+	msgRpc, _ := messageservice.NewClient("example_service", client.WithHostPorts("0.0.0.0:10100"), client.WithTransportProtocol(transport.GRPC))
+	c.messsageHandler = NewMessageHandler(nil, msgRpc, nil)
 }
 
 func (c *Client) pingHandler(appData string) error {
@@ -141,11 +146,11 @@ func (c *Client) readMessage() {
 				c.closedErr = parseDataErr
 				return
 			}
-		case PingMessage:
+		case MessagePing:
 			err := c.writePongMsg("")
 			log.ZError(c.ctx, "writePongMsg", err)
 
-		case CloseMessage:
+		case MessageClose:
 			c.closedErr = ErrClientClosed
 			return
 
@@ -172,24 +177,27 @@ func (c *Client) handleMessage(message []byte) error {
 	var binaryReq = getReq()
 	defer freeReq(binaryReq)
 
-	err := c.Encoder.Decode(message, binaryReq)
-	if err != nil {
-		return err
-	}
+	// err := c.Encoder.Decode(message, binaryReq)
+	// if err != nil {
+	// 	return err
+	// }
 
-	if err := c.IsValidReq(binaryReq); err != nil {
-		return err
-	}
+	// if err := c.IsValidReq(binaryReq); err != nil {
+	// 	return err
+	// }
 
-	if binaryReq.SendID != c.UserID {
-		return errs.New("exception conn userID not same to req userID", "binaryReq", binaryReq.String())
-	}
+	// if binaryReq.SendID != c.UserID {
+	// 	return errs.New("exception conn userID not same to req userID", "binaryReq", binaryReq.String())
+	// }
+
+	binaryReq.Data, _ = mockMsg().Marshal(nil)
+	binaryReq.ReqIdentifier = WSSendMsg
 
 	ctx := mcontext.WithMustInfoCtx(
 		[]string{binaryReq.OperationID, binaryReq.SendID, constant.PlatformIDToName(c.PlatformID), c.ctx.GetConnID()},
 	)
 
-	log.ZDebug(ctx, "gateway req message", "req", binaryReq.String())
+	// log.ZDebug(ctx, "gateway req message", "req", binaryReq.String())
 
 	var (
 		resp       []byte
@@ -387,7 +395,7 @@ func (c *Client) writePingMsg() error {
 		return err
 	}
 
-	return c.conn.WriteMessage(PingMessage, nil)
+	return c.conn.WriteMessage(MessagePing, nil)
 }
 
 func (c *Client) writePongMsg(appData string) error {
@@ -405,9 +413,9 @@ func (c *Client) writePongMsg(appData string) error {
 		log.ZWarn(c.ctx, "SetWriteDeadline in Server have error", errs.Wrap(err), "writeWait", writeWait, "appData", appData)
 		return errs.Wrap(err)
 	}
-	err = c.conn.WriteMessage(PongMessage, []byte(appData))
+	err = c.conn.WriteMessage(MessagePong, []byte(appData))
 	if err != nil {
-		log.ZWarn(c.ctx, "Write Message have error", errs.Wrap(err), "Pong msg", PongMessage)
+		log.ZWarn(c.ctx, "Write Message have error", errs.Wrap(err), "Pong msg", MessagePong)
 	}
 
 	return errs.Wrap(err)
@@ -435,5 +443,17 @@ func (c *Client) handlerTextMessage(b []byte) error {
 		return c.conn.WriteMessage(MessageText, msgData)
 	default:
 		return fmt.Errorf("not support message type %s", msg.Type)
+	}
+}
+
+func mockMsg() *sdkws.MsgData {
+	return &sdkws.MsgData{
+		ClientMsgID: "mockClientMsgID",
+		ServerMsgID: "mockServerMsgID",
+		SendTime:    time.Now().Unix(),
+		SendID:      "mockSendID",
+		ContentType: constant.Text,
+		SessionType: constant.SingleChatType,
+		Content:     []byte("mockContent"),
 	}
 }

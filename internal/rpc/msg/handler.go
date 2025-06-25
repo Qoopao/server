@@ -4,10 +4,13 @@ import (
 	"context"
 	msg "github.com/roc/roc-im-server/internal/kitex_gen/msg"
 	sdkws "github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
+	"github.com/roc/roc-im-server/pkg/common/storage/controller"
 )
 
 // MessageServiceImpl implements the last service interface defined in the IDL.
-type MessageServiceImpl struct{}
+type MessageServiceImpl struct {
+	MsgDatabase controller.CommonMsgDatabase
+}
 
 // GetMaxSeq implements the MessageServiceImpl interface.
 func (s *MessageServiceImpl) GetMaxSeq(ctx context.Context, req *sdkws.GetMaxSeqReq) (resp *sdkws.GetMaxSeqResp, err error) {
@@ -59,8 +62,8 @@ func (s *MessageServiceImpl) SearchMessage(ctx context.Context, req *msg.SearchM
 
 // SendMsg implements the MessageServiceImpl interface.
 func (s *MessageServiceImpl) SendMsg(ctx context.Context, req *msg.SendMsgReq) (resp *msg.SendMsgResp, err error) {
-	// TODO: Your code here...
-	return
+	resp, err = s.sendMsg(ctx, req)
+	return resp, err
 }
 
 // SendSimpleMsg implements the MessageServiceImpl interface.
