@@ -17,11 +17,13 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	// "github.com/openimsdk/open-im-server/v3/pkg/common/prommetrics"
+	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/roc/roc-im-server/pkg/common/servererrs"
 	// "github.com/openimsdk/protocol/constant"
 	// "github.com/openimsdk/protocol/msggateway"
 	"github.com/openimsdk/tools/discovery"
 	"github.com/openimsdk/tools/log"
+	"github.com/roc/roc-im-server/pkg/user"
 	// "github.com/openimsdk/tools/utils/stringutil"
 	// "golang.org/x/sync/errgroup"
 )
@@ -59,7 +61,8 @@ type WsServer struct {
 	validate          *validator.Validate
 	disCov            discovery.Conn
 	Compressor
-	//Encoder
+
+	userservice user.UserService // UserService interface for user-related operations
 	// webhookClient *webhook.Client
 	// userClient    *rpcli.UserClient
 	// authClient    *rpcli.AuthClient
@@ -149,27 +152,33 @@ func NewWsServer( /*msgGatewayConfig *Config,*/ opts ...Option) *WsServer {
 		clients:  newUserMap(),
 		// subscription:    newSubscription(),
 		Compressor: NewGzipCompressor(),
-		// webhookClient:   webhook.NewWebhookClient(msgGatewayConfig.WebhooksConfig.URL),
+		// webhookClient:   webhook.NewWebhookClient(msgGatewayConfig.WebhooksConfig.URL)
+
+		userservice: user.NewUserService(),
 	}
 }
 
 func (ws *WsServer) Run(ctx context.Context) error {
-	// var client *Client
-
 	ctx, cancel := context.WithCancelCause(ctx)
+
 	go func() {
-		// for {
-		// 	select {
-		// 	case <-ctx.Done():
-		// 		return
-		// 	case client = <-ws.registerChan:
-		// 		ws.registerClient(client)
-		// 	case client = <-ws.unregisterChan:
-		// 		ws.unregisterClient(client)
-		// 	case onlineInfo := <-ws.kickHandlerChan:
-		// 		ws.multiTerminalLoginChecker(onlineInfo.clientOK, onlineInfo.oldClients, onlineInfo.newClient)
-		// 	}
-		// }
+		startPushService(ws)
+	}()
+
+	go func() {
+		var client *Client
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case client = <-ws.registerChan:
+				ws.registerClient(client)
+				// case client = <-ws.unregisterChan:
+				// 	ws.unregisterClient(client)
+				// case onlineInfo := <-ws.kickHandlerChan:
+				// 	ws.multiTerminalLoginChecker(onlineInfo.clientOK, onlineInfo.oldClients, onlineInfo.newClient)
+			}
+		}
 	}()
 
 	done := make(chan struct{})
@@ -201,6 +210,16 @@ func (ws *WsServer) Run(ctx context.Context) error {
 	return context.Cause(ctx)
 }
 
+func (ws *WsServer) pushToUser(ctx context.Context, userID string, message *sdkws.MsgData) error {
+	client, _, _ := ws.clients.Get(userID, 0)
+	if len(client) == 0 {
+		return ErrClientClosed.WrapMsg("client not found")
+	}
+
+	client[0].PushMessage(ctx, message)
+	return nil
+}
+
 const concurrentRequest = 3
 
 // func (ws *WsServer) sendUserOnlineInfoToOtherNode(ctx context.Context, client *Client) error {
@@ -219,7 +238,7 @@ const concurrentRequest = 3
 // 	for _, v := range conns {
 // 		v := v
 // 		log.ZDebug(ctx, "sendUserOnlineInfoToOtherNode conn")
-// 		if ws.disCov.IsSelfNode(v) {
+// if ws.disCov.IsSelfNode(v) {
 // 			log.ZDebug(ctx, "Filter out this node")
 // 			continue
 // 		}
@@ -245,55 +264,62 @@ const concurrentRequest = 3
 // 	ws.kickHandlerChan <- i
 // }
 
-// func (ws *WsServer) registerClient(client *Client) {
-// 	var (
-// 		userOK     bool
-// 		clientOK   bool
-// 		oldClients []*Client
-// 	)
-// 	oldClients, userOK, clientOK = ws.clients.Get(client.UserID, client.PlatformID)
-// 	if !userOK {
-// 		ws.clients.Set(client.UserID, client)
-// 		log.ZDebug(client.ctx, "user not exist", "userID", client.UserID, "platformID", client.PlatformID)
-// 		prommetrics.OnlineUserGauge.Add(1)
-// 		ws.onlineUserNum.Add(1)
-// 		ws.onlineUserConnNum.Add(1)
-// 	} else {
-// 		ws.multiTerminalLoginChecker(clientOK, oldClients, client)
-// 		log.ZDebug(client.ctx, "user exist", "userID", client.UserID, "platformID", client.PlatformID)
-// 		if clientOK {
-// 			ws.clients.Set(client.UserID, client)
-// 			// There is already a connection to the platform
-// 			log.ZDebug(client.ctx, "repeat login", "userID", client.UserID, "platformID",
-// 				client.PlatformID, "old remote addr", getRemoteAdders(oldClients))
-// 			ws.onlineUserConnNum.Add(1)
-// 		} else {
-// 			ws.clients.Set(client.UserID, client)
-// 			ws.onlineUserConnNum.Add(1)
-// 		}
-// 	}
+func (ws *WsServer) registerClient(client *Client) {
 
-// 	wg := sync.WaitGroup{}
-// 	log.ZDebug(client.ctx, "ws.msgGatewayConfig.Discovery.Enable", "discoveryEnable", ws.msgGatewayConfig.Discovery.Enable)
+	// 注册 用户地址
+	ws.userservice.SetUserAddress(context.Background(), client.UserID, "127.0.0.1:10300")
 
-// 	if ws.msgGatewayConfig.Discovery.Enable != "k8s" {
-// 		wg.Add(1)
-// 		go func() {
-// 			defer wg.Done()
-// 			_ = ws.sendUserOnlineInfoToOtherNode(client.ctx, client)
-// 		}()
-// 	}
+	// 记录用户
+	ws.clients.Set(client.UserID, client)
 
-// 	//wg.Add(1)
-// 	//go func() {
-// 	//	defer wg.Done()
-// 	//	ws.SetUserOnlineStatus(client.ctx, client, constant.Online)
-// 	//}()
+	// var (
+	// 	userOK     bool
+	// 	clientOK   bool
+	// 	oldClients []*Client
+	// )
+	// oldClients, userOK, clientOK = ws.clients.Get(client.UserID, client.PlatformID)
+	// if !userOK {
+	// 	ws.clients.Set(client.UserID, client)
+	// 	log.ZDebug(client.ctx, "user not exist", "userID", client.UserID, "platformID", client.PlatformID)
+	// 	prommetrics.OnlineUserGauge.Add(1)
+	// 	ws.onlineUserNum.Add(1)
+	// 	ws.onlineUserConnNum.Add(1)
+	// } else {
+	// 	ws.multiTerminalLoginChecker(clientOK, oldClients, client)
+	// 	log.ZDebug(client.ctx, "user exist", "userID", client.UserID, "platformID", client.PlatformID)
+	// 	if clientOK {
+	// ws.clients.Set(client.UserID, client)
+	// 		// There is already a connection to the platform
+	// 		log.ZDebug(client.ctx, "repeat login", "userID", client.UserID, "platformID",
+	// 			client.PlatformID, "old remote addr", getRemoteAdders(oldClients))
+	// 		ws.onlineUserConnNum.Add(1)
+	// 	} else {
+	// 		ws.clients.Set(client.UserID, client)
+	// 		ws.onlineUserConnNum.Add(1)
+	// 	}
+	// }
 
-// 	wg.Wait()
+	// wg := sync.WaitGroup{}
+	// log.ZDebug(client.ctx, "ws.msgGatewayConfig.Discovery.Enable", "discoveryEnable", ws.msgGatewayConfig.Discovery.Enable)
 
-// 	log.ZDebug(client.ctx, "user online", "online user Num", ws.onlineUserNum.Load(), "online user conn Num", ws.onlineUserConnNum.Load())
-// }
+	// if ws.msgGatewayConfig.Discovery.Enable != "k8s" {
+	// 	wg.Add(1)
+	// 	go func() {
+	// 		defer wg.Done()
+	// _ = ws.sendUserOnlineInfoToOtherNode(client.ctx, client)
+	// 	}()
+	// }
+
+	// //wg.Add(1)
+	// //go func() {
+	// //	defer wg.Done()
+	// //	ws.SetUserOnlineStatus(client.ctx, client, constant.Online)
+	// //}()
+
+	// wg.Wait()
+
+	// log.ZDebug(client.ctx, "user online", "online user Num", ws.onlineUserNum.Load(), "online user conn Num", ws.onlineUserConnNum.Load())
+}
 
 func getRemoteAdders(client []*Client) string {
 	var ret string

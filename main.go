@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
+	"net"
 
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/roc/roc-im-server/internal/msggateway"
+	"github.com/roc/roc-im-server/internal/pushhandler"
 	msgRpc "github.com/roc/roc-im-server/internal/rpc/msg"
+	"github.com/roc/roc-im-server/test/redis"
 	// "github.com/roc/roc-im-server/test/kafaka"
 )
 
@@ -31,10 +35,37 @@ func test_mar() {
 	panic(err)
 }
 
+func GetLocalIP() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
+	}
+
+	for _, addr := range addrs {
+		ipNet, ok := addr.(*net.IPNet)
+		if ok && !ipNet.IP.IsLoopback() {
+			if ipNet.IP.To4() != nil { // 优先IPv4
+				return ipNet.IP.String(), nil
+			}
+		}
+	}
+	return "", errors.New("no non-loopback IP found")
+}
+
 func main() {
 
 	// test_mar()
+	redis.Redis_Test()
 
+	res, _ := GetLocalIP()
+	println("Local IP:", res)
+
+	// 开启 push_handler
+	go func() {
+		pushhandler.Start()
+	}()
+
+	// 开启 message_rpc
 	go func() {
 		msgRpc.Start()
 	}()
@@ -47,6 +78,7 @@ func main() {
 	// 	kafaka_test.Consumer()
 	// }()
 
+	// 开启 msggateway
 	var wsServer = msggateway.NewWsServer(
 		msggateway.WithPort(10010),
 		msggateway.WithMaxConnNum(10000),

@@ -60,11 +60,13 @@ func (db *commonMsgDatabase) MsgToMQ(ctx context.Context, key string, msg2mq *sd
 	if err != nil {
 		return err
 	}
-	return db.mqi.Publish(ctx, &mq.Message{
-		Topic: "message",
+	err = db.mqi.Publish(ctx, &mq.Message{
+		Topic: "message_topic",
 		Body:  data,
 		// Timestamp: ,
 	})
+
+	return err
 	// return db.producer.SendMessage(ctx, key, data)
 }
 

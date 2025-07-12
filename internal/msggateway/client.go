@@ -166,21 +166,21 @@ func (c *Client) IsValidReq(req *Req) error {
 
 // handleMessage processes a single message received by the client.
 func (c *Client) handleMessage(message []byte) error {
-	if c.IsCompress {
-		var err error
-		message, err = c.composer.DecompressWithPool(message)
-		if err != nil {
-			return errs.Wrap(err)
-		}
-	}
+	// if c.IsCompress {
+	// 	var err error
+	// 	message, err = c.composer.DecompressWithPool(message)
+	// 	if err != nil {
+	// 		return errs.Wrap(err)
+	// 	}
+	// }
 
 	var binaryReq = getReq()
 	defer freeReq(binaryReq)
 
-	// err := c.Encoder.Decode(message, binaryReq)
-	// if err != nil {
-	// 	return err
-	// }
+	err := c.Encoder.Decode(message, binaryReq)
+	if err != nil {
+		return err
+	}
 
 	// if err := c.IsValidReq(binaryReq); err != nil {
 	// 	return err
@@ -235,6 +235,7 @@ func (c *Client) handleMessage(message []byte) error {
 	}
 
 	return c.replyMessage(ctx, binaryReq, messageErr, resp)
+	return nil
 }
 
 func (c *Client) setAppBackgroundStatus(ctx context.Context, req *Req) ([]byte, error) {
@@ -451,7 +452,8 @@ func mockMsg() *sdkws.MsgData {
 		ClientMsgID: "mockClientMsgID",
 		ServerMsgID: "mockServerMsgID",
 		SendTime:    time.Now().Unix(),
-		SendID:      "mockSendID",
+		SendID:      "RhpUserID",
+		RecvID:      "RhpUserID",
 		ContentType: constant.Text,
 		SessionType: constant.SingleChatType,
 		Content:     []byte("mockContent"),
