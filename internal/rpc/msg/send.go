@@ -6,216 +6,64 @@ package msg
 
 import (
 	"context"
+	"time"
 
-	// "google.golang.org/protobuf/proto"
-
-	// "github.com/openimsdk/open-im-server/v3/pkg/common/prommetrics"
-	// "github.com/openimsdk/open-im-server/v3/pkg/msgprocessor"
-	// "github.com/openimsdk/open-im-server/v3/pkg/util/conversationutil"
-	// "github.com/openimsdk/protocol/constant"
-	// pbconv "github.com/openimsdk/protocol/conversation"
-	// pbmsg "github.com/openimsdk/protocol/msg"
-	// "github.com/openimsdk/protocol/sdkws"
-	// "github.com/openimsdk/protocol/wrapperspb"
+	"github.com/google/uuid"
 	"github.com/openimsdk/tools/errs"
-	// "github.com/openimsdk/tools/log"
-	// "github.com/openimsdk/tools/mcontext"
-	// "github.com/openimsdk/tools/utils/datautil"
-	msg "github.com/roc/roc-im-server/internal/kitex_gen/msg"
+	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 )
 
 // SendMsg implements the MessageServiceImpl interface.
-func (s *MessageServiceImpl) sendMsg(ctx context.Context, req *msg.SendMsgReq) (resp *msg.SendMsgResp, err error) {
+func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMessageReq) (resp *sdkws.SendMessageResp, err error) {
 	// 1、check
-	if req.MsgData == nil {
-		return nil, errs.ErrArgs.WrapMsg("msgData is nil")
+	if len(req.Msgs) == 0 {
+		return nil, errs.ErrArgs.WrapMsg("msgs is empty")
 	}
 
-	// switch req.MsgData.SessionType {
-	// case constant.SingleChatType:
-	// 	return s.sendMsgSingleChat(ctx, req, before)
-	// case constant.NotificationChatType:
-	// 	// return m.sendMsgNotification(ctx, req, before)
-	// case constant.ReadGroupChatType:
-	// 	// return m.sendMsgGroupChat(ctx, req, before)
-	// default:
-	// 	return nil, errs.ErrArgs.WrapMsg("unknown sessionType")
-	// }
+	// 构造返回信息
+	respInfos := make([]*sdkws.SendMessageRespInfo, 0, len(req.Msgs))
+	for index := range req.Msgs {
+		respInfos[index] = &sdkws.SendMessageRespInfo{
+			ServerMsgID: "",
+			ClientMsgID: "",
+			SendTime:    0,
+			IsSuccess:   true,
+			ErrorCode:   "",
+		}
+	}
 
-	s.MsgDatabase.MsgToMQ(ctx, req.MsgData.SendID, req.MsgData)
+	// 生成消息ID
+	for index, msg := range req.Msgs {
+		msg.ServerMsgID = uuid.New().String()
 
-	return
+		respInfos[index].ServerMsgID = msg.ServerMsgID
+		respInfos[index].ClientMsgID = msg.ClientMsgID
+	}
+
+	// 追加到单链（会话链） 并生成orderIndex
+	for index, msg := range req.Msgs {
+		orderIndex, err := s.MsgDatabase.AppendMsgToConvMsgList(ctx, msg.ConvID, msg.ServerMsgID)
+		if err != nil {
+			respInfos[index].IsSuccess = false
+			respInfos[index].ErrorCode = err.Error()
+			continue
+		}
+
+		msg.ServerOrdIndex = orderIndex
+	}
+
+	// 存储消息
+	for _, msg := range req.Msgs {
+		s.MsgDatabase.SaveMsgToDB(ctx, msg)
+	}
+
+	// 转发消息到MQ
+	for _, msg := range req.Msgs {
+		s.MsgDatabase.MsgToMQ(ctx, msg.SendID, msg)
+	}
+
+	resp = &sdkws.SendMessageResp{
+		Infos: respInfos,
+	}
+	return resp, nil
 }
-
-// func (m *msgServer) SendMsg(ctx context.Context, req *pbmsg.SendMsgReq) (*pbmsg.SendMsgResp, error) {
-// 	if req.MsgData == nil {
-// 		return nil, errs.ErrArgs.WrapMsg("msgData is nil")
-// 	}
-// 	before := new(*sdkws.MsgData)
-// 	resp, err := m.sendMsg(ctx, req, before)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if *before != nil && proto.Equal(*before, req.MsgData) == false {
-// 		resp.Modify = req.MsgData
-// 	}
-// 	return resp, nil
-// }
-
-// func (m *msgServer) sendMsg(ctx context.Context, req *pbmsg.SendMsgReq, before **sdkws.MsgData) (*pbmsg.SendMsgResp, error) {
-// 	m.encapsulateMsgData(req.MsgData)
-// 	switch req.MsgData.SessionType {
-// 	case constant.SingleChatType:
-// 		return m.sendMsgSingleChat(ctx, req, before)
-// 	case constant.NotificationChatType:
-// 		return m.sendMsgNotification(ctx, req, before)
-// 	case constant.ReadGroupChatType:
-// 		return m.sendMsgGroupChat(ctx, req, before)
-// 	default:
-// 		return nil, errs.ErrArgs.WrapMsg("unknown sessionType")
-// 	}
-// }
-
-// func (m *msgServer) sendMsgGroupChat(ctx context.Context, req *pbmsg.SendMsgReq, before **sdkws.MsgData) (resp *pbmsg.SendMsgResp, err error) {
-// 	if err = m.messageVerification(ctx, req); err != nil {
-// 		prommetrics.GroupChatMsgProcessFailedCounter.Inc()
-// 		return nil, err
-// 	}
-
-// 	if err = m.webhookBeforeSendGroupMsg(ctx, &m.config.WebhooksConfig.BeforeSendGroupMsg, req); err != nil {
-// 		return nil, err
-// 	}
-// 	if err := m.webhookBeforeMsgModify(ctx, &m.config.WebhooksConfig.BeforeMsgModify, req, before); err != nil {
-// 		return nil, err
-// 	}
-// 	err = m.MsgDatabase.MsgToMQ(ctx, conversationutil.GenConversationUniqueKeyForGroup(req.MsgData.GroupID), req.MsgData)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if req.MsgData.ContentType == constant.AtText {
-// 		go m.setConversationAtInfo(ctx, req.MsgData)
-// 	}
-
-// 	m.webhookAfterSendGroupMsg(ctx, &m.config.WebhooksConfig.AfterSendGroupMsg, req)
-// 	prommetrics.GroupChatMsgProcessSuccessCounter.Inc()
-// 	resp = &pbmsg.SendMsgResp{}
-// 	resp.SendTime = req.MsgData.SendTime
-// 	resp.ServerMsgID = req.MsgData.ServerMsgID
-// 	resp.ClientMsgID = req.MsgData.ClientMsgID
-// 	return resp, nil
-// }
-
-// func (m *msgServer) setConversationAtInfo(nctx context.Context, msg *sdkws.MsgData) {
-
-// 	log.ZDebug(nctx, "setConversationAtInfo", "msg", msg)
-
-// 	defer func() {
-// 		if r := recover(); r != nil {
-// 			log.ZPanic(nctx, "setConversationAtInfo Panic", errs.ErrPanic(r))
-// 		}
-// 	}()
-
-// 	ctx := mcontext.NewCtx("@@@" + mcontext.GetOperationID(nctx))
-
-// 	var atUserID []string
-
-// 	conversation := &pbconv.ConversationReq{
-// 		ConversationID:   msgprocessor.GetConversationIDByMsg(msg),
-// 		ConversationType: msg.SessionType,
-// 		GroupID:          msg.GroupID,
-// 	}
-// 	memberUserIDList, err := m.GroupLocalCache.GetGroupMemberIDs(ctx, msg.GroupID)
-// 	if err != nil {
-// 		log.ZWarn(ctx, "GetGroupMemberIDs", err)
-// 		return
-// 	}
-
-// 	tagAll := datautil.Contain(constant.AtAllString, msg.AtUserIDList...)
-// 	if tagAll {
-
-// 		memberUserIDList = datautil.DeleteElems(memberUserIDList, msg.SendID)
-
-// 		atUserID = datautil.Single([]string{constant.AtAllString}, msg.AtUserIDList)
-
-// 		if len(atUserID) == 0 { // just @everyone
-// 			conversation.GroupAtType = &wrapperspb.Int32Value{Value: constant.AtAll}
-// 		} else { // @Everyone and @other people
-// 			conversation.GroupAtType = &wrapperspb.Int32Value{Value: constant.AtAllAtMe}
-// 			atUserID = datautil.SliceIntersectFuncs(atUserID, memberUserIDList, func(a string) string { return a }, func(b string) string {
-// 				return b
-// 			})
-// 			if err := m.conversationClient.SetConversations(ctx, atUserID, conversation); err != nil {
-// 				log.ZWarn(ctx, "SetConversations", err, "userID", atUserID, "conversation", conversation)
-// 			}
-// 			memberUserIDList = datautil.Single(atUserID, memberUserIDList)
-// 		}
-
-// 		conversation.GroupAtType = &wrapperspb.Int32Value{Value: constant.AtAll}
-// 		if err := m.conversationClient.SetConversations(ctx, memberUserIDList, conversation); err != nil {
-// 			log.ZWarn(ctx, "SetConversations", err, "userID", memberUserIDList, "conversation", conversation)
-// 		}
-
-// 		return
-// 	}
-// 	atUserID = datautil.SliceIntersectFuncs(msg.AtUserIDList, memberUserIDList, func(a string) string { return a }, func(b string) string {
-// 		return b
-// 	})
-// 	conversation.GroupAtType = &wrapperspb.Int32Value{Value: constant.AtMe}
-
-// 	if err := m.conversationClient.SetConversations(ctx, atUserID, conversation); err != nil {
-// 		log.ZWarn(ctx, "SetConversations", err, atUserID, conversation)
-// 	}
-// }
-
-// func (m *msgServer) sendMsgNotification(ctx context.Context, req *pbmsg.SendMsgReq, before **sdkws.MsgData) (resp *pbmsg.SendMsgResp, err error) {
-// 	if err := m.MsgDatabase.MsgToMQ(ctx, conversationutil.GenConversationUniqueKeyForSingle(req.MsgData.SendID, req.MsgData.RecvID), req.MsgData); err != nil {
-// 		return nil, err
-// 	}
-// 	resp = &pbmsg.SendMsgResp{
-// 		ServerMsgID: req.MsgData.ServerMsgID,
-// 		ClientMsgID: req.MsgData.ClientMsgID,
-// 		SendTime:    req.MsgData.SendTime,
-// 	}
-// 	return resp, nil
-// }
-
-// func (m *MessageServiceImpl) sendMsgSingleChat(ctx context.Context, req *pbmsg.SendMsgReq, before **sdkws.MsgData) (resp *pbmsg.SendMsgResp, err error) {
-// if err := m.MsgDatabase.MsgToMQ(ctx, conversationutil.GenConversationUniqueKeyForSingle(req.MsgData.SendID, req.MsgData.RecvID), req.MsgData); err != nil {
-// }
-// if err := m.messageVerification(ctx, req); err != nil {
-// 	return nil, err
-// }
-// isSend := true
-// isNotification := msgprocessor.IsNotificationByMsg(req.MsgData)
-// if !isNotification {
-// 	isSend, err = m.modifyMessageByUserMessageReceiveOpt(
-// 		ctx,
-// 		req.MsgData.RecvID,
-// 		conversationutil.GenConversationIDForSingle(req.MsgData.SendID, req.MsgData.RecvID),
-// 		constant.SingleChatType,
-// 		req,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// }
-// if !isSend {
-// 	prommetrics.SingleChatMsgProcessFailedCounter.Inc()
-// 	return nil, errs.ErrArgs.WrapMsg("message is not sent")
-// } else {
-// 	if err := m.webhookBeforeMsgModify(ctx, &m.config.WebhooksConfig.BeforeMsgModify, req, before); err != nil {
-// 		return nil, err
-// 	}
-// 	if err := m.MsgDatabase.MsgToMQ(ctx, conversationutil.GenConversationUniqueKeyForSingle(req.MsgData.SendID, req.MsgData.RecvID), req.MsgData); err != nil {
-// 		prommetrics.SingleChatMsgProcessFailedCounter.Inc()
-// 		return nil, err
-// 	}
-// 	m.webhookAfterSendSingleMsg(ctx, &m.config.WebhooksConfig.AfterSendSingleMsg, req)
-// 	prommetrics.SingleChatMsgProcessSuccessCounter.Inc()
-// 	return &pbmsg.SendMsgResp{
-// 		ServerMsgID: req.MsgData.ServerMsgID,
-// 		ClientMsgID: req.MsgData.ClientMsgID,
-// 		SendTime:    req.MsgData.SendTime,
-// 	}, nil
-// }
-// }

@@ -191,14 +191,14 @@ func (r *redisStore) HGetAll(ctx context.Context, key string) (map[string][]byte
 
 // 列表操作实现
 
-func (r *redisStore) LPush(ctx context.Context, key string, values ...[]byte) error {
+func (r *redisStore) LPush(ctx context.Context, key string, values ...[]byte) (int64, error) {
 	// 转换为接口切片
 	vals := make([]interface{}, len(values))
 	for i, v := range values {
 		vals[i] = v
 	}
 
-	return r.client.LPush(ctx, key, vals...).Err()
+	return r.client.LPush(ctx, key, vals...).Result()
 }
 
 func (r *redisStore) RPop(ctx context.Context, key string) ([]byte, error) {
@@ -210,6 +210,39 @@ func (r *redisStore) RPop(ctx context.Context, key string) ([]byte, error) {
 		return nil, err
 	}
 	return val, nil
+}
+
+func (r *redisStore) RPush(ctx context.Context, key string, values ...[]byte) (int64, error) {
+	// 转换为接口切片
+	vals := make([]interface{}, len(values))
+	for i, v := range values {
+		vals[i] = v
+	}
+
+	return r.client.RPush(ctx, key, vals...).Result()
+}
+
+func (r *redisStore) LLen(ctx context.Context, key string) (int64, error) {
+	return r.client.LLen(ctx, key).Result()
+}
+
+func (r *redisStore) LPop(ctx context.Context, key string) ([]byte, error) {
+	return r.client.LPop(ctx, key).Bytes()
+}
+
+func (r *redisStore) LRange(ctx context.Context, key string, start, stop int64) ([][]byte, error) {
+	vals, err := r.client.LRange(ctx, key, start, stop).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	// 转换结果为字节切片
+	result := make([][]byte, len(vals))
+	for i, v := range vals {
+		result[i] = []byte(v)
+	}
+
+	return result, nil
 }
 
 // 集合操作实现

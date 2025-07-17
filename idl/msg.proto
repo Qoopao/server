@@ -406,7 +406,7 @@ service MessageService {
   rpc GetSeqMessage(GetSeqMessageReq) returns (GetSeqMessageResp);
   rpc SearchMessage(SearchMessageReq) returns (SearchMessageResp);
   //发送消息
-  rpc SendMsg(SendMsgReq) returns (SendMsgResp);
+  rpc SendMessages(sdkws.SendMessageReq) returns (sdkws.SendMessageResp);
   //简易发送消息
   rpc SendSimpleMsg(SendSimpleMsgReq) returns (SendSimpleMsgResp);
 

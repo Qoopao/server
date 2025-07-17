@@ -30,8 +30,12 @@ type KVStore interface {
 	HGetAll(ctx context.Context, key string) (map[string][]byte, error)
 
 	// 列表操作
-	LPush(ctx context.Context, key string, values ...[]byte) error
+	LPush(ctx context.Context, key string, values ...[]byte) (int64, error)
+	RPush(ctx context.Context, key string, values ...[]byte) (int64, error)
+	LPop(ctx context.Context, key string) ([]byte, error)
 	RPop(ctx context.Context, key string) ([]byte, error)
+	LLen(ctx context.Context, key string) (int64, error)
+	LRange(ctx context.Context, key string, start, stop int64) ([][]byte, error)
 
 	// 集合操作
 	SAdd(ctx context.Context, key string, members ...[]byte) error

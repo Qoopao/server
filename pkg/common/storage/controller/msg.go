@@ -16,11 +16,13 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	// "github.com/roc/roc-im-server/pkg/common/storage/database"
 	// "github.com/roc/roc-im-server/pkg/common/storage/model"
 
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
+	"github.com/roc/roc-im-server/tools/kvstore"
 	"github.com/roc/roc-im-server/tools/mq"
 )
 
@@ -32,6 +34,8 @@ const (
 // CommonMsgDatabase defines the interface for message database operations.
 type CommonMsgDatabase interface {
 	MsgToMQ(ctx context.Context, key string, msg2mq *sdkws.MsgData) error
+	SaveMsgToDB(ctx context.Context, msg *sdkws.MsgData) error
+	AppendMsgToConvMsgList(ctx context.Context, conversationID string, msgID string) (int64, error)
 }
 
 func NewCommonMsgDatabase(mqi mq.MQ /*msgDocModel database.Msg msg cache.MsgCache, seqUser cache.SeqUser, seqConversation cache.SeqConversationCache, producer mq.Producer*/) CommonMsgDatabase {
@@ -52,7 +56,8 @@ type commonMsgDatabase struct {
 	// seqConversation cache.SeqConversationCache
 	// seqUser         cache.SeqUser
 	// producer mq.Producer
-	mqi mq.MQ
+	mqi     mq.MQ
+	kvstore kvstore.KVStore
 }
 
 func (db *commonMsgDatabase) MsgToMQ(ctx context.Context, key string, msg2mq *sdkws.MsgData) error {
@@ -68,6 +73,24 @@ func (db *commonMsgDatabase) MsgToMQ(ctx context.Context, key string, msg2mq *sd
 
 	return err
 	// return db.producer.SendMessage(ctx, key, data)
+}
+
+func (db *commonMsgDatabase) SaveMsgToDB(ctx context.Context, msg *sdkws.MsgData) error {
+	var (
+		data []byte
+		err  error
+	)
+
+	if data, err = msg.Marshal(nil); err != nil {
+		return err
+	}
+
+	db.kvstore.Set(ctx, msg.SendID, data, time.Hour*24*7)
+	return nil
+}
+
+func (db *commonMsgDatabase) AppendMsgToConvMsgList(ctx context.Context, conversationID string, msgID string) (int64, error) {
+	return db.kvstore.RPush(ctx, conversationID, []byte(msgID))
 }
 
 // func (db *commonMsgDatabase) batchInsertBlock(ctx context.Context, conversationID string, fields []any, key int8, firstSeq int64) error {

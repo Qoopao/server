@@ -60,10 +60,10 @@ func (s *MessageServiceImpl) SearchMessage(ctx context.Context, req *msg.SearchM
 	return
 }
 
-// SendMsg implements the MessageServiceImpl interface.
-func (s *MessageServiceImpl) SendMsg(ctx context.Context, req *msg.SendMsgReq) (resp *msg.SendMsgResp, err error) {
-	resp, err = s.sendMsg(ctx, req)
-	return resp, err
+// SendMessages implements the MessageServiceImpl interface.
+func (s *MessageServiceImpl) SendMessages(ctx context.Context, req *sdkws.SendMessageReq) (resp *sdkws.SendMessageResp, err error) {
+	// TODO: Your code here...
+	return s.sendMessages(ctx, req)
 }
 
 // SendSimpleMsg implements the MessageServiceImpl interface.

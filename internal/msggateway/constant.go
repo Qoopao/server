@@ -31,6 +31,9 @@ const (
 
 const (
 	// Websocket Protocol.
+	WSPullSingleList      = 1
+	WSPullMixList         = 2
+	WSSendMessage         = 3
 	WSGetNewestSeq        = 1001
 	WSPullMsgBySeqList    = 1002
 	WSSendMsg             = 1003

@@ -2097,7 +2097,7 @@ type MessageService interface {
 	PullMessageBySeqs(ctx context.Context, req *sdkws.PullMessageBySeqsReq) (res *sdkws.PullMessageBySeqsResp, err error)
 	GetSeqMessage(ctx context.Context, req *GetSeqMessageReq) (res *GetSeqMessageResp, err error)
 	SearchMessage(ctx context.Context, req *SearchMessageReq) (res *SearchMessageResp, err error)
-	SendMsg(ctx context.Context, req *SendMsgReq) (res *SendMsgResp, err error)
+	SendMessages(ctx context.Context, req *sdkws.SendMessageReq) (res *sdkws.SendMessageResp, err error)
 	SendSimpleMsg(ctx context.Context, req *SendSimpleMsgReq) (res *SendSimpleMsgResp, err error)
 	SetUserConversationsMinSeq(ctx context.Context, req *SetUserConversationsMinSeqReq) (res *SetUserConversationsMinSeqResp, err error)
 	ClearConversationsMsg(ctx context.Context, req *ClearConversationsMsgReq) (res *ClearConversationsMsgResp, err error)

@@ -8,12 +8,13 @@ import (
 	"github.com/cloudwego/prutal"
 )
 
-// /////////////////////////////////base end/////////////////////////////////////
+// PullOrder 消息拉取顺序枚举
+// 定义消息拉取的排序方式
 type PullOrder int32
 
 const (
-	PullOrder_PullOrderAsc  PullOrder = 0
-	PullOrder_PullOrderDesc PullOrder = 1
+	PullOrder_PullOrderAsc  PullOrder = 0 // 升序拉取 (从旧到新)
+	PullOrder_PullOrderDesc PullOrder = 1 // 降序拉取 (从新到旧)
 )
 
 // Enum value maps for PullOrder.
@@ -35,24 +36,26 @@ func (x PullOrder) String() string {
 	return strconv.Itoa(int(x))
 }
 
+// GroupInfo 群组基本信息
+// 包含群组的完整信息，用于群组管理和展示
 type GroupInfo struct {
-	GroupID                string `protobuf:"bytes,1,opt,name=groupID" json:"groupID,omitempty"`
-	GroupName              string `protobuf:"bytes,2,opt,name=groupName" json:"groupName,omitempty"`
-	Notification           string `protobuf:"bytes,3,opt,name=notification" json:"notification,omitempty"`
-	Introduction           string `protobuf:"bytes,4,opt,name=introduction" json:"introduction,omitempty"`
-	FaceURL                string `protobuf:"bytes,5,opt,name=faceURL" json:"faceURL,omitempty"`
-	OwnerUserID            string `protobuf:"bytes,6,opt,name=ownerUserID" json:"ownerUserID,omitempty"`
-	CreateTime             int64  `protobuf:"varint,7,opt,name=createTime" json:"createTime,omitempty"`
-	MemberCount            uint32 `protobuf:"varint,8,opt,name=memberCount" json:"memberCount,omitempty"`
-	Ex                     string `protobuf:"bytes,9,opt,name=ex" json:"ex,omitempty"`
-	Status                 int32  `protobuf:"varint,10,opt,name=status" json:"status,omitempty"`
-	CreatorUserID          string `protobuf:"bytes,11,opt,name=creatorUserID" json:"creatorUserID,omitempty"`
-	GroupType              int32  `protobuf:"varint,12,opt,name=groupType" json:"groupType,omitempty"`
-	NeedVerification       int32  `protobuf:"varint,13,opt,name=needVerification" json:"needVerification,omitempty"`
-	LookMemberInfo         int32  `protobuf:"varint,14,opt,name=lookMemberInfo" json:"lookMemberInfo,omitempty"`
-	ApplyMemberFriend      int32  `protobuf:"varint,15,opt,name=applyMemberFriend" json:"applyMemberFriend,omitempty"`
-	NotificationUpdateTime int64  `protobuf:"varint,16,opt,name=notificationUpdateTime" json:"notificationUpdateTime,omitempty"`
-	NotificationUserID     string `protobuf:"bytes,17,opt,name=notificationUserID" json:"notificationUserID,omitempty"`
+	GroupID                string `protobuf:"bytes,1,opt,name=groupID" json:"groupID,omitempty"`                                 // 群组唯一标识
+	GroupName              string `protobuf:"bytes,2,opt,name=groupName" json:"groupName,omitempty"`                             // 群组名称
+	Notification           string `protobuf:"bytes,3,opt,name=notification" json:"notification,omitempty"`                       // 群组公告
+	Introduction           string `protobuf:"bytes,4,opt,name=introduction" json:"introduction,omitempty"`                       // 群组简介
+	FaceURL                string `protobuf:"bytes,5,opt,name=faceURL" json:"faceURL,omitempty"`                                 // 群组头像URL
+	OwnerUserID            string `protobuf:"bytes,6,opt,name=ownerUserID" json:"ownerUserID,omitempty"`                         // 群主用户ID
+	CreateTime             int64  `protobuf:"varint,7,opt,name=createTime" json:"createTime,omitempty"`                          // 群组创建时间戳
+	MemberCount            uint32 `protobuf:"varint,8,opt,name=memberCount" json:"memberCount,omitempty"`                        // 群组成员数量
+	Ex                     string `protobuf:"bytes,9,opt,name=ex" json:"ex,omitempty"`                                           // 扩展字段
+	Status                 int32  `protobuf:"varint,10,opt,name=status" json:"status,omitempty"`                                 // 群组状态 (0:正常 1:解散 2:封禁)
+	CreatorUserID          string `protobuf:"bytes,11,opt,name=creatorUserID" json:"creatorUserID,omitempty"`                    // 群组创建者用户ID
+	GroupType              int32  `protobuf:"varint,12,opt,name=groupType" json:"groupType,omitempty"`                           // 群组类型 (0:普通群 1:工作群)
+	NeedVerification       int32  `protobuf:"varint,13,opt,name=needVerification" json:"needVerification,omitempty"`             // 入群验证设置 (0:直接入群 1:管理员同意 2:禁止入群)
+	LookMemberInfo         int32  `protobuf:"varint,14,opt,name=lookMemberInfo" json:"lookMemberInfo,omitempty"`                 // 查看成员信息权限 (0:所有人 1:仅群主和管理员)
+	ApplyMemberFriend      int32  `protobuf:"varint,15,opt,name=applyMemberFriend" json:"applyMemberFriend,omitempty"`           // 群内加好友权限 (0:允许 1:禁止)
+	NotificationUpdateTime int64  `protobuf:"varint,16,opt,name=notificationUpdateTime" json:"notificationUpdateTime,omitempty"` // 公告更新时间戳
+	NotificationUserID     string `protobuf:"bytes,17,opt,name=notificationUserID" json:"notificationUserID,omitempty"`          // 公告更新者用户ID
 }
 
 func (x *GroupInfo) Reset() { *x = GroupInfo{} }
@@ -180,16 +183,18 @@ func (x *GroupInfo) GetNotificationUserID() string {
 	return ""
 }
 
+// GroupInfoForSet 群组设置信息
+// 专用于群组信息更新操作，包含可修改的字段
 type GroupInfoForSet struct {
-	GroupID           string `protobuf:"bytes,1,opt,name=groupID" json:"groupID,omitempty"`
-	GroupName         string `protobuf:"bytes,2,opt,name=groupName" json:"groupName,omitempty"`
-	Notification      string `protobuf:"bytes,3,opt,name=notification" json:"notification,omitempty"`
-	Introduction      string `protobuf:"bytes,4,opt,name=introduction" json:"introduction,omitempty"`
-	FaceURL           string `protobuf:"bytes,5,opt,name=faceURL" json:"faceURL,omitempty"`
-	Ex                string `protobuf:"bytes,6,opt,name=ex" json:"ex,omitempty"`
-	NeedVerification  int32  `protobuf:"varint,7,opt,name=needVerification" json:"needVerification,omitempty"`
-	LookMemberInfo    int32  `protobuf:"varint,8,opt,name=lookMemberInfo" json:"lookMemberInfo,omitempty"`
-	ApplyMemberFriend int32  `protobuf:"varint,9,opt,name=applyMemberFriend" json:"applyMemberFriend,omitempty"`
+	GroupID           string `protobuf:"bytes,1,opt,name=groupID" json:"groupID,omitempty"`                      // 群组唯一标识
+	GroupName         string `protobuf:"bytes,2,opt,name=groupName" json:"groupName,omitempty"`                  // 群组名称
+	Notification      string `protobuf:"bytes,3,opt,name=notification" json:"notification,omitempty"`            // 群组公告
+	Introduction      string `protobuf:"bytes,4,opt,name=introduction" json:"introduction,omitempty"`            // 群组简介
+	FaceURL           string `protobuf:"bytes,5,opt,name=faceURL" json:"faceURL,omitempty"`                      // 群组头像URL
+	Ex                string `protobuf:"bytes,6,opt,name=ex" json:"ex,omitempty"`                                // 扩展字段
+	NeedVerification  int32  `protobuf:"varint,7,opt,name=needVerification" json:"needVerification,omitempty"`   // 入群验证设置
+	LookMemberInfo    int32  `protobuf:"varint,8,opt,name=lookMemberInfo" json:"lookMemberInfo,omitempty"`       // 查看成员信息权限
+	ApplyMemberFriend int32  `protobuf:"varint,9,opt,name=applyMemberFriend" json:"applyMemberFriend,omitempty"` // 群内加好友权限
 }
 
 func (x *GroupInfoForSet) Reset() { *x = GroupInfoForSet{} }
@@ -261,19 +266,21 @@ func (x *GroupInfoForSet) GetApplyMemberFriend() int32 {
 	return 0
 }
 
+// GroupMemberFullInfo 群组成员完整信息
+// 包含群组成员的详细信息和权限设置
 type GroupMemberFullInfo struct {
-	GroupID        string `protobuf:"bytes,1,opt,name=groupID" json:"groupID,omitempty"`
-	UserID         string `protobuf:"bytes,2,opt,name=userID" json:"userID,omitempty"`
-	RoleLevel      int32  `protobuf:"varint,3,opt,name=roleLevel" json:"roleLevel,omitempty"`
-	JoinTime       int64  `protobuf:"varint,4,opt,name=joinTime" json:"joinTime,omitempty"`
-	Nickname       string `protobuf:"bytes,5,opt,name=nickname" json:"nickname,omitempty"`
-	FaceURL        string `protobuf:"bytes,6,opt,name=faceURL" json:"faceURL,omitempty"`
-	AppMangerLevel int32  `protobuf:"varint,7,opt,name=appMangerLevel" json:"appMangerLevel,omitempty"` //if >0
-	JoinSource     int32  `protobuf:"varint,8,opt,name=joinSource" json:"joinSource,omitempty"`
-	OperatorUserID string `protobuf:"bytes,9,opt,name=operatorUserID" json:"operatorUserID,omitempty"`
-	Ex             string `protobuf:"bytes,10,opt,name=ex" json:"ex,omitempty"`
-	MuteEndTime    int64  `protobuf:"varint,11,opt,name=muteEndTime" json:"muteEndTime,omitempty"`
-	InviterUserID  string `protobuf:"bytes,12,opt,name=inviterUserID" json:"inviterUserID,omitempty"`
+	GroupID        string `protobuf:"bytes,1,opt,name=groupID" json:"groupID,omitempty"`                // 群组ID
+	UserID         string `protobuf:"bytes,2,opt,name=userID" json:"userID,omitempty"`                  // 用户ID
+	RoleLevel      int32  `protobuf:"varint,3,opt,name=roleLevel" json:"roleLevel,omitempty"`           // 角色级别 (1:普通成员 2:管理员 3:群主)
+	JoinTime       int64  `protobuf:"varint,4,opt,name=joinTime" json:"joinTime,omitempty"`             // 入群时间戳
+	Nickname       string `protobuf:"bytes,5,opt,name=nickname" json:"nickname,omitempty"`              // 群内昵称
+	FaceURL        string `protobuf:"bytes,6,opt,name=faceURL" json:"faceURL,omitempty"`                // 用户头像URL
+	AppMangerLevel int32  `protobuf:"varint,7,opt,name=appMangerLevel" json:"appMangerLevel,omitempty"` // 应用管理级别 (>0表示有管理权限)
+	JoinSource     int32  `protobuf:"varint,8,opt,name=joinSource" json:"joinSource,omitempty"`         // 入群来源 (0:邀请 1:搜索 2:二维码)
+	OperatorUserID string `protobuf:"bytes,9,opt,name=operatorUserID" json:"operatorUserID,omitempty"`  // 操作者用户ID
+	Ex             string `protobuf:"bytes,10,opt,name=ex" json:"ex,omitempty"`                         // 扩展字段
+	MuteEndTime    int64  `protobuf:"varint,11,opt,name=muteEndTime" json:"muteEndTime,omitempty"`      // 禁言结束时间戳 (0表示未禁言)
+	InviterUserID  string `protobuf:"bytes,12,opt,name=inviterUserID" json:"inviterUserID,omitempty"`   // 邀请者用户ID
 }
 
 func (x *GroupMemberFullInfo) Reset() { *x = GroupMemberFullInfo{} }
@@ -366,11 +373,13 @@ func (x *GroupMemberFullInfo) GetInviterUserID() string {
 	return ""
 }
 
+// PublicUserInfo 公开用户信息
+// 包含用户的基本公开信息，用于展示和搜索
 type PublicUserInfo struct {
-	UserID   string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	Nickname string `protobuf:"bytes,2,opt,name=nickname" json:"nickname,omitempty"`
-	FaceURL  string `protobuf:"bytes,3,opt,name=faceURL" json:"faceURL,omitempty"`
-	Ex       string `protobuf:"bytes,4,opt,name=ex" json:"ex,omitempty"`
+	UserID   string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`     // 用户唯一标识
+	Nickname string `protobuf:"bytes,2,opt,name=nickname" json:"nickname,omitempty"` // 用户昵称
+	FaceURL  string `protobuf:"bytes,3,opt,name=faceURL" json:"faceURL,omitempty"`   // 用户头像URL
+	Ex       string `protobuf:"bytes,4,opt,name=ex" json:"ex,omitempty"`             // 扩展字段
 }
 
 func (x *PublicUserInfo) Reset() { *x = PublicUserInfo{} }
@@ -407,14 +416,16 @@ func (x *PublicUserInfo) GetEx() string {
 	return ""
 }
 
+// UserInfo 用户完整信息
+// 包含用户的详细信息和系统设置
 type UserInfo struct {
-	UserID           string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	Nickname         string `protobuf:"bytes,2,opt,name=nickname" json:"nickname,omitempty"`
-	FaceURL          string `protobuf:"bytes,3,opt,name=faceURL" json:"faceURL,omitempty"`
-	Ex               string `protobuf:"bytes,4,opt,name=ex" json:"ex,omitempty"`
-	CreateTime       int64  `protobuf:"varint,5,opt,name=createTime" json:"createTime,omitempty"`
-	AppMangerLevel   int32  `protobuf:"varint,6,opt,name=appMangerLevel" json:"appMangerLevel,omitempty"`
-	GlobalRecvMsgOpt int32  `protobuf:"varint,7,opt,name=globalRecvMsgOpt" json:"globalRecvMsgOpt,omitempty"`
+	UserID           string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`                      // 用户唯一标识
+	Nickname         string `protobuf:"bytes,2,opt,name=nickname" json:"nickname,omitempty"`                  // 用户昵称
+	FaceURL          string `protobuf:"bytes,3,opt,name=faceURL" json:"faceURL,omitempty"`                    // 用户头像URL
+	Ex               string `protobuf:"bytes,4,opt,name=ex" json:"ex,omitempty"`                              // 扩展字段
+	CreateTime       int64  `protobuf:"varint,5,opt,name=createTime" json:"createTime,omitempty"`             // 用户创建时间戳
+	AppMangerLevel   int32  `protobuf:"varint,6,opt,name=appMangerLevel" json:"appMangerLevel,omitempty"`     // 应用管理级别 (0:普通用户 >0:管理员)
+	GlobalRecvMsgOpt int32  `protobuf:"varint,7,opt,name=globalRecvMsgOpt" json:"globalRecvMsgOpt,omitempty"` // 全局消息接收设置 (0:接收 1:不接收 2:接收但不通知)
 }
 
 func (x *UserInfo) Reset() { *x = UserInfo{} }
@@ -472,12 +483,14 @@ func (x *UserInfo) GetGlobalRecvMsgOpt() int32 {
 	return 0
 }
 
+// UserInfoWithEx 带扩展的用户信息
+// 用户信息的简化版本，包含扩展字段
 type UserInfoWithEx struct {
-	UserID           string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	Nickname         string `protobuf:"bytes,2,opt,name=nickname" json:"nickname,omitempty"`
-	FaceURL          string `protobuf:"bytes,3,opt,name=faceURL" json:"faceURL,omitempty"`
-	Ex               string `protobuf:"bytes,4,opt,name=ex" json:"ex,omitempty"`
-	GlobalRecvMsgOpt int32  `protobuf:"varint,7,opt,name=globalRecvMsgOpt" json:"globalRecvMsgOpt,omitempty"`
+	UserID           string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`                      // 用户唯一标识
+	Nickname         string `protobuf:"bytes,2,opt,name=nickname" json:"nickname,omitempty"`                  // 用户昵称
+	FaceURL          string `protobuf:"bytes,3,opt,name=faceURL" json:"faceURL,omitempty"`                    // 用户头像URL
+	Ex               string `protobuf:"bytes,4,opt,name=ex" json:"ex,omitempty"`                              // 扩展字段
+	GlobalRecvMsgOpt int32  `protobuf:"varint,7,opt,name=globalRecvMsgOpt" json:"globalRecvMsgOpt,omitempty"` // 全局消息接收设置
 }
 
 func (x *UserInfoWithEx) Reset() { *x = UserInfoWithEx{} }
@@ -521,15 +534,17 @@ func (x *UserInfoWithEx) GetGlobalRecvMsgOpt() int32 {
 	return 0
 }
 
+// FriendInfo 好友信息
+// 包含好友关系的详细信息和设置
 type FriendInfo struct {
-	OwnerUserID    string    `protobuf:"bytes,1,opt,name=ownerUserID" json:"ownerUserID,omitempty"`
-	Remark         string    `protobuf:"bytes,2,opt,name=remark" json:"remark,omitempty"`
-	CreateTime     int64     `protobuf:"varint,3,opt,name=createTime" json:"createTime,omitempty"`
-	FriendUser     *UserInfo `protobuf:"bytes,4,opt,name=friendUser" json:"friendUser,omitempty"`
-	AddSource      int32     `protobuf:"varint,5,opt,name=addSource" json:"addSource,omitempty"`
-	OperatorUserID string    `protobuf:"bytes,6,opt,name=operatorUserID" json:"operatorUserID,omitempty"`
-	Ex             string    `protobuf:"bytes,7,opt,name=ex" json:"ex,omitempty"`
-	IsPinned       bool      `protobuf:"varint,8,opt,name=isPinned" json:"isPinned,omitempty"`
+	OwnerUserID    string    `protobuf:"bytes,1,opt,name=ownerUserID" json:"ownerUserID,omitempty"`       // 好友关系拥有者用户ID
+	Remark         string    `protobuf:"bytes,2,opt,name=remark" json:"remark,omitempty"`                 // 好友备注名称
+	CreateTime     int64     `protobuf:"varint,3,opt,name=createTime" json:"createTime,omitempty"`        // 好友关系创建时间戳
+	FriendUser     *UserInfo `protobuf:"bytes,4,opt,name=friendUser" json:"friendUser,omitempty"`         // 好友的用户信息
+	AddSource      int32     `protobuf:"varint,5,opt,name=addSource" json:"addSource,omitempty"`          // 添加来源 (0:搜索 1:群组 2:名片 3:二维码)
+	OperatorUserID string    `protobuf:"bytes,6,opt,name=operatorUserID" json:"operatorUserID,omitempty"` // 操作者用户ID
+	Ex             string    `protobuf:"bytes,7,opt,name=ex" json:"ex,omitempty"`                         // 扩展字段
+	IsPinned       bool      `protobuf:"varint,8,opt,name=isPinned" json:"isPinned,omitempty"`            // 是否置顶好友
 }
 
 func (x *FriendInfo) Reset() { *x = FriendInfo{} }
@@ -594,13 +609,15 @@ func (x *FriendInfo) GetIsPinned() bool {
 	return false
 }
 
+// BlackInfo 黑名单信息
+// 包含黑名单用户的详细信息
 type BlackInfo struct {
-	OwnerUserID    string          `protobuf:"bytes,1,opt,name=ownerUserID" json:"ownerUserID,omitempty"`
-	CreateTime     int64           `protobuf:"varint,2,opt,name=createTime" json:"createTime,omitempty"`
-	BlackUserInfo  *PublicUserInfo `protobuf:"bytes,3,opt,name=blackUserInfo" json:"blackUserInfo,omitempty"`
-	AddSource      int32           `protobuf:"varint,4,opt,name=addSource" json:"addSource,omitempty"`
-	OperatorUserID string          `protobuf:"bytes,5,opt,name=operatorUserID" json:"operatorUserID,omitempty"`
-	Ex             string          `protobuf:"bytes,6,opt,name=ex" json:"ex,omitempty"`
+	OwnerUserID    string          `protobuf:"bytes,1,opt,name=ownerUserID" json:"ownerUserID,omitempty"`       // 黑名单拥有者用户ID
+	CreateTime     int64           `protobuf:"varint,2,opt,name=createTime" json:"createTime,omitempty"`        // 加入黑名单时间戳
+	BlackUserInfo  *PublicUserInfo `protobuf:"bytes,3,opt,name=blackUserInfo" json:"blackUserInfo,omitempty"`   // 被拉黑用户的公开信息
+	AddSource      int32           `protobuf:"varint,4,opt,name=addSource" json:"addSource,omitempty"`          // 添加来源 (0:搜索 1:群组 2:名片 3:二维码)
+	OperatorUserID string          `protobuf:"bytes,5,opt,name=operatorUserID" json:"operatorUserID,omitempty"` // 操作者用户ID
+	Ex             string          `protobuf:"bytes,6,opt,name=ex" json:"ex,omitempty"`                         // 扩展字段
 }
 
 func (x *BlackInfo) Reset() { *x = BlackInfo{} }
@@ -651,18 +668,20 @@ func (x *BlackInfo) GetEx() string {
 	return ""
 }
 
+// GroupRequest 群组申请/邀请请求
+// 包含群组相关请求的详细信息
 type GroupRequest struct {
-	UserInfo      *PublicUserInfo `protobuf:"bytes,1,opt,name=userInfo" json:"userInfo,omitempty"`
-	GroupInfo     *GroupInfo      `protobuf:"bytes,2,opt,name=groupInfo" json:"groupInfo,omitempty"`
-	HandleResult  int32           `protobuf:"varint,3,opt,name=handleResult" json:"handleResult,omitempty"`
-	ReqMsg        string          `protobuf:"bytes,4,opt,name=reqMsg" json:"reqMsg,omitempty"`
-	HandleMsg     string          `protobuf:"bytes,5,opt,name=handleMsg" json:"handleMsg,omitempty"`
-	ReqTime       int64           `protobuf:"varint,6,opt,name=reqTime" json:"reqTime,omitempty"`
-	HandleUserID  string          `protobuf:"bytes,7,opt,name=handleUserID" json:"handleUserID,omitempty"`
-	HandleTime    int64           `protobuf:"varint,8,opt,name=handleTime" json:"handleTime,omitempty"`
-	Ex            string          `protobuf:"bytes,9,opt,name=ex" json:"ex,omitempty"`
-	JoinSource    int32           `protobuf:"varint,10,opt,name=joinSource" json:"joinSource,omitempty"`
-	InviterUserID string          `protobuf:"bytes,11,opt,name=inviterUserID" json:"inviterUserID,omitempty"`
+	UserInfo      *PublicUserInfo `protobuf:"bytes,1,opt,name=userInfo" json:"userInfo,omitempty"`            // 申请者/被邀请者用户信息
+	GroupInfo     *GroupInfo      `protobuf:"bytes,2,opt,name=groupInfo" json:"groupInfo,omitempty"`          // 群组信息
+	HandleResult  int32           `protobuf:"varint,3,opt,name=handleResult" json:"handleResult,omitempty"`   // 处理结果 (0:未处理 1:同意 2:拒绝)
+	ReqMsg        string          `protobuf:"bytes,4,opt,name=reqMsg" json:"reqMsg,omitempty"`                // 请求消息
+	HandleMsg     string          `protobuf:"bytes,5,opt,name=handleMsg" json:"handleMsg,omitempty"`          // 处理消息
+	ReqTime       int64           `protobuf:"varint,6,opt,name=reqTime" json:"reqTime,omitempty"`             // 请求时间戳
+	HandleUserID  string          `protobuf:"bytes,7,opt,name=handleUserID" json:"handleUserID,omitempty"`    // 处理者用户ID
+	HandleTime    int64           `protobuf:"varint,8,opt,name=handleTime" json:"handleTime,omitempty"`       // 处理时间戳
+	Ex            string          `protobuf:"bytes,9,opt,name=ex" json:"ex,omitempty"`                        // 扩展字段
+	JoinSource    int32           `protobuf:"varint,10,opt,name=joinSource" json:"joinSource,omitempty"`      // 入群来源 (0:邀请 1:搜索 2:二维码)
+	InviterUserID string          `protobuf:"bytes,11,opt,name=inviterUserID" json:"inviterUserID,omitempty"` // 邀请者用户ID
 }
 
 func (x *GroupRequest) Reset() { *x = GroupRequest{} }
@@ -748,20 +767,22 @@ func (x *GroupRequest) GetInviterUserID() string {
 	return ""
 }
 
+// FriendRequest 好友申请请求
+// 包含好友申请的详细信息
 type FriendRequest struct {
-	FromUserID    string `protobuf:"bytes,1,opt,name=fromUserID" json:"fromUserID,omitempty"`
-	FromNickname  string `protobuf:"bytes,2,opt,name=fromNickname" json:"fromNickname,omitempty"`
-	FromFaceURL   string `protobuf:"bytes,3,opt,name=fromFaceURL" json:"fromFaceURL,omitempty"`
-	ToUserID      string `protobuf:"bytes,4,opt,name=toUserID" json:"toUserID,omitempty"`
-	ToNickname    string `protobuf:"bytes,5,opt,name=toNickname" json:"toNickname,omitempty"`
-	ToFaceURL     string `protobuf:"bytes,6,opt,name=toFaceURL" json:"toFaceURL,omitempty"`
-	HandleResult  int32  `protobuf:"varint,7,opt,name=handleResult" json:"handleResult,omitempty"`
-	ReqMsg        string `protobuf:"bytes,8,opt,name=reqMsg" json:"reqMsg,omitempty"`
-	CreateTime    int64  `protobuf:"varint,9,opt,name=createTime" json:"createTime,omitempty"`
-	HandlerUserID string `protobuf:"bytes,10,opt,name=handlerUserID" json:"handlerUserID,omitempty"`
-	HandleMsg     string `protobuf:"bytes,11,opt,name=handleMsg" json:"handleMsg,omitempty"`
-	HandleTime    int64  `protobuf:"varint,12,opt,name=handleTime" json:"handleTime,omitempty"`
-	Ex            string `protobuf:"bytes,13,opt,name=ex" json:"ex,omitempty"`
+	FromUserID    string `protobuf:"bytes,1,opt,name=fromUserID" json:"fromUserID,omitempty"`        // 申请者用户ID
+	FromNickname  string `protobuf:"bytes,2,opt,name=fromNickname" json:"fromNickname,omitempty"`    // 申请者昵称
+	FromFaceURL   string `protobuf:"bytes,3,opt,name=fromFaceURL" json:"fromFaceURL,omitempty"`      // 申请者头像URL
+	ToUserID      string `protobuf:"bytes,4,opt,name=toUserID" json:"toUserID,omitempty"`            // 被申请者用户ID
+	ToNickname    string `protobuf:"bytes,5,opt,name=toNickname" json:"toNickname,omitempty"`        // 被申请者昵称
+	ToFaceURL     string `protobuf:"bytes,6,opt,name=toFaceURL" json:"toFaceURL,omitempty"`          // 被申请者头像URL
+	HandleResult  int32  `protobuf:"varint,7,opt,name=handleResult" json:"handleResult,omitempty"`   // 处理结果 (0:未处理 1:同意 2:拒绝)
+	ReqMsg        string `protobuf:"bytes,8,opt,name=reqMsg" json:"reqMsg,omitempty"`                // 申请消息
+	CreateTime    int64  `protobuf:"varint,9,opt,name=createTime" json:"createTime,omitempty"`       // 申请创建时间戳
+	HandlerUserID string `protobuf:"bytes,10,opt,name=handlerUserID" json:"handlerUserID,omitempty"` // 处理者用户ID
+	HandleMsg     string `protobuf:"bytes,11,opt,name=handleMsg" json:"handleMsg,omitempty"`         // 处理消息
+	HandleTime    int64  `protobuf:"varint,12,opt,name=handleTime" json:"handleTime,omitempty"`      // 处理时间戳
+	Ex            string `protobuf:"bytes,13,opt,name=ex" json:"ex,omitempty"`                       // 扩展字段
 }
 
 func (x *FriendRequest) Reset() { *x = FriendRequest{} }
@@ -861,10 +882,12 @@ func (x *FriendRequest) GetEx() string {
 	return ""
 }
 
+// PullMessageBySeqsReq 按序列号拉取消息请求
+// 用于按指定的序列号范围拉取消息
 type PullMessageBySeqsReq struct {
-	UserID    string      `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	SeqRanges []*SeqRange `protobuf:"bytes,2,rep,name=seqRanges" json:"seqRanges,omitempty"`
-	Order     PullOrder   `protobuf:"varint,3,opt,name=order" json:"order,omitempty"`
+	UserID    string      `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`       // 用户ID
+	SeqRanges []*SeqRange `protobuf:"bytes,2,rep,name=seqRanges" json:"seqRanges,omitempty"` // 序列号范围列表
+	Order     PullOrder   `protobuf:"varint,3,opt,name=order" json:"order,omitempty"`        // 拉取顺序
 }
 
 func (x *PullMessageBySeqsReq) Reset() { *x = PullMessageBySeqsReq{} }
@@ -894,11 +917,13 @@ func (x *PullMessageBySeqsReq) GetOrder() PullOrder {
 	return PullOrder_PullOrderAsc
 }
 
+// SeqRange 序列号范围
+// 定义消息序列号的范围，用于批量拉取消息
 type SeqRange struct {
-	ConversationID string `protobuf:"bytes,1,opt,name=conversationID" json:"conversationID,omitempty"`
-	Begin          int64  `protobuf:"varint,2,opt,name=begin" json:"begin,omitempty"`
-	End            int64  `protobuf:"varint,3,opt,name=end" json:"end,omitempty"`
-	Num            int64  `protobuf:"varint,4,opt,name=num" json:"num,omitempty"`
+	ConversationID string `protobuf:"bytes,1,opt,name=conversationID" json:"conversationID,omitempty"` // 会话ID
+	Begin          int64  `protobuf:"varint,2,opt,name=begin" json:"begin,omitempty"`                  // 起始序列号
+	End            int64  `protobuf:"varint,3,opt,name=end" json:"end,omitempty"`                      // 结束序列号
+	Num            int64  `protobuf:"varint,4,opt,name=num" json:"num,omitempty"`                      // 拉取数量限制
 }
 
 func (x *SeqRange) Reset() { *x = SeqRange{} }
@@ -935,10 +960,12 @@ func (x *SeqRange) GetNum() int64 {
 	return 0
 }
 
+// PullMsgs 拉取的消息集合
+// 包含拉取到的消息列表和分页信息
 type PullMsgs struct {
-	Msgs   []*MsgData `protobuf:"bytes,1,rep,name=Msgs" json:"Msgs,omitempty"`
-	IsEnd  bool       `protobuf:"varint,2,opt,name=isEnd" json:"isEnd,omitempty"`
-	EndSeq int64      `protobuf:"varint,3,opt,name=endSeq" json:"endSeq,omitempty"`
+	Msgs   []*MessageUnion `protobuf:"bytes,1,rep,name=msgs" json:"msgs,omitempty"`      // 消息列表
+	IsEnd  bool            `protobuf:"varint,2,opt,name=isEnd" json:"isEnd,omitempty"`   // 是否为最后一页
+	EndSeq int64           `protobuf:"varint,3,opt,name=endSeq" json:"endSeq,omitempty"` // 最后一条消息的序列号
 }
 
 func (x *PullMsgs) Reset() { *x = PullMsgs{} }
@@ -947,7 +974,7 @@ func (x *PullMsgs) Marshal(in []byte) ([]byte, error) { return prutal.MarshalApp
 
 func (x *PullMsgs) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *PullMsgs) GetMsgs() []*MsgData {
+func (x *PullMsgs) GetMsgs() []*MessageUnion {
 	if x != nil {
 		return x.Msgs
 	}
@@ -968,9 +995,11 @@ func (x *PullMsgs) GetEndSeq() int64 {
 	return 0
 }
 
+// PullMessageBySeqsResp 按序列号拉取消息响应
+// 返回拉取到的消息和通知消息
 type PullMessageBySeqsResp struct {
-	Msgs             map[string]*PullMsgs `protobuf:"bytes,1,rep,name=msgs" json:"msgs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	NotificationMsgs map[string]*PullMsgs `protobuf:"bytes,2,rep,name=notificationMsgs" json:"notificationMsgs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Msgs             map[string]*PullMsgs `protobuf:"bytes,1,rep,name=msgs" json:"msgs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`                         // 普通消息 key:conversationID
+	NotificationMsgs map[string]*PullMsgs `protobuf:"bytes,2,rep,name=notificationMsgs" json:"notificationMsgs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 通知消息 key:conversationID
 }
 
 func (x *PullMessageBySeqsResp) Reset() { *x = PullMessageBySeqsResp{} }
@@ -995,8 +1024,10 @@ func (x *PullMessageBySeqsResp) GetNotificationMsgs() map[string]*PullMsgs {
 	return nil
 }
 
+// GetMaxSeqReq 获取最大序列号请求
+// 用于获取用户各会话的最大和最小序列号
 type GetMaxSeqReq struct {
-	UserID string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
+	UserID string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"` // 用户ID
 }
 
 func (x *GetMaxSeqReq) Reset() { *x = GetMaxSeqReq{} }
@@ -1012,9 +1043,11 @@ func (x *GetMaxSeqReq) GetUserID() string {
 	return ""
 }
 
+// GetMaxSeqResp 获取最大序列号响应
+// 返回用户各会话的最大和最小序列号
 type GetMaxSeqResp struct {
-	MaxSeqs map[string]int64 `protobuf:"bytes,1,rep,name=maxSeqs" json:"maxSeqs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	MinSeqs map[string]int64 `protobuf:"bytes,2,rep,name=minSeqs" json:"minSeqs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	MaxSeqs map[string]int64 `protobuf:"bytes,1,rep,name=maxSeqs" json:"maxSeqs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"` // 最大序列号 key:conversationID
+	MinSeqs map[string]int64 `protobuf:"bytes,2,rep,name=minSeqs" json:"minSeqs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"` // 最小序列号 key:conversationID
 }
 
 func (x *GetMaxSeqResp) Reset() { *x = GetMaxSeqResp{} }
@@ -1037,10 +1070,12 @@ func (x *GetMaxSeqResp) GetMinSeqs() map[string]int64 {
 	return nil
 }
 
+// UserSendMsgResp 用户发送消息响应
+// 返回消息发送结果的相关信息
 type UserSendMsgResp struct {
-	ServerMsgID string `protobuf:"bytes,1,opt,name=serverMsgID" json:"serverMsgID,omitempty"`
-	ClientMsgID string `protobuf:"bytes,2,opt,name=clientMsgID" json:"clientMsgID,omitempty"`
-	SendTime    int64  `protobuf:"varint,3,opt,name=sendTime" json:"sendTime,omitempty"`
+	ServerMsgID string `protobuf:"bytes,1,opt,name=serverMsgID" json:"serverMsgID,omitempty"` // 服务器生成的消息ID
+	ClientMsgID string `protobuf:"bytes,2,opt,name=clientMsgID" json:"clientMsgID,omitempty"` // 客户端生成的消息ID
+	SendTime    int64  `protobuf:"varint,3,opt,name=sendTime" json:"sendTime,omitempty"`      // 消息发送时间戳
 }
 
 func (x *UserSendMsgResp) Reset() { *x = UserSendMsgResp{} }
@@ -1070,29 +1105,34 @@ func (x *UserSendMsgResp) GetSendTime() int64 {
 	return 0
 }
 
+// MsgData 消息数据
+// 包含消息的完整信息，是系统中最核心的消息结构
 type MsgData struct {
-	SendID           string           `protobuf:"bytes,1,opt,name=sendID" json:"sendID,omitempty"`
-	RecvID           string           `protobuf:"bytes,2,opt,name=recvID" json:"recvID,omitempty"`
-	GroupID          string           `protobuf:"bytes,3,opt,name=groupID" json:"groupID,omitempty"`
-	ClientMsgID      string           `protobuf:"bytes,4,opt,name=clientMsgID" json:"clientMsgID,omitempty"`
-	ServerMsgID      string           `protobuf:"bytes,5,opt,name=serverMsgID" json:"serverMsgID,omitempty"`
-	SenderPlatformID int32            `protobuf:"varint,6,opt,name=senderPlatformID" json:"senderPlatformID,omitempty"`
-	SenderNickname   string           `protobuf:"bytes,7,opt,name=senderNickname" json:"senderNickname,omitempty"`
-	SenderFaceURL    string           `protobuf:"bytes,8,opt,name=senderFaceURL" json:"senderFaceURL,omitempty"`
-	SessionType      int32            `protobuf:"varint,9,opt,name=sessionType" json:"sessionType,omitempty"`
-	MsgFrom          int32            `protobuf:"varint,10,opt,name=msgFrom" json:"msgFrom,omitempty"`
-	ContentType      int32            `protobuf:"varint,11,opt,name=contentType" json:"contentType,omitempty"`
-	Content          []byte           `protobuf:"bytes,12,opt,name=content" json:"content,omitempty"`
-	Seq              int64            `protobuf:"varint,14,opt,name=seq" json:"seq,omitempty"`
-	SendTime         int64            `protobuf:"varint,15,opt,name=sendTime" json:"sendTime,omitempty"`
-	CreateTime       int64            `protobuf:"varint,16,opt,name=createTime" json:"createTime,omitempty"`
-	Status           int32            `protobuf:"varint,17,opt,name=status" json:"status,omitempty"`
-	IsRead           bool             `protobuf:"varint,18,opt,name=isRead" json:"isRead,omitempty"`
-	Options          map[string]bool  `protobuf:"bytes,19,rep,name=options" json:"options,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	OfflinePushInfo  *OfflinePushInfo `protobuf:"bytes,20,opt,name=offlinePushInfo" json:"offlinePushInfo,omitempty"`
-	AtUserIDList     []string         `protobuf:"bytes,21,rep,name=atUserIDList" json:"atUserIDList,omitempty"`
-	AttachedInfo     string           `protobuf:"bytes,22,opt,name=attachedInfo" json:"attachedInfo,omitempty"`
-	Ex               string           `protobuf:"bytes,23,opt,name=ex" json:"ex,omitempty"`
+	SendID           string           `protobuf:"bytes,1,opt,name=sendID" json:"sendID,omitempty"`                                                                               // 发送者用户ID
+	RecvID           string           `protobuf:"bytes,2,opt,name=recvID" json:"recvID,omitempty"`                                                                               // 接收者用户ID (单聊时使用)
+	ConvID           string           `protobuf:"bytes,3,opt,name=convID" json:"convID,omitempty"`                                                                               // 群组ID (群聊时使用)
+	ClientMsgID      string           `protobuf:"bytes,4,opt,name=clientMsgID" json:"clientMsgID,omitempty"`                                                                     // 客户端生成的消息ID
+	ServerMsgID      string           `protobuf:"bytes,5,opt,name=serverMsgID" json:"serverMsgID,omitempty"`                                                                     // 服务器生成的消息ID
+	SenderPlatformID int32            `protobuf:"varint,6,opt,name=senderPlatformID" json:"senderPlatformID,omitempty"`                                                          // 发送者平台ID (1:iOS 2:Android 3:Windows 4:Mac 5:Web)
+	SenderNickname   string           `protobuf:"bytes,7,opt,name=senderNickname" json:"senderNickname,omitempty"`                                                               // 发送者昵称
+	SenderFaceURL    string           `protobuf:"bytes,8,opt,name=senderFaceURL" json:"senderFaceURL,omitempty"`                                                                 // 发送者头像URL
+	SessionType      int32            `protobuf:"varint,9,opt,name=sessionType" json:"sessionType,omitempty"`                                                                    // 会话类型 (1:单聊 2:群聊 3:系统通知)
+	MsgFrom          int32            `protobuf:"varint,10,opt,name=msgFrom" json:"msgFrom,omitempty"`                                                                           // 消息来源 (100:用户 200:系统)
+	ContentType      int32            `protobuf:"varint,11,opt,name=contentType" json:"contentType,omitempty"`                                                                   // 消息内容类型 (101:文本 102:图片 103:语音 104:视频 105:文件 106:位置 107:合并 108:名片 109:通知)
+	Content          []byte           `protobuf:"bytes,12,opt,name=content" json:"content,omitempty"`                                                                            // 消息内容 (JSON格式的字节数组)
+	Seq              int64            `protobuf:"varint,14,opt,name=seq" json:"seq,omitempty"`                                                                                   // 消息序列号
+	SendTime         int64            `protobuf:"varint,15,opt,name=sendTime" json:"sendTime,omitempty"`                                                                         // 消息发送时间戳
+	CreateTime       int64            `protobuf:"varint,16,opt,name=createTime" json:"createTime,omitempty"`                                                                     // 消息创建时间戳
+	Status           int32            `protobuf:"varint,17,opt,name=status" json:"status,omitempty"`                                                                             // 消息状态 (1:发送中 2:发送成功 3:发送失败 4:已删除 5:已撤回)
+	IsRead           bool             `protobuf:"varint,18,opt,name=isRead" json:"isRead,omitempty"`                                                                             // 是否已读
+	Options          map[string]bool  `protobuf:"bytes,19,rep,name=options" json:"options,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"` // 消息选项 (如: 是否存储历史记录、是否推送等)
+	OfflinePushInfo  *OfflinePushInfo `protobuf:"bytes,20,opt,name=offlinePushInfo" json:"offlinePushInfo,omitempty"`                                                            // 离线推送信息
+	AtUserIDList     []string         `protobuf:"bytes,21,rep,name=atUserIDList" json:"atUserIDList,omitempty"`                                                                  // @用户ID列表
+	AttachedInfo     string           `protobuf:"bytes,22,opt,name=attachedInfo" json:"attachedInfo,omitempty"`                                                                  // 附加信息
+	Ex               string           `protobuf:"bytes,23,opt,name=ex" json:"ex,omitempty"`                                                                                      // 扩展字段
+	ServerOrdIndex   int64            `protobuf:"varint,24,opt,name=serverOrdIndex" json:"serverOrdIndex,omitempty"`                                                             // 服务端消息消息再会话内的索引
+	IsDeleted        bool             `protobuf:"varint,25,opt,name=isDeleted" json:"isDeleted,omitempty"`                                                                       // 是否已删除
+	IsRecalled       bool             `protobuf:"varint,26,opt,name=isRecalled" json:"isRecalled,omitempty"`                                                                     // 是否已撤回
 }
 
 func (x *MsgData) Reset() { *x = MsgData{} }
@@ -1115,9 +1155,9 @@ func (x *MsgData) GetRecvID() string {
 	return ""
 }
 
-func (x *MsgData) GetGroupID() string {
+func (x *MsgData) GetConvID() string {
 	if x != nil {
-		return x.GroupID
+		return x.ConvID
 	}
 	return ""
 }
@@ -1255,9 +1295,140 @@ func (x *MsgData) GetEx() string {
 	return ""
 }
 
+func (x *MsgData) GetServerOrdIndex() int64 {
+	if x != nil {
+		return x.ServerOrdIndex
+	}
+	return 0
+}
+
+func (x *MsgData) GetIsDeleted() bool {
+	if x != nil {
+		return x.IsDeleted
+	}
+	return false
+}
+
+func (x *MsgData) GetIsRecalled() bool {
+	if x != nil {
+		return x.IsRecalled
+	}
+	return false
+}
+
+// 发送消息 --------------------------------
+type SendMessageRespInfo struct {
+	ServerMsgID string `protobuf:"bytes,1,opt,name=serverMsgID" json:"serverMsgID,omitempty"` // 服务器生成的消息ID
+	ClientMsgID string `protobuf:"bytes,2,opt,name=clientMsgID" json:"clientMsgID,omitempty"` // 客户端生成的消息ID
+	SendTime    int64  `protobuf:"varint,3,opt,name=sendTime" json:"sendTime,omitempty"`      // 消息发送时间戳
+	IsSuccess   bool   `protobuf:"varint,4,opt,name=isSuccess" json:"isSuccess,omitempty"`    // 是否发送成功
+	ErrorCode   string `protobuf:"bytes,5,opt,name=errorCode" json:"errorCode,omitempty"`     // 错误码
+	ErrorMsg    string `protobuf:"bytes,6,opt,name=errorMsg" json:"errorMsg,omitempty"`       // 错误信息
+}
+
+func (x *SendMessageRespInfo) Reset() { *x = SendMessageRespInfo{} }
+
+func (x *SendMessageRespInfo) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *SendMessageRespInfo) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *SendMessageRespInfo) GetServerMsgID() string {
+	if x != nil {
+		return x.ServerMsgID
+	}
+	return ""
+}
+
+func (x *SendMessageRespInfo) GetClientMsgID() string {
+	if x != nil {
+		return x.ClientMsgID
+	}
+	return ""
+}
+
+func (x *SendMessageRespInfo) GetSendTime() int64 {
+	if x != nil {
+		return x.SendTime
+	}
+	return 0
+}
+
+func (x *SendMessageRespInfo) GetIsSuccess() bool {
+	if x != nil {
+		return x.IsSuccess
+	}
+	return false
+}
+
+func (x *SendMessageRespInfo) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
+func (x *SendMessageRespInfo) GetErrorMsg() string {
+	if x != nil {
+		return x.ErrorMsg
+	}
+	return ""
+}
+
+type SendMessageReq struct {
+	Msgs []*MsgData `protobuf:"bytes,1,rep,name=msgs" json:"msgs,omitempty"` // 消息列表f
+}
+
+func (x *SendMessageReq) Reset() { *x = SendMessageReq{} }
+
+func (x *SendMessageReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *SendMessageReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *SendMessageReq) GetMsgs() []*MsgData {
+	if x != nil {
+		return x.Msgs
+	}
+	return nil
+}
+
+type SendMessageResp struct {
+	Infos []*SendMessageRespInfo `protobuf:"bytes,1,rep,name=infos" json:"infos,omitempty"`
+}
+
+func (x *SendMessageResp) Reset() { *x = SendMessageResp{} }
+
+func (x *SendMessageResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *SendMessageResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *SendMessageResp) GetInfos() []*SendMessageRespInfo {
+	if x != nil {
+		return x.Infos
+	}
+	return nil
+}
+
+type CmdMessage struct {
+	Cmd int32 `protobuf:"varint,1,opt,name=cmd" json:"cmd,omitempty"` // 命令
+}
+
+func (x *CmdMessage) Reset() { *x = CmdMessage{} }
+
+func (x *CmdMessage) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *CmdMessage) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CmdMessage) GetCmd() int32 {
+	if x != nil {
+		return x.Cmd
+	}
+	return 0
+}
+
+// PushMessages 推送消息
+// 用于向客户端推送消息和通知
 type PushMessages struct {
-	Msgs             map[string]*PullMsgs `protobuf:"bytes,1,rep,name=msgs" json:"msgs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	NotificationMsgs map[string]*PullMsgs `protobuf:"bytes,2,rep,name=notificationMsgs" json:"notificationMsgs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Msgs []*MessageUnion `protobuf:"bytes,1,rep,name=msgs" json:"msgs,omitempty"` // 消息列表
 }
 
 func (x *PushMessages) Reset() { *x = PushMessages{} }
@@ -1266,27 +1437,144 @@ func (x *PushMessages) Marshal(in []byte) ([]byte, error) { return prutal.Marsha
 
 func (x *PushMessages) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *PushMessages) GetMsgs() map[string]*PullMsgs {
+func (x *PushMessages) GetMsgs() []*MessageUnion {
 	if x != nil {
 		return x.Msgs
 	}
 	return nil
 }
 
-func (x *PushMessages) GetNotificationMsgs() map[string]*PullMsgs {
+type MessageUnion struct {
+	IsCmd  bool        `protobuf:"varint,1,opt,name=isCmd" json:"isCmd,omitempty"`
+	CmdMsg *CmdMessage `protobuf:"bytes,2,opt,name=cmdMsg" json:"cmdMsg,omitempty"`
+	Msg    *MsgData    `protobuf:"bytes,3,opt,name=msg" json:"msg,omitempty"`
+}
+
+func (x *MessageUnion) Reset() { *x = MessageUnion{} }
+
+func (x *MessageUnion) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *MessageUnion) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *MessageUnion) GetIsCmd() bool {
 	if x != nil {
-		return x.NotificationMsgs
+		return x.IsCmd
+	}
+	return false
+}
+
+func (x *MessageUnion) GetCmdMsg() *CmdMessage {
+	if x != nil {
+		return x.CmdMsg
 	}
 	return nil
 }
 
+func (x *MessageUnion) GetMsg() *MsgData {
+	if x != nil {
+		return x.Msg
+	}
+	return nil
+}
+
+type ConversationInfo struct {
+	ConvID          string          `protobuf:"bytes,1,opt,name=convID" json:"convID,omitempty"`                    // 会话ID
+	OwnerUserID     string          `protobuf:"bytes,2,opt,name=ownerUserID" json:"ownerUserID,omitempty"`          // 会话拥有者用户ID
+	ConvType        int32           `protobuf:"varint,3,opt,name=convType" json:"convType,omitempty"`               // 会话类型
+	ConvName        string          `protobuf:"bytes,4,opt,name=convName" json:"convName,omitempty"`                // 会话名称
+	ConvAvatar      string          `protobuf:"bytes,5,opt,name=convAvatar" json:"convAvatar,omitempty"`            // 会话头像URL
+	Msgs            []*MessageUnion `protobuf:"bytes,6,rep,name=msgs" json:"msgs,omitempty"`                        // 会话消息列表
+	LastMsg         *MsgData        `protobuf:"bytes,7,opt,name=lastMsg" json:"lastMsg,omitempty"`                  // 会话最后一条消息
+	ConvUnreadCount int64           `protobuf:"varint,8,opt,name=convUnreadCount" json:"convUnreadCount,omitempty"` // 会话未读消息数量
+	IsMuted         bool            `protobuf:"varint,9,opt,name=isMuted" json:"isMuted,omitempty"`                 // 会话是否静音
+	IsTop           bool            `protobuf:"varint,10,opt,name=isTop" json:"isTop,omitempty"`                    // 会话是否置顶
+}
+
+func (x *ConversationInfo) Reset() { *x = ConversationInfo{} }
+
+func (x *ConversationInfo) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *ConversationInfo) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *ConversationInfo) GetConvID() string {
+	if x != nil {
+		return x.ConvID
+	}
+	return ""
+}
+
+func (x *ConversationInfo) GetOwnerUserID() string {
+	if x != nil {
+		return x.OwnerUserID
+	}
+	return ""
+}
+
+func (x *ConversationInfo) GetConvType() int32 {
+	if x != nil {
+		return x.ConvType
+	}
+	return 0
+}
+
+func (x *ConversationInfo) GetConvName() string {
+	if x != nil {
+		return x.ConvName
+	}
+	return ""
+}
+
+func (x *ConversationInfo) GetConvAvatar() string {
+	if x != nil {
+		return x.ConvAvatar
+	}
+	return ""
+}
+
+func (x *ConversationInfo) GetMsgs() []*MessageUnion {
+	if x != nil {
+		return x.Msgs
+	}
+	return nil
+}
+
+func (x *ConversationInfo) GetLastMsg() *MsgData {
+	if x != nil {
+		return x.LastMsg
+	}
+	return nil
+}
+
+func (x *ConversationInfo) GetConvUnreadCount() int64 {
+	if x != nil {
+		return x.ConvUnreadCount
+	}
+	return 0
+}
+
+func (x *ConversationInfo) GetIsMuted() bool {
+	if x != nil {
+		return x.IsMuted
+	}
+	return false
+}
+
+func (x *ConversationInfo) GetIsTop() bool {
+	if x != nil {
+		return x.IsTop
+	}
+	return false
+}
+
+// OfflinePushInfo 离线推送信息
+// 包含离线推送的配置信息
 type OfflinePushInfo struct {
-	Title         string `protobuf:"bytes,1,opt,name=title" json:"title,omitempty"`
-	Desc          string `protobuf:"bytes,2,opt,name=desc" json:"desc,omitempty"`
-	Ex            string `protobuf:"bytes,3,opt,name=ex" json:"ex,omitempty"`
-	IOSPushSound  string `protobuf:"bytes,4,opt,name=iOSPushSound" json:"iOSPushSound,omitempty"`
-	IOSBadgeCount bool   `protobuf:"varint,5,opt,name=iOSBadgeCount" json:"iOSBadgeCount,omitempty"`
-	SignalInfo    string `protobuf:"bytes,6,opt,name=signalInfo" json:"signalInfo,omitempty"`
+	Title         string `protobuf:"bytes,1,opt,name=title" json:"title,omitempty"`                  // 推送标题
+	Desc          string `protobuf:"bytes,2,opt,name=desc" json:"desc,omitempty"`                    // 推送描述
+	Ex            string `protobuf:"bytes,3,opt,name=ex" json:"ex,omitempty"`                        // 扩展字段
+	IOSPushSound  string `protobuf:"bytes,4,opt,name=iOSPushSound" json:"iOSPushSound,omitempty"`    // iOS推送声音
+	IOSBadgeCount bool   `protobuf:"varint,5,opt,name=iOSBadgeCount" json:"iOSBadgeCount,omitempty"` // iOS角标计数
+	SignalInfo    string `protobuf:"bytes,6,opt,name=signalInfo" json:"signalInfo,omitempty"`        // 信号信息
 }
 
 func (x *OfflinePushInfo) Reset() { *x = OfflinePushInfo{} }
@@ -1337,10 +1625,12 @@ func (x *OfflinePushInfo) GetSignalInfo() string {
 	return ""
 }
 
+// TipsComm 通用提示信息
+// 用于系统通知和提示消息的统一结构
 type TipsComm struct {
-	Detail      []byte `protobuf:"bytes,1,opt,name=detail" json:"detail,omitempty"`
-	DefaultTips string `protobuf:"bytes,2,opt,name=defaultTips" json:"defaultTips,omitempty"`
-	JsonDetail  string `protobuf:"bytes,3,opt,name=jsonDetail" json:"jsonDetail,omitempty"`
+	Detail      []byte `protobuf:"bytes,1,opt,name=detail" json:"detail,omitempty"`           // 详细信息 (protobuf序列化的字节数组)
+	DefaultTips string `protobuf:"bytes,2,opt,name=defaultTips" json:"defaultTips,omitempty"` // 默认提示文本
+	JsonDetail  string `protobuf:"bytes,3,opt,name=jsonDetail" json:"jsonDetail,omitempty"`   // JSON格式的详细信息
 }
 
 func (x *TipsComm) Reset() { *x = TipsComm{} }
@@ -1370,15 +1660,258 @@ func (x *TipsComm) GetJsonDetail() string {
 	return ""
 }
 
-// OnGroupCreated()
+// 拉取混链
+type PullMixListReq struct {
+	Cursor    int64 `protobuf:"varint,1,opt,name=cursor" json:"cursor,omitempty"`       // 游标
+	ConvLimit int32 `protobuf:"varint,2,opt,name=convLimit" json:"convLimit,omitempty"` // 会话数量限制
+	MsgLimit  int32 `protobuf:"varint,3,opt,name=msgLimit" json:"msgLimit,omitempty"`   // 消息数量限制
+	Forward   bool  `protobuf:"varint,4,opt,name=forward" json:"forward,omitempty"`     // 是否向前拉取
+}
+
+func (x *PullMixListReq) Reset() { *x = PullMixListReq{} }
+
+func (x *PullMixListReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *PullMixListReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *PullMixListReq) GetCursor() int64 {
+	if x != nil {
+		return x.Cursor
+	}
+	return 0
+}
+
+func (x *PullMixListReq) GetConvLimit() int32 {
+	if x != nil {
+		return x.ConvLimit
+	}
+	return 0
+}
+
+func (x *PullMixListReq) GetMsgLimit() int32 {
+	if x != nil {
+		return x.MsgLimit
+	}
+	return 0
+}
+
+func (x *PullMixListReq) GetForward() bool {
+	if x != nil {
+		return x.Forward
+	}
+	return false
+}
+
+type PullMixListResp struct {
+	Conversations []*ConversationInfo `protobuf:"bytes,1,rep,name=conversations" json:"conversations,omitempty"` // 会话列表
+}
+
+func (x *PullMixListResp) Reset() { *x = PullMixListResp{} }
+
+func (x *PullMixListResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *PullMixListResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *PullMixListResp) GetConversations() []*ConversationInfo {
+	if x != nil {
+		return x.Conversations
+	}
+	return nil
+}
+
+// 拉取单链
+type PullSingleListReq struct {
+	ConversationID string `protobuf:"bytes,1,opt,name=conversationID" json:"conversationID,omitempty"` // 会话ID
+	MsgLimit       int32  `protobuf:"varint,2,opt,name=msgLimit" json:"msgLimit,omitempty"`            // 消息数量限制
+	Forward        bool   `protobuf:"varint,3,opt,name=forward" json:"forward,omitempty"`              // 是否向前拉取
+	Cursor         int64  `protobuf:"varint,4,opt,name=cursor" json:"cursor,omitempty"`                // 游标
+}
+
+func (x *PullSingleListReq) Reset() { *x = PullSingleListReq{} }
+
+func (x *PullSingleListReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *PullSingleListReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *PullSingleListReq) GetConversationID() string {
+	if x != nil {
+		return x.ConversationID
+	}
+	return ""
+}
+
+func (x *PullSingleListReq) GetMsgLimit() int32 {
+	if x != nil {
+		return x.MsgLimit
+	}
+	return 0
+}
+
+func (x *PullSingleListReq) GetForward() bool {
+	if x != nil {
+		return x.Forward
+	}
+	return false
+}
+
+func (x *PullSingleListReq) GetCursor() int64 {
+	if x != nil {
+		return x.Cursor
+	}
+	return 0
+}
+
+type PullSingleListResp struct {
+	Msgs []*MsgData `protobuf:"bytes,1,rep,name=msgs" json:"msgs,omitempty"` // 消息列表
+}
+
+func (x *PullSingleListResp) Reset() { *x = PullSingleListResp{} }
+
+func (x *PullSingleListResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *PullSingleListResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *PullSingleListResp) GetMsgs() []*MsgData {
+	if x != nil {
+		return x.Msgs
+	}
+	return nil
+}
+
+type SdkWSReq struct {
+	RequestId string `protobuf:"bytes,1,opt,name=requestId" json:"requestId,omitempty"` // 请求ID
+	Token     string `protobuf:"bytes,2,opt,name=token" json:"token,omitempty"`         // 令牌
+	UserID    string `protobuf:"bytes,3,opt,name=userID" json:"userID,omitempty"`       // 用户ID
+	DeviceID  string `protobuf:"bytes,4,opt,name=deviceID" json:"deviceID,omitempty"`   // 设备ID
+	Data      []byte `protobuf:"bytes,5,opt,name=data" json:"data,omitempty"`           // 数据
+	Type      int32  `protobuf:"varint,6,opt,name=type" json:"type,omitempty"`          // 请求类型
+}
+
+func (x *SdkWSReq) Reset() { *x = SdkWSReq{} }
+
+func (x *SdkWSReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *SdkWSReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *SdkWSReq) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *SdkWSReq) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *SdkWSReq) GetUserID() string {
+	if x != nil {
+		return x.UserID
+	}
+	return ""
+}
+
+func (x *SdkWSReq) GetDeviceID() string {
+	if x != nil {
+		return x.DeviceID
+	}
+	return ""
+}
+
+func (x *SdkWSReq) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *SdkWSReq) GetType() int32 {
+	if x != nil {
+		return x.Type
+	}
+	return 0
+}
+
+type SdkWSResp struct {
+	RequestId string `protobuf:"bytes,1,opt,name=requestId" json:"requestId,omitempty"` // 请求ID
+	Token     string `protobuf:"bytes,2,opt,name=token" json:"token,omitempty"`         // 令牌
+	UserID    string `protobuf:"bytes,3,opt,name=userID" json:"userID,omitempty"`       // 用户ID
+	DeviceID  string `protobuf:"bytes,4,opt,name=deviceID" json:"deviceID,omitempty"`   // 设备ID
+	ErrorCode string `protobuf:"bytes,5,opt,name=errorCode" json:"errorCode,omitempty"` // 错误码
+	ErrorMsg  string `protobuf:"bytes,6,opt,name=errorMsg" json:"errorMsg,omitempty"`   // 错误信息
+	Data      []byte `protobuf:"bytes,7,opt,name=data" json:"data,omitempty"`           // 数据
+}
+
+func (x *SdkWSResp) Reset() { *x = SdkWSResp{} }
+
+func (x *SdkWSResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *SdkWSResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *SdkWSResp) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *SdkWSResp) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *SdkWSResp) GetUserID() string {
+	if x != nil {
+		return x.UserID
+	}
+	return ""
+}
+
+func (x *SdkWSResp) GetDeviceID() string {
+	if x != nil {
+		return x.DeviceID
+	}
+	return ""
+}
+
+func (x *SdkWSResp) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
+func (x *SdkWSResp) GetErrorMsg() string {
+	if x != nil {
+		return x.ErrorMsg
+	}
+	return ""
+}
+
+func (x *SdkWSResp) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+// GroupCreatedTips 群组创建通知
+// 当群组被创建时发送的通知消息
+//
+//	OnGroupCreated()
 type GroupCreatedTips struct {
-	Group                *GroupInfo             `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	OpUser               *GroupMemberFullInfo   `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`
-	MemberList           []*GroupMemberFullInfo `protobuf:"bytes,3,rep,name=memberList" json:"memberList,omitempty"`
-	OperationTime        int64                  `protobuf:"varint,4,opt,name=operationTime" json:"operationTime,omitempty"`
-	GroupOwnerUser       *GroupMemberFullInfo   `protobuf:"bytes,5,opt,name=groupOwnerUser" json:"groupOwnerUser,omitempty"`
-	GroupMemberVersion   uint64                 `protobuf:"varint,6,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string                 `protobuf:"bytes,7,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
+	Group                *GroupInfo             `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	OpUser               *GroupMemberFullInfo   `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`                             // 操作者信息
+	MemberList           []*GroupMemberFullInfo `protobuf:"bytes,3,rep,name=memberList" json:"memberList,omitempty"`                     // 初始成员列表
+	OperationTime        int64                  `protobuf:"varint,4,opt,name=operationTime" json:"operationTime,omitempty"`              // 操作时间戳
+	GroupOwnerUser       *GroupMemberFullInfo   `protobuf:"bytes,5,opt,name=groupOwnerUser" json:"groupOwnerUser,omitempty"`             // 群主信息
+	GroupMemberVersion   uint64                 `protobuf:"varint,6,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string                 `protobuf:"bytes,7,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
 }
 
 func (x *GroupCreatedTips) Reset() { *x = GroupCreatedTips{} }
@@ -1436,13 +1969,16 @@ func (x *GroupCreatedTips) GetGroupMemberVersionID() string {
 	return ""
 }
 
-// OnGroupInfoSet()
+// GroupInfoSetTips 群组信息设置通知
+// 当群组信息被修改时发送的通知消息
+//
+//	OnGroupInfoSet()
 type GroupInfoSetTips struct {
-	OpUser               *GroupMemberFullInfo `protobuf:"bytes,1,opt,name=opUser" json:"opUser,omitempty"` //who do this
-	MuteTime             int64                `protobuf:"varint,2,opt,name=muteTime" json:"muteTime,omitempty"`
-	Group                *GroupInfo           `protobuf:"bytes,3,opt,name=group" json:"group,omitempty"`
-	GroupMemberVersion   uint64               `protobuf:"varint,4,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string               `protobuf:"bytes,5,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
+	OpUser               *GroupMemberFullInfo `protobuf:"bytes,1,opt,name=opUser" json:"opUser,omitempty"`                             // 操作者信息
+	MuteTime             int64                `protobuf:"varint,2,opt,name=muteTime" json:"muteTime,omitempty"`                        // 禁言时间 (毫秒)
+	Group                *GroupInfo           `protobuf:"bytes,3,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	GroupMemberVersion   uint64               `protobuf:"varint,4,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string               `protobuf:"bytes,5,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
 }
 
 func (x *GroupInfoSetTips) Reset() { *x = GroupInfoSetTips{} }
@@ -1486,11 +2022,13 @@ func (x *GroupInfoSetTips) GetGroupMemberVersionID() string {
 	return ""
 }
 
+// GroupInfoSetNameTips 群组名称设置通知
+// 当群组名称被修改时发送的通知消息
 type GroupInfoSetNameTips struct {
-	OpUser               *GroupMemberFullInfo `protobuf:"bytes,1,opt,name=opUser" json:"opUser,omitempty"` //who do this
-	Group                *GroupInfo           `protobuf:"bytes,2,opt,name=group" json:"group,omitempty"`
-	GroupMemberVersion   uint64               `protobuf:"varint,3,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string               `protobuf:"bytes,4,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
+	OpUser               *GroupMemberFullInfo `protobuf:"bytes,1,opt,name=opUser" json:"opUser,omitempty"`                             // 操作者信息
+	Group                *GroupInfo           `protobuf:"bytes,2,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	GroupMemberVersion   uint64               `protobuf:"varint,3,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string               `protobuf:"bytes,4,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
 }
 
 func (x *GroupInfoSetNameTips) Reset() { *x = GroupInfoSetNameTips{} }
@@ -1527,11 +2065,13 @@ func (x *GroupInfoSetNameTips) GetGroupMemberVersionID() string {
 	return ""
 }
 
+// GroupInfoSetAnnouncementTips 群组公告设置通知
+// 当群组公告被修改时发送的通知消息
 type GroupInfoSetAnnouncementTips struct {
-	OpUser               *GroupMemberFullInfo `protobuf:"bytes,1,opt,name=opUser" json:"opUser,omitempty"` //who do this
-	Group                *GroupInfo           `protobuf:"bytes,2,opt,name=group" json:"group,omitempty"`
-	GroupMemberVersion   uint64               `protobuf:"varint,3,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string               `protobuf:"bytes,4,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
+	OpUser               *GroupMemberFullInfo `protobuf:"bytes,1,opt,name=opUser" json:"opUser,omitempty"`                             // 操作者信息
+	Group                *GroupInfo           `protobuf:"bytes,2,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	GroupMemberVersion   uint64               `protobuf:"varint,3,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string               `protobuf:"bytes,4,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
 }
 
 func (x *GroupInfoSetAnnouncementTips) Reset() { *x = GroupInfoSetAnnouncementTips{} }
@@ -1570,11 +2110,14 @@ func (x *GroupInfoSetAnnouncementTips) GetGroupMemberVersionID() string {
 	return ""
 }
 
-// OnJoinGroupApplication()
+// JoinGroupApplicationTips 入群申请通知
+// 当有用户申请加入群组时发送的通知消息
+//
+//	OnJoinGroupApplication()
 type JoinGroupApplicationTips struct {
-	Group     *GroupInfo      `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	Applicant *PublicUserInfo `protobuf:"bytes,2,opt,name=applicant" json:"applicant,omitempty"`
-	ReqMsg    string          `protobuf:"bytes,3,opt,name=reqMsg" json:"reqMsg,omitempty"`
+	Group     *GroupInfo      `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`         // 群组信息
+	Applicant *PublicUserInfo `protobuf:"bytes,2,opt,name=applicant" json:"applicant,omitempty"` // 申请者信息
+	ReqMsg    string          `protobuf:"bytes,3,opt,name=reqMsg" json:"reqMsg,omitempty"`       // 申请消息
 }
 
 func (x *JoinGroupApplicationTips) Reset() { *x = JoinGroupApplicationTips{} }
@@ -1606,15 +2149,18 @@ func (x *JoinGroupApplicationTips) GetReqMsg() string {
 	return ""
 }
 
+// MemberQuitTips 成员退出通知
+// 当成员主动退出群组时发送的通知消息
+//
 //	OnQuitGroup()
 //
 // Actively leave the group
 type MemberQuitTips struct {
-	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	QuitUser             *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=quitUser" json:"quitUser,omitempty"`
-	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`
-	GroupMemberVersion   uint64               `protobuf:"varint,4,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string               `protobuf:"bytes,5,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
+	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	QuitUser             *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=quitUser" json:"quitUser,omitempty"`                         // 退出的成员信息
+	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`              // 操作时间戳
+	GroupMemberVersion   uint64               `protobuf:"varint,4,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string               `protobuf:"bytes,5,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
 }
 
 func (x *MemberQuitTips) Reset() { *x = MemberQuitTips{} }
@@ -1658,12 +2204,15 @@ func (x *MemberQuitTips) GetGroupMemberVersionID() string {
 	return ""
 }
 
-// OnApplicationGroupAccepted()
+// GroupApplicationAcceptedTips 入群申请同意通知
+// 当入群申请被同意时发送的通知消息
+//
+//	OnApplicationGroupAccepted()
 type GroupApplicationAcceptedTips struct {
-	Group      *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	OpUser     *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`
-	HandleMsg  string               `protobuf:"bytes,4,opt,name=handleMsg" json:"handleMsg,omitempty"`
-	ReceiverAs int32                `protobuf:"varint,5,opt,name=receiverAs" json:"receiverAs,omitempty"` // admin(==1) or applicant(==0)
+	Group      *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`            // 群组信息
+	OpUser     *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`          // 操作者信息
+	HandleMsg  string               `protobuf:"bytes,4,opt,name=handleMsg" json:"handleMsg,omitempty"`    // 处理消息
+	ReceiverAs int32                `protobuf:"varint,5,opt,name=receiverAs" json:"receiverAs,omitempty"` // 接收者身份 (1:管理员 0:申请者)
 }
 
 func (x *GroupApplicationAcceptedTips) Reset() { *x = GroupApplicationAcceptedTips{} }
@@ -1702,12 +2251,15 @@ func (x *GroupApplicationAcceptedTips) GetReceiverAs() int32 {
 	return 0
 }
 
-// OnApplicationGroupRejected()
+// GroupApplicationRejectedTips 入群申请拒绝通知
+// 当入群申请被拒绝时发送的通知消息
+//
+//	OnApplicationGroupRejected()
 type GroupApplicationRejectedTips struct {
-	Group      *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	OpUser     *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`
-	HandleMsg  string               `protobuf:"bytes,4,opt,name=handleMsg" json:"handleMsg,omitempty"`
-	ReceiverAs int32                `protobuf:"varint,5,opt,name=receiverAs" json:"receiverAs,omitempty"` // admin(==1) or applicant(==0)
+	Group      *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`            // 群组信息
+	OpUser     *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`          // 操作者信息
+	HandleMsg  string               `protobuf:"bytes,4,opt,name=handleMsg" json:"handleMsg,omitempty"`    // 处理消息
+	ReceiverAs int32                `protobuf:"varint,5,opt,name=receiverAs" json:"receiverAs,omitempty"` // 接收者身份 (1:管理员 0:申请者)
 }
 
 func (x *GroupApplicationRejectedTips) Reset() { *x = GroupApplicationRejectedTips{} }
@@ -1746,16 +2298,19 @@ func (x *GroupApplicationRejectedTips) GetReceiverAs() int32 {
 	return 0
 }
 
-// OnTransferGroupOwner()
+// GroupOwnerTransferredTips 群主转让通知
+// 当群主转让群组时发送的通知消息
+//
+//	OnTransferGroupOwner()
 type GroupOwnerTransferredTips struct {
-	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	OpUser               *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`
-	NewGroupOwner        *GroupMemberFullInfo `protobuf:"bytes,3,opt,name=newGroupOwner" json:"newGroupOwner,omitempty"`
-	OldGroupOwner        string               `protobuf:"bytes,4,opt,name=oldGroupOwner" json:"oldGroupOwner,omitempty"`
-	OperationTime        int64                `protobuf:"varint,5,opt,name=operationTime" json:"operationTime,omitempty"`
-	OldGroupOwnerInfo    *GroupMemberFullInfo `protobuf:"bytes,6,opt,name=oldGroupOwnerInfo" json:"oldGroupOwnerInfo,omitempty"`
-	GroupMemberVersion   uint64               `protobuf:"varint,7,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string               `protobuf:"bytes,8,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
+	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	OpUser               *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`                             // 操作者信息
+	NewGroupOwner        *GroupMemberFullInfo `protobuf:"bytes,3,opt,name=newGroupOwner" json:"newGroupOwner,omitempty"`               // 新群主信息
+	OldGroupOwner        string               `protobuf:"bytes,4,opt,name=oldGroupOwner" json:"oldGroupOwner,omitempty"`               // 原群主用户ID
+	OperationTime        int64                `protobuf:"varint,5,opt,name=operationTime" json:"operationTime,omitempty"`              // 操作时间戳
+	OldGroupOwnerInfo    *GroupMemberFullInfo `protobuf:"bytes,6,opt,name=oldGroupOwnerInfo" json:"oldGroupOwnerInfo,omitempty"`       // 原群主信息
+	GroupMemberVersion   uint64               `protobuf:"varint,7,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string               `protobuf:"bytes,8,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
 }
 
 func (x *GroupOwnerTransferredTips) Reset() { *x = GroupOwnerTransferredTips{} }
@@ -1822,14 +2377,17 @@ func (x *GroupOwnerTransferredTips) GetGroupMemberVersionID() string {
 	return ""
 }
 
-// OnMemberKicked()
+// MemberKickedTips 成员被踢出通知
+// 当成员被踢出群组时发送的通知消息
+//
+//	OnMemberKicked()
 type MemberKickedTips struct {
-	Group                *GroupInfo             `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	OpUser               *GroupMemberFullInfo   `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`
-	KickedUserList       []*GroupMemberFullInfo `protobuf:"bytes,3,rep,name=kickedUserList" json:"kickedUserList,omitempty"`
-	OperationTime        int64                  `protobuf:"varint,4,opt,name=operationTime" json:"operationTime,omitempty"`
-	GroupMemberVersion   uint64                 `protobuf:"varint,5,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string                 `protobuf:"bytes,6,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
+	Group                *GroupInfo             `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	OpUser               *GroupMemberFullInfo   `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`                             // 操作者信息
+	KickedUserList       []*GroupMemberFullInfo `protobuf:"bytes,3,rep,name=kickedUserList" json:"kickedUserList,omitempty"`             // 被踢出的成员列表
+	OperationTime        int64                  `protobuf:"varint,4,opt,name=operationTime" json:"operationTime,omitempty"`              // 操作时间戳
+	GroupMemberVersion   uint64                 `protobuf:"varint,5,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string                 `protobuf:"bytes,6,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
 }
 
 func (x *MemberKickedTips) Reset() { *x = MemberKickedTips{} }
@@ -1880,15 +2438,18 @@ func (x *MemberKickedTips) GetGroupMemberVersionID() string {
 	return ""
 }
 
-// OnMemberInvited()
+// MemberInvitedTips 成员邀请通知
+// 当成员被邀请加入群组时发送的通知消息
+//
+//	OnMemberInvited()
 type MemberInvitedTips struct {
-	Group                *GroupInfo             `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	OpUser               *GroupMemberFullInfo   `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`
-	InvitedUserList      []*GroupMemberFullInfo `protobuf:"bytes,3,rep,name=invitedUserList" json:"invitedUserList,omitempty"`
-	OperationTime        int64                  `protobuf:"varint,4,opt,name=operationTime" json:"operationTime,omitempty"`
-	GroupMemberVersion   uint64                 `protobuf:"varint,5,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string                 `protobuf:"bytes,6,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
-	InviterUser          *GroupMemberFullInfo   `protobuf:"bytes,7,opt,name=inviterUser" json:"inviterUser,omitempty"`
+	Group                *GroupInfo             `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	OpUser               *GroupMemberFullInfo   `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`                             // 操作者信息
+	InvitedUserList      []*GroupMemberFullInfo `protobuf:"bytes,3,rep,name=invitedUserList" json:"invitedUserList,omitempty"`           // 被邀请的成员列表
+	OperationTime        int64                  `protobuf:"varint,4,opt,name=operationTime" json:"operationTime,omitempty"`              // 操作时间戳
+	GroupMemberVersion   uint64                 `protobuf:"varint,5,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string                 `protobuf:"bytes,6,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
+	InviterUser          *GroupMemberFullInfo   `protobuf:"bytes,7,opt,name=inviterUser" json:"inviterUser,omitempty"`                   // 邀请者信息
 }
 
 func (x *MemberInvitedTips) Reset() { *x = MemberInvitedTips{} }
@@ -1946,13 +2507,15 @@ func (x *MemberInvitedTips) GetInviterUser() *GroupMemberFullInfo {
 	return nil
 }
 
+// MemberEnterTips 成员进入通知
+// 当成员主动加入群组时发送的通知消息
 // Actively join the group
 type MemberEnterTips struct {
-	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	EntrantUser          *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=entrantUser" json:"entrantUser,omitempty"`
-	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`
-	GroupMemberVersion   uint64               `protobuf:"varint,5,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string               `protobuf:"bytes,6,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
+	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	EntrantUser          *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=entrantUser" json:"entrantUser,omitempty"`                   // 进入的成员信息
+	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`              // 操作时间戳
+	GroupMemberVersion   uint64               `protobuf:"varint,5,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string               `protobuf:"bytes,6,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
 }
 
 func (x *MemberEnterTips) Reset() { *x = MemberEnterTips{} }
@@ -1996,10 +2559,12 @@ func (x *MemberEnterTips) GetGroupMemberVersionID() string {
 	return ""
 }
 
+// GroupDismissedTips 群组解散通知
+// 当群组被解散时发送的通知消息
 type GroupDismissedTips struct {
-	Group         *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	OpUser        *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`
-	OperationTime int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`
+	Group         *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`                  // 群组信息
+	OpUser        *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`                // 操作者信息
+	OperationTime int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"` // 操作时间戳
 }
 
 func (x *GroupDismissedTips) Reset() { *x = GroupDismissedTips{} }
@@ -2029,14 +2594,16 @@ func (x *GroupDismissedTips) GetOperationTime() int64 {
 	return 0
 }
 
+// GroupMemberMutedTips 群成员禁言通知
+// 当群成员被禁言时发送的通知消息
 type GroupMemberMutedTips struct {
-	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	OpUser               *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`
-	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`
-	MutedUser            *GroupMemberFullInfo `protobuf:"bytes,4,opt,name=mutedUser" json:"mutedUser,omitempty"`
-	MutedSeconds         uint32               `protobuf:"varint,5,opt,name=mutedSeconds" json:"mutedSeconds,omitempty"`
-	GroupMemberVersion   uint64               `protobuf:"varint,6,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string               `protobuf:"bytes,7,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
+	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	OpUser               *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`                             // 操作者信息
+	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`              // 操作时间戳
+	MutedUser            *GroupMemberFullInfo `protobuf:"bytes,4,opt,name=mutedUser" json:"mutedUser,omitempty"`                       // 被禁言的成员信息
+	MutedSeconds         uint32               `protobuf:"varint,5,opt,name=mutedSeconds" json:"mutedSeconds,omitempty"`                // 禁言时长 (秒)
+	GroupMemberVersion   uint64               `protobuf:"varint,6,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string               `protobuf:"bytes,7,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
 }
 
 func (x *GroupMemberMutedTips) Reset() { *x = GroupMemberMutedTips{} }
@@ -2094,13 +2661,15 @@ func (x *GroupMemberMutedTips) GetGroupMemberVersionID() string {
 	return ""
 }
 
+// GroupMemberCancelMutedTips 群成员取消禁言通知
+// 当群成员禁言被取消时发送的通知消息
 type GroupMemberCancelMutedTips struct {
-	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	OpUser               *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`
-	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`
-	MutedUser            *GroupMemberFullInfo `protobuf:"bytes,4,opt,name=mutedUser" json:"mutedUser,omitempty"`
-	GroupMemberVersion   uint64               `protobuf:"varint,5,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string               `protobuf:"bytes,6,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
+	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	OpUser               *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`                             // 操作者信息
+	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`              // 操作时间戳
+	MutedUser            *GroupMemberFullInfo `protobuf:"bytes,4,opt,name=mutedUser" json:"mutedUser,omitempty"`                       // 被取消禁言的成员信息
+	GroupMemberVersion   uint64               `protobuf:"varint,5,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string               `protobuf:"bytes,6,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
 }
 
 func (x *GroupMemberCancelMutedTips) Reset() { *x = GroupMemberCancelMutedTips{} }
@@ -2153,12 +2722,14 @@ func (x *GroupMemberCancelMutedTips) GetGroupMemberVersionID() string {
 	return ""
 }
 
+// GroupMutedTips 群组禁言通知
+// 当整个群组被禁言时发送的通知消息
 type GroupMutedTips struct {
-	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	OpUser               *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`
-	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`
-	GroupMemberVersion   uint64               `protobuf:"varint,4,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string               `protobuf:"bytes,5,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
+	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	OpUser               *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`                             // 操作者信息
+	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`              // 操作时间戳
+	GroupMemberVersion   uint64               `protobuf:"varint,4,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string               `protobuf:"bytes,5,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
 }
 
 func (x *GroupMutedTips) Reset() { *x = GroupMutedTips{} }
@@ -2202,12 +2773,14 @@ func (x *GroupMutedTips) GetGroupMemberVersionID() string {
 	return ""
 }
 
+// GroupCancelMutedTips 群组取消禁言通知
+// 当整个群组禁言被取消时发送的通知消息
 type GroupCancelMutedTips struct {
-	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	OpUser               *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`
-	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`
-	GroupMemberVersion   uint64               `protobuf:"varint,4,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string               `protobuf:"bytes,5,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
+	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	OpUser               *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`                             // 操作者信息
+	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`              // 操作时间戳
+	GroupMemberVersion   uint64               `protobuf:"varint,4,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string               `protobuf:"bytes,5,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
 }
 
 func (x *GroupCancelMutedTips) Reset() { *x = GroupCancelMutedTips{} }
@@ -2251,14 +2824,16 @@ func (x *GroupCancelMutedTips) GetGroupMemberVersionID() string {
 	return ""
 }
 
+// GroupMemberInfoSetTips 群成员信息设置通知
+// 当群成员信息被修改时发送的通知消息
 type GroupMemberInfoSetTips struct {
-	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`
-	OpUser               *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`
-	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`
-	ChangedUser          *GroupMemberFullInfo `protobuf:"bytes,4,opt,name=changedUser" json:"changedUser,omitempty"`
-	GroupMemberVersion   uint64               `protobuf:"varint,5,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`
-	GroupMemberVersionID string               `protobuf:"bytes,6,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"`
-	GroupSortVersion     uint64               `protobuf:"varint,7,opt,name=groupSortVersion" json:"groupSortVersion,omitempty"`
+	Group                *GroupInfo           `protobuf:"bytes,1,opt,name=group" json:"group,omitempty"`                               // 群组信息
+	OpUser               *GroupMemberFullInfo `protobuf:"bytes,2,opt,name=opUser" json:"opUser,omitempty"`                             // 操作者信息
+	OperationTime        int64                `protobuf:"varint,3,opt,name=operationTime" json:"operationTime,omitempty"`              // 操作时间戳
+	ChangedUser          *GroupMemberFullInfo `protobuf:"bytes,4,opt,name=changedUser" json:"changedUser,omitempty"`                   // 被修改信息的成员
+	GroupMemberVersion   uint64               `protobuf:"varint,5,opt,name=groupMemberVersion" json:"groupMemberVersion,omitempty"`    // 群成员版本号
+	GroupMemberVersionID string               `protobuf:"bytes,6,opt,name=groupMemberVersionID" json:"groupMemberVersionID,omitempty"` // 群成员版本ID
+	GroupSortVersion     uint64               `protobuf:"varint,7,opt,name=groupSortVersion" json:"groupSortVersion,omitempty"`        // 群组排序版本号
 }
 
 func (x *GroupMemberInfoSetTips) Reset() { *x = GroupMemberInfoSetTips{} }
@@ -2318,10 +2893,12 @@ func (x *GroupMemberInfoSetTips) GetGroupSortVersion() uint64 {
 	return 0
 }
 
+// FriendApplication 好友申请信息
+// 包含好友申请的基本信息
 type FriendApplication struct {
-	AddTime    int64  `protobuf:"varint,1,opt,name=addTime" json:"addTime,omitempty"`
-	AddSource  string `protobuf:"bytes,2,opt,name=addSource" json:"addSource,omitempty"`
-	AddWording string `protobuf:"bytes,3,opt,name=addWording" json:"addWording,omitempty"`
+	AddTime    int64  `protobuf:"varint,1,opt,name=addTime" json:"addTime,omitempty"`      // 添加时间戳
+	AddSource  string `protobuf:"bytes,2,opt,name=addSource" json:"addSource,omitempty"`   // 添加来源
+	AddWording string `protobuf:"bytes,3,opt,name=addWording" json:"addWording,omitempty"` // 添加说明
 }
 
 func (x *FriendApplication) Reset() { *x = FriendApplication{} }
@@ -2351,9 +2928,11 @@ func (x *FriendApplication) GetAddWording() string {
 	return ""
 }
 
+// FromToUserID 用户ID关系
+// 表示两个用户之间的关系，通常用于好友操作
 type FromToUserID struct {
-	FromUserID string `protobuf:"bytes,1,opt,name=fromUserID" json:"fromUserID,omitempty"`
-	ToUserID   string `protobuf:"bytes,2,opt,name=toUserID" json:"toUserID,omitempty"`
+	FromUserID string `protobuf:"bytes,1,opt,name=fromUserID" json:"fromUserID,omitempty"` // 发起者用户ID
+	ToUserID   string `protobuf:"bytes,2,opt,name=toUserID" json:"toUserID,omitempty"`     // 接收者用户ID
 }
 
 func (x *FromToUserID) Reset() { *x = FromToUserID{} }
@@ -2376,9 +2955,11 @@ func (x *FromToUserID) GetToUserID() string {
 	return ""
 }
 
+// FriendApplicationTips 好友申请通知
+// 当用户申请添加好友时发送的通知消息
 // FromUserID apply to add ToUserID
 type FriendApplicationTips struct {
-	FromToUserID *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"` //from：发起者； to：接收者
+	FromToUserID *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"` // 用户ID关系 (from：发起者； to：接收者)
 }
 
 func (x *FriendApplicationTips) Reset() { *x = FriendApplicationTips{} }
@@ -2396,12 +2977,14 @@ func (x *FriendApplicationTips) GetFromToUserID() *FromToUserID {
 	return nil
 }
 
+// FriendApplicationApprovedTips 好友申请同意通知
+// 当好友申请被同意时发送的通知消息
 // FromUserID accept or reject ToUserID
 type FriendApplicationApprovedTips struct {
-	FromToUserID    *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"` //from：同意者；to：请求发起者
-	HandleMsg       string        `protobuf:"bytes,2,opt,name=handleMsg" json:"handleMsg,omitempty"`
-	FriendVersion   uint64        `protobuf:"varint,3,opt,name=friendVersion" json:"friendVersion,omitempty"`
-	FriendVersionID string        `protobuf:"bytes,4,opt,name=friendVersionID" json:"friendVersionID,omitempty"`
+	FromToUserID    *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"`       // 用户ID关系 (from：同意者；to：请求发起者)
+	HandleMsg       string        `protobuf:"bytes,2,opt,name=handleMsg" json:"handleMsg,omitempty"`             // 处理消息
+	FriendVersion   uint64        `protobuf:"varint,3,opt,name=friendVersion" json:"friendVersion,omitempty"`    // 好友版本号
+	FriendVersionID string        `protobuf:"bytes,4,opt,name=friendVersionID" json:"friendVersionID,omitempty"` // 好友版本ID
 }
 
 func (x *FriendApplicationApprovedTips) Reset() { *x = FriendApplicationApprovedTips{} }
@@ -2440,10 +3023,12 @@ func (x *FriendApplicationApprovedTips) GetFriendVersionID() string {
 	return ""
 }
 
+// FriendApplicationRejectedTips 好友申请拒绝通知
+// 当好友申请被拒绝时发送的通知消息
 // FromUserID accept or reject ToUserID
 type FriendApplicationRejectedTips struct {
-	FromToUserID *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"` //from：拒绝者；to：请求发起者
-	HandleMsg    string        `protobuf:"bytes,2,opt,name=handleMsg" json:"handleMsg,omitempty"`
+	FromToUserID *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"` // 用户ID关系 (from：拒绝者；to：请求发起者)
+	HandleMsg    string        `protobuf:"bytes,2,opt,name=handleMsg" json:"handleMsg,omitempty"`       // 处理消息
 }
 
 func (x *FriendApplicationRejectedTips) Reset() { *x = FriendApplicationRejectedTips{} }
@@ -2468,13 +3053,15 @@ func (x *FriendApplicationRejectedTips) GetHandleMsg() string {
 	return ""
 }
 
+// FriendAddedTips 好友添加通知
+// 当成功添加好友时发送的通知消息
 // FromUserID  Added a friend ToUserID
 type FriendAddedTips struct {
-	Friend          *FriendInfo     `protobuf:"bytes,1,opt,name=friend" json:"friend,omitempty"`
-	OperationTime   int64           `protobuf:"varint,2,opt,name=operationTime" json:"operationTime,omitempty"`
-	OpUser          *PublicUserInfo `protobuf:"bytes,3,opt,name=opUser" json:"opUser,omitempty"` //who do this
-	FriendVersion   uint64          `protobuf:"varint,4,opt,name=friendVersion" json:"friendVersion,omitempty"`
-	FriendVersionID string          `protobuf:"bytes,5,opt,name=friendVersionID" json:"friendVersionID,omitempty"`
+	Friend          *FriendInfo     `protobuf:"bytes,1,opt,name=friend" json:"friend,omitempty"`                   // 好友信息
+	OperationTime   int64           `protobuf:"varint,2,opt,name=operationTime" json:"operationTime,omitempty"`    // 操作时间戳
+	OpUser          *PublicUserInfo `protobuf:"bytes,3,opt,name=opUser" json:"opUser,omitempty"`                   // 操作者信息
+	FriendVersion   uint64          `protobuf:"varint,4,opt,name=friendVersion" json:"friendVersion,omitempty"`    // 好友版本号
+	FriendVersionID string          `protobuf:"bytes,5,opt,name=friendVersionID" json:"friendVersionID,omitempty"` // 好友版本ID
 }
 
 func (x *FriendAddedTips) Reset() { *x = FriendAddedTips{} }
@@ -2518,11 +3105,13 @@ func (x *FriendAddedTips) GetFriendVersionID() string {
 	return ""
 }
 
+// FriendDeletedTips 好友删除通知
+// 当删除好友时发送的通知消息
 // FromUserID  deleted a friend ToUserID
 type FriendDeletedTips struct {
-	FromToUserID    *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"` //from：owner； to：friend
-	FriendVersion   uint64        `protobuf:"varint,2,opt,name=friendVersion" json:"friendVersion,omitempty"`
-	FriendVersionID string        `protobuf:"bytes,3,opt,name=friendVersionID" json:"friendVersionID,omitempty"`
+	FromToUserID    *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"`       // 用户ID关系 (from：拥有者； to：好友)
+	FriendVersion   uint64        `protobuf:"varint,2,opt,name=friendVersion" json:"friendVersion,omitempty"`    // 好友版本号
+	FriendVersionID string        `protobuf:"bytes,3,opt,name=friendVersionID" json:"friendVersionID,omitempty"` // 好友版本ID
 }
 
 func (x *FriendDeletedTips) Reset() { *x = FriendDeletedTips{} }
@@ -2552,8 +3141,10 @@ func (x *FriendDeletedTips) GetFriendVersionID() string {
 	return ""
 }
 
+// BlackAddedTips 黑名单添加通知
+// 当添加用户到黑名单时发送的通知消息
 type BlackAddedTips struct {
-	FromToUserID *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"` //from：owner； to：black
+	FromToUserID *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"` // 用户ID关系 (from：拥有者； to：被拉黑者)
 }
 
 func (x *BlackAddedTips) Reset() { *x = BlackAddedTips{} }
@@ -2569,8 +3160,10 @@ func (x *BlackAddedTips) GetFromToUserID() *FromToUserID {
 	return nil
 }
 
+// BlackDeletedTips 黑名单删除通知
+// 当从黑名单删除用户时发送的通知消息
 type BlackDeletedTips struct {
-	FromToUserID *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"` //from：owner； to：black
+	FromToUserID *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"` // 用户ID关系 (from：拥有者； to：被删除者)
 }
 
 func (x *BlackDeletedTips) Reset() { *x = BlackDeletedTips{} }
@@ -2586,11 +3179,13 @@ func (x *BlackDeletedTips) GetFromToUserID() *FromToUserID {
 	return nil
 }
 
+// FriendInfoChangedTips 好友信息变更通知
+// 当好友信息发生变更时发送的通知消息
 type FriendInfoChangedTips struct {
-	FromToUserID      *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"` //from：changed； to：friend
-	FriendVersion     uint64        `protobuf:"varint,2,opt,name=friendVersion" json:"friendVersion,omitempty"`
-	FriendVersionID   string        `protobuf:"bytes,3,opt,name=friendVersionID" json:"friendVersionID,omitempty"`
-	FriendSortVersion uint64        `protobuf:"varint,4,opt,name=friendSortVersion" json:"friendSortVersion,omitempty"`
+	FromToUserID      *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"`            // 用户ID关系 (from：变更者； to：好友)
+	FriendVersion     uint64        `protobuf:"varint,2,opt,name=friendVersion" json:"friendVersion,omitempty"`         // 好友版本号
+	FriendVersionID   string        `protobuf:"bytes,3,opt,name=friendVersionID" json:"friendVersionID,omitempty"`      // 好友版本ID
+	FriendSortVersion uint64        `protobuf:"varint,4,opt,name=friendSortVersion" json:"friendSortVersion,omitempty"` // 好友排序版本号
 }
 
 func (x *FriendInfoChangedTips) Reset() { *x = FriendInfoChangedTips{} }
@@ -2629,9 +3224,10 @@ func (x *FriendInfoChangedTips) GetFriendSortVersion() uint64 {
 	return 0
 }
 
-// ////////////////////user/////////////////////
+// UserInfoUpdatedTips 用户信息更新通知
+// 当用户信息被更新时发送的通知消息
 type UserInfoUpdatedTips struct {
-	UserID string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
+	UserID string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"` // 用户ID
 }
 
 func (x *UserInfoUpdatedTips) Reset() { *x = UserInfoUpdatedTips{} }
@@ -2647,11 +3243,13 @@ func (x *UserInfoUpdatedTips) GetUserID() string {
 	return ""
 }
 
+// UserStatusChangeTips 用户状态变更通知
+// 当用户状态发生变更时发送的通知消息
 type UserStatusChangeTips struct {
-	FromUserID string `protobuf:"bytes,1,opt,name=fromUserID" json:"fromUserID,omitempty"`
-	ToUserID   string `protobuf:"bytes,2,opt,name=toUserID" json:"toUserID,omitempty"`
-	Status     int32  `protobuf:"varint,3,opt,name=status" json:"status,omitempty"`
-	PlatformID int32  `protobuf:"varint,4,opt,name=platformID" json:"platformID,omitempty"`
+	FromUserID string `protobuf:"bytes,1,opt,name=fromUserID" json:"fromUserID,omitempty"`  // 发起者用户ID
+	ToUserID   string `protobuf:"bytes,2,opt,name=toUserID" json:"toUserID,omitempty"`      // 接收者用户ID
+	Status     int32  `protobuf:"varint,3,opt,name=status" json:"status,omitempty"`         // 状态值
+	PlatformID int32  `protobuf:"varint,4,opt,name=platformID" json:"platformID,omitempty"` // 平台ID
 }
 
 func (x *UserStatusChangeTips) Reset() { *x = UserStatusChangeTips{} }
@@ -2688,9 +3286,11 @@ func (x *UserStatusChangeTips) GetPlatformID() int32 {
 	return 0
 }
 
+// UserCommandAddTips 用户命令添加通知
+// 当用户命令被添加时发送的通知消息
 type UserCommandAddTips struct {
-	FromUserID string `protobuf:"bytes,1,opt,name=fromUserID" json:"fromUserID,omitempty"`
-	ToUserID   string `protobuf:"bytes,2,opt,name=toUserID" json:"toUserID,omitempty"`
+	FromUserID string `protobuf:"bytes,1,opt,name=fromUserID" json:"fromUserID,omitempty"` // 发起者用户ID
+	ToUserID   string `protobuf:"bytes,2,opt,name=toUserID" json:"toUserID,omitempty"`     // 接收者用户ID
 }
 
 func (x *UserCommandAddTips) Reset() { *x = UserCommandAddTips{} }
@@ -2713,9 +3313,11 @@ func (x *UserCommandAddTips) GetToUserID() string {
 	return ""
 }
 
+// UserCommandUpdateTips 用户命令更新通知
+// 当用户命令被更新时发送的通知消息
 type UserCommandUpdateTips struct {
-	FromUserID string `protobuf:"bytes,1,opt,name=fromUserID" json:"fromUserID,omitempty"`
-	ToUserID   string `protobuf:"bytes,2,opt,name=toUserID" json:"toUserID,omitempty"`
+	FromUserID string `protobuf:"bytes,1,opt,name=fromUserID" json:"fromUserID,omitempty"` // 发起者用户ID
+	ToUserID   string `protobuf:"bytes,2,opt,name=toUserID" json:"toUserID,omitempty"`     // 接收者用户ID
 }
 
 func (x *UserCommandUpdateTips) Reset() { *x = UserCommandUpdateTips{} }
@@ -2740,9 +3342,11 @@ func (x *UserCommandUpdateTips) GetToUserID() string {
 	return ""
 }
 
+// UserCommandDeleteTips 用户命令删除通知
+// 当用户命令被删除时发送的通知消息
 type UserCommandDeleteTips struct {
-	FromUserID string `protobuf:"bytes,1,opt,name=fromUserID" json:"fromUserID,omitempty"`
-	ToUserID   string `protobuf:"bytes,2,opt,name=toUserID" json:"toUserID,omitempty"`
+	FromUserID string `protobuf:"bytes,1,opt,name=fromUserID" json:"fromUserID,omitempty"` // 发起者用户ID
+	ToUserID   string `protobuf:"bytes,2,opt,name=toUserID" json:"toUserID,omitempty"`     // 接收者用户ID
 }
 
 func (x *UserCommandDeleteTips) Reset() { *x = UserCommandDeleteTips{} }
@@ -2767,10 +3371,11 @@ func (x *UserCommandDeleteTips) GetToUserID() string {
 	return ""
 }
 
-// ////////////////////conversation/////////////////////
+// ConversationUpdateTips 会话更新通知
+// 当会话信息被更新时发送的通知消息
 type ConversationUpdateTips struct {
-	UserID             string   `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	ConversationIDList []string `protobuf:"bytes,2,rep,name=conversationIDList" json:"conversationIDList,omitempty"`
+	UserID             string   `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`                         // 用户ID
+	ConversationIDList []string `protobuf:"bytes,2,rep,name=conversationIDList" json:"conversationIDList,omitempty"` // 会话ID列表
 }
 
 func (x *ConversationUpdateTips) Reset() { *x = ConversationUpdateTips{} }
@@ -2795,11 +3400,13 @@ func (x *ConversationUpdateTips) GetConversationIDList() []string {
 	return nil
 }
 
+// ConversationSetPrivateTips 会话隐私设置通知
+// 当会话隐私设置被修改时发送的通知消息
 type ConversationSetPrivateTips struct {
-	RecvID         string `protobuf:"bytes,1,opt,name=recvID" json:"recvID,omitempty"`
-	SendID         string `protobuf:"bytes,2,opt,name=sendID" json:"sendID,omitempty"`
-	IsPrivate      bool   `protobuf:"varint,3,opt,name=isPrivate" json:"isPrivate,omitempty"`
-	ConversationID string `protobuf:"bytes,4,opt,name=conversationID" json:"conversationID,omitempty"`
+	RecvID         string `protobuf:"bytes,1,opt,name=recvID" json:"recvID,omitempty"`                 // 接收者ID
+	SendID         string `protobuf:"bytes,2,opt,name=sendID" json:"sendID,omitempty"`                 // 发送者ID
+	IsPrivate      bool   `protobuf:"varint,3,opt,name=isPrivate" json:"isPrivate,omitempty"`          // 是否私密会话
+	ConversationID string `protobuf:"bytes,4,opt,name=conversationID" json:"conversationID,omitempty"` // 会话ID
 }
 
 func (x *ConversationSetPrivateTips) Reset() { *x = ConversationSetPrivateTips{} }
@@ -2838,11 +3445,13 @@ func (x *ConversationSetPrivateTips) GetConversationID() string {
 	return ""
 }
 
+// ConversationHasReadTips 会话已读通知
+// 当会话消息被标记为已读时发送的通知消息
 type ConversationHasReadTips struct {
-	UserID          string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	ConversationID  string `protobuf:"bytes,2,opt,name=conversationID" json:"conversationID,omitempty"`
-	HasReadSeq      int64  `protobuf:"varint,3,opt,name=hasReadSeq" json:"hasReadSeq,omitempty"`
-	UnreadCountTime int64  `protobuf:"varint,4,opt,name=unreadCountTime" json:"unreadCountTime,omitempty"`
+	UserID          string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`                    // 用户ID
+	ConversationID  string `protobuf:"bytes,2,opt,name=conversationID" json:"conversationID,omitempty"`    // 会话ID
+	HasReadSeq      int64  `protobuf:"varint,3,opt,name=hasReadSeq" json:"hasReadSeq,omitempty"`           // 已读序列号
+	UnreadCountTime int64  `protobuf:"varint,4,opt,name=unreadCountTime" json:"unreadCountTime,omitempty"` // 未读计数时间
 }
 
 func (x *ConversationHasReadTips) Reset() { *x = ConversationHasReadTips{} }
@@ -2881,8 +3490,10 @@ func (x *ConversationHasReadTips) GetUnreadCountTime() int64 {
 	return 0
 }
 
+// NotificationElem 通知元素
+// 用于封装通知的详细信息
 type NotificationElem struct {
-	Detail string `protobuf:"bytes,1,opt,name=detail" json:"detail,omitempty"`
+	Detail string `protobuf:"bytes,1,opt,name=detail" json:"detail,omitempty"` // 详细信息
 }
 
 func (x *NotificationElem) Reset() { *x = NotificationElem{} }
@@ -2898,28 +3509,12 @@ func (x *NotificationElem) GetDetail() string {
 	return ""
 }
 
-// //////////////////message///////////////////////
-type Seqs struct {
-	Seqs []int64 `protobuf:"varint,1,rep,packed,name=seqs" json:"seqs,omitempty"`
-}
-
-func (x *Seqs) Reset() { *x = Seqs{} }
-
-func (x *Seqs) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *Seqs) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *Seqs) GetSeqs() []int64 {
-	if x != nil {
-		return x.Seqs
-	}
-	return nil
-}
-
+// DeleteMessageTips 删除消息通知
+// 当消息被删除时发送的通知消息
 type DeleteMessageTips struct {
-	OpUserID string  `protobuf:"bytes,1,opt,name=opUserID" json:"opUserID,omitempty"`
-	UserID   string  `protobuf:"bytes,2,opt,name=userID" json:"userID,omitempty"`
-	Seqs     []int64 `protobuf:"varint,3,rep,packed,name=seqs" json:"seqs,omitempty"`
+	OpUserID string  `protobuf:"bytes,1,opt,name=opUserID" json:"opUserID,omitempty"` // 操作者用户ID
+	UserID   string  `protobuf:"bytes,2,opt,name=userID" json:"userID,omitempty"`     // 用户ID
+	Seqs     []int64 `protobuf:"varint,3,rep,packed,name=seqs" json:"seqs,omitempty"` // 被删除的消息序列号列表
 }
 
 func (x *DeleteMessageTips) Reset() { *x = DeleteMessageTips{} }
@@ -2949,14 +3544,16 @@ func (x *DeleteMessageTips) GetSeqs() []int64 {
 	return nil
 }
 
+// RevokeMsgTips 撤回消息通知
+// 当消息被撤回时发送的通知消息
 type RevokeMsgTips struct {
-	RevokerUserID  string `protobuf:"bytes,1,opt,name=revokerUserID" json:"revokerUserID,omitempty"`
-	ClientMsgID    string `protobuf:"bytes,2,opt,name=clientMsgID" json:"clientMsgID,omitempty"`
-	RevokeTime     int64  `protobuf:"varint,3,opt,name=revokeTime" json:"revokeTime,omitempty"`
-	SesstionType   int32  `protobuf:"varint,5,opt,name=sesstionType" json:"sesstionType,omitempty"`
-	Seq            int64  `protobuf:"varint,6,opt,name=seq" json:"seq,omitempty"`
-	ConversationID string `protobuf:"bytes,7,opt,name=conversationID" json:"conversationID,omitempty"`
-	IsAdminRevoke  bool   `protobuf:"varint,8,opt,name=isAdminRevoke" json:"isAdminRevoke,omitempty"`
+	RevokerUserID  string `protobuf:"bytes,1,opt,name=revokerUserID" json:"revokerUserID,omitempty"`   // 撤回者用户ID
+	ClientMsgID    string `protobuf:"bytes,2,opt,name=clientMsgID" json:"clientMsgID,omitempty"`       // 客户端消息ID
+	RevokeTime     int64  `protobuf:"varint,3,opt,name=revokeTime" json:"revokeTime,omitempty"`        // 撤回时间戳
+	SesstionType   int32  `protobuf:"varint,5,opt,name=sesstionType" json:"sesstionType,omitempty"`    // 会话类型
+	Seq            int64  `protobuf:"varint,6,opt,name=seq" json:"seq,omitempty"`                      // 消息序列号
+	ConversationID string `protobuf:"bytes,7,opt,name=conversationID" json:"conversationID,omitempty"` // 会话ID
+	IsAdminRevoke  bool   `protobuf:"varint,8,opt,name=isAdminRevoke" json:"isAdminRevoke,omitempty"`  // 是否管理员撤回
 }
 
 func (x *RevokeMsgTips) Reset() { *x = RevokeMsgTips{} }
@@ -3014,18 +3611,20 @@ func (x *RevokeMsgTips) GetIsAdminRevoke() bool {
 	return false
 }
 
+// MessageRevokedContent 消息撤回内容
+// 包含撤回消息的详细信息
 type MessageRevokedContent struct {
-	RevokerID                   string `protobuf:"bytes,1,opt,name=revokerID" json:"revokerID,omitempty"`
-	RevokerRole                 int32  `protobuf:"varint,2,opt,name=revokerRole" json:"revokerRole,omitempty"`
-	ClientMsgID                 string `protobuf:"bytes,3,opt,name=clientMsgID" json:"clientMsgID,omitempty"`
-	RevokerNickname             string `protobuf:"bytes,4,opt,name=revokerNickname" json:"revokerNickname,omitempty"`
-	RevokeTime                  int64  `protobuf:"varint,5,opt,name=revokeTime" json:"revokeTime,omitempty"`
-	SourceMessageSendTime       int64  `protobuf:"varint,6,opt,name=sourceMessageSendTime" json:"sourceMessageSendTime,omitempty"`
-	SourceMessageSendID         string `protobuf:"bytes,7,opt,name=sourceMessageSendID" json:"sourceMessageSendID,omitempty"`
-	SourceMessageSenderNickname string `protobuf:"bytes,8,opt,name=sourceMessageSenderNickname" json:"sourceMessageSenderNickname,omitempty"`
-	SessionType                 int32  `protobuf:"varint,10,opt,name=sessionType" json:"sessionType,omitempty"`
-	Seq                         int64  `protobuf:"varint,11,opt,name=seq" json:"seq,omitempty"`
-	Ex                          string `protobuf:"bytes,12,opt,name=ex" json:"ex,omitempty"`
+	RevokerID                   string `protobuf:"bytes,1,opt,name=revokerID" json:"revokerID,omitempty"`                                     // 撤回者ID
+	RevokerRole                 int32  `protobuf:"varint,2,opt,name=revokerRole" json:"revokerRole,omitempty"`                                // 撤回者角色
+	ClientMsgID                 string `protobuf:"bytes,3,opt,name=clientMsgID" json:"clientMsgID,omitempty"`                                 // 客户端消息ID
+	RevokerNickname             string `protobuf:"bytes,4,opt,name=revokerNickname" json:"revokerNickname,omitempty"`                         // 撤回者昵称
+	RevokeTime                  int64  `protobuf:"varint,5,opt,name=revokeTime" json:"revokeTime,omitempty"`                                  // 撤回时间戳
+	SourceMessageSendTime       int64  `protobuf:"varint,6,opt,name=sourceMessageSendTime" json:"sourceMessageSendTime,omitempty"`            // 原消息发送时间
+	SourceMessageSendID         string `protobuf:"bytes,7,opt,name=sourceMessageSendID" json:"sourceMessageSendID,omitempty"`                 // 原消息发送者ID
+	SourceMessageSenderNickname string `protobuf:"bytes,8,opt,name=sourceMessageSenderNickname" json:"sourceMessageSenderNickname,omitempty"` // 原消息发送者昵称
+	SessionType                 int32  `protobuf:"varint,10,opt,name=sessionType" json:"sessionType,omitempty"`                               // 会话类型
+	Seq                         int64  `protobuf:"varint,11,opt,name=seq" json:"seq,omitempty"`                                               // 消息序列号
+	Ex                          string `protobuf:"bytes,12,opt,name=ex" json:"ex,omitempty"`                                                  // 扩展字段
 }
 
 func (x *MessageRevokedContent) Reset() { *x = MessageRevokedContent{} }
@@ -3113,9 +3712,11 @@ func (x *MessageRevokedContent) GetEx() string {
 	return ""
 }
 
+// ClearConversationTips 清空会话通知
+// 当会话被清空时发送的通知消息
 type ClearConversationTips struct {
-	UserID          string   `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	ConversationIDs []string `protobuf:"bytes,2,rep,name=conversationIDs" json:"conversationIDs,omitempty"`
+	UserID          string   `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`                   // 用户ID
+	ConversationIDs []string `protobuf:"bytes,2,rep,name=conversationIDs" json:"conversationIDs,omitempty"` // 被清空的会话ID列表
 }
 
 func (x *ClearConversationTips) Reset() { *x = ClearConversationTips{} }
@@ -3140,10 +3741,12 @@ func (x *ClearConversationTips) GetConversationIDs() []string {
 	return nil
 }
 
+// DeleteMsgsTips 批量删除消息通知
+// 当批量删除消息时发送的通知消息
 type DeleteMsgsTips struct {
-	UserID         string  `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	ConversationID string  `protobuf:"bytes,2,opt,name=conversationID" json:"conversationID,omitempty"`
-	Seqs           []int64 `protobuf:"varint,3,rep,packed,name=seqs" json:"seqs,omitempty"`
+	UserID         string  `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`                 // 用户ID
+	ConversationID string  `protobuf:"bytes,2,opt,name=conversationID" json:"conversationID,omitempty"` // 会话ID
+	Seqs           []int64 `protobuf:"varint,3,rep,packed,name=seqs" json:"seqs,omitempty"`             // 被删除的消息序列号列表
 }
 
 func (x *DeleteMsgsTips) Reset() { *x = DeleteMsgsTips{} }
@@ -3173,11 +3776,13 @@ func (x *DeleteMsgsTips) GetSeqs() []int64 {
 	return nil
 }
 
+// MarkAsReadTips 标记已读通知
+// 当消息被标记为已读时发送的通知消息
 type MarkAsReadTips struct {
-	MarkAsReadUserID string  `protobuf:"bytes,1,opt,name=markAsReadUserID" json:"markAsReadUserID,omitempty"`
-	ConversationID   string  `protobuf:"bytes,2,opt,name=conversationID" json:"conversationID,omitempty"`
-	Seqs             []int64 `protobuf:"varint,3,rep,packed,name=seqs" json:"seqs,omitempty"`
-	HasReadSeq       int64   `protobuf:"varint,4,opt,name=hasReadSeq" json:"hasReadSeq,omitempty"`
+	MarkAsReadUserID string  `protobuf:"bytes,1,opt,name=markAsReadUserID" json:"markAsReadUserID,omitempty"` // 标记已读的用户ID
+	ConversationID   string  `protobuf:"bytes,2,opt,name=conversationID" json:"conversationID,omitempty"`     // 会话ID
+	Seqs             []int64 `protobuf:"varint,3,rep,packed,name=seqs" json:"seqs,omitempty"`                 // 已读消息序列号列表
+	HasReadSeq       int64   `protobuf:"varint,4,opt,name=hasReadSeq" json:"hasReadSeq,omitempty"`            // 已读序列号
 }
 
 func (x *MarkAsReadTips) Reset() { *x = MarkAsReadTips{} }
@@ -3214,9 +3819,11 @@ func (x *MarkAsReadTips) GetHasReadSeq() int64 {
 	return 0
 }
 
+// SetAppBackgroundStatusReq 设置应用后台状态请求
+// 用于设置应用是否在后台运行
 type SetAppBackgroundStatusReq struct {
-	UserID       string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	IsBackground bool   `protobuf:"varint,2,opt,name=isBackground" json:"isBackground,omitempty"`
+	UserID       string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`              // 用户ID
+	IsBackground bool   `protobuf:"varint,2,opt,name=isBackground" json:"isBackground,omitempty"` // 是否在后台
 }
 
 func (x *SetAppBackgroundStatusReq) Reset() { *x = SetAppBackgroundStatusReq{} }
@@ -3241,6 +3848,8 @@ func (x *SetAppBackgroundStatusReq) GetIsBackground() bool {
 	return false
 }
 
+// SetAppBackgroundStatusResp 设置应用后台状态响应
+// 设置应用后台状态的响应消息
 type SetAppBackgroundStatusResp struct {
 }
 
@@ -3252,12 +3861,14 @@ func (x *SetAppBackgroundStatusResp) Marshal(in []byte) ([]byte, error) {
 
 func (x *SetAppBackgroundStatusResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
+// ProcessUserCommand 处理用户命令
+// 用于处理用户发送的命令
 type ProcessUserCommand struct {
-	UserID     string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	Type       int32  `protobuf:"varint,2,opt,name=type" json:"type,omitempty"`
-	CreateTime int64  `protobuf:"varint,3,opt,name=createTime" json:"createTime,omitempty"`
-	Uuid       string `protobuf:"bytes,4,opt,name=uuid" json:"uuid,omitempty"`
-	Value      string `protobuf:"bytes,5,opt,name=value" json:"value,omitempty"`
+	UserID     string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`          // 用户ID
+	Type       int32  `protobuf:"varint,2,opt,name=type" json:"type,omitempty"`             // 命令类型
+	CreateTime int64  `protobuf:"varint,3,opt,name=createTime" json:"createTime,omitempty"` // 创建时间戳
+	Uuid       string `protobuf:"bytes,4,opt,name=uuid" json:"uuid,omitempty"`              // 唯一标识符
+	Value      string `protobuf:"bytes,5,opt,name=value" json:"value,omitempty"`            // 命令值
 }
 
 func (x *ProcessUserCommand) Reset() { *x = ProcessUserCommand{} }
@@ -3301,9 +3912,11 @@ func (x *ProcessUserCommand) GetValue() string {
 	return ""
 }
 
+// RequestPagination 请求分页信息
+// 用于分页查询的参数
 type RequestPagination struct {
-	PageNumber int32 `protobuf:"varint,1,opt,name=pageNumber" json:"pageNumber,omitempty"`
-	ShowNumber int32 `protobuf:"varint,2,opt,name=showNumber" json:"showNumber,omitempty"`
+	PageNumber int32 `protobuf:"varint,1,opt,name=pageNumber" json:"pageNumber,omitempty"` // 页码
+	ShowNumber int32 `protobuf:"varint,2,opt,name=showNumber" json:"showNumber,omitempty"` // 每页显示数量
 }
 
 func (x *RequestPagination) Reset() { *x = RequestPagination{} }
@@ -3326,11 +3939,13 @@ func (x *RequestPagination) GetShowNumber() int32 {
 	return 0
 }
 
+// FriendsInfoUpdateTips 好友信息更新通知
+// 当好友信息被更新时发送的通知消息
 type FriendsInfoUpdateTips struct {
-	FromToUserID    *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"`
-	FriendIDs       []string      `protobuf:"bytes,2,rep,name=friendIDs" json:"friendIDs,omitempty"`
-	FriendVersion   uint64        `protobuf:"varint,3,opt,name=friendVersion" json:"friendVersion,omitempty"`
-	FriendVersionID string        `protobuf:"bytes,4,opt,name=friendVersionID" json:"friendVersionID,omitempty"`
+	FromToUserID    *FromToUserID `protobuf:"bytes,1,opt,name=fromToUserID" json:"fromToUserID,omitempty"`       // 用户ID关系
+	FriendIDs       []string      `protobuf:"bytes,2,rep,name=friendIDs" json:"friendIDs,omitempty"`             // 好友ID列表
+	FriendVersion   uint64        `protobuf:"varint,3,opt,name=friendVersion" json:"friendVersion,omitempty"`    // 好友版本号
+	FriendVersionID string        `protobuf:"bytes,4,opt,name=friendVersionID" json:"friendVersionID,omitempty"` // 好友版本ID
 }
 
 func (x *FriendsInfoUpdateTips) Reset() { *x = FriendsInfoUpdateTips{} }
@@ -3369,9 +3984,11 @@ func (x *FriendsInfoUpdateTips) GetFriendVersionID() string {
 	return ""
 }
 
+// SubUserOnlineStatusElem 用户在线状态元素
+// 包含用户在线状态的详细信息
 type SubUserOnlineStatusElem struct {
-	UserID            string  `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	OnlinePlatformIDs []int32 `protobuf:"varint,2,rep,packed,name=onlinePlatformIDs" json:"onlinePlatformIDs,omitempty"`
+	UserID            string  `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`                               // 用户ID
+	OnlinePlatformIDs []int32 `protobuf:"varint,2,rep,packed,name=onlinePlatformIDs" json:"onlinePlatformIDs,omitempty"` // 在线平台ID列表
 }
 
 func (x *SubUserOnlineStatusElem) Reset() { *x = SubUserOnlineStatusElem{} }
@@ -3396,8 +4013,10 @@ func (x *SubUserOnlineStatusElem) GetOnlinePlatformIDs() []int32 {
 	return nil
 }
 
+// SubUserOnlineStatusTips 用户在线状态通知
+// 当用户在线状态发生变化时发送的通知消息
 type SubUserOnlineStatusTips struct {
-	Subscribers []*SubUserOnlineStatusElem `protobuf:"bytes,1,rep,name=subscribers" json:"subscribers,omitempty"`
+	Subscribers []*SubUserOnlineStatusElem `protobuf:"bytes,1,rep,name=subscribers" json:"subscribers,omitempty"` // 订阅者列表
 }
 
 func (x *SubUserOnlineStatusTips) Reset() { *x = SubUserOnlineStatusTips{} }
@@ -3415,9 +4034,11 @@ func (x *SubUserOnlineStatusTips) GetSubscribers() []*SubUserOnlineStatusElem {
 	return nil
 }
 
+// SubUserOnlineStatus 用户在线状态订阅
+// 用于管理用户在线状态的订阅
 type SubUserOnlineStatus struct {
-	SubscribeUserID   []string `protobuf:"bytes,1,rep,name=subscribeUserID" json:"subscribeUserID,omitempty"`
-	UnsubscribeUserID []string `protobuf:"bytes,2,rep,name=unsubscribeUserID" json:"unsubscribeUserID,omitempty"`
+	SubscribeUserID   []string `protobuf:"bytes,1,rep,name=subscribeUserID" json:"subscribeUserID,omitempty"`     // 订阅的用户ID列表
+	UnsubscribeUserID []string `protobuf:"bytes,2,rep,name=unsubscribeUserID" json:"unsubscribeUserID,omitempty"` // 取消订阅的用户ID列表
 }
 
 func (x *SubUserOnlineStatus) Reset() { *x = SubUserOnlineStatus{} }
@@ -3440,12 +4061,14 @@ func (x *SubUserOnlineStatus) GetUnsubscribeUserID() []string {
 	return nil
 }
 
+// StreamMsgTips 流式消息通知
+// 用于流式消息传输的通知
 type StreamMsgTips struct {
-	ConversationID string   `protobuf:"bytes,1,opt,name=conversationID" json:"conversationID,omitempty"`
-	ClientMsgID    string   `protobuf:"bytes,2,opt,name=clientMsgID" json:"clientMsgID,omitempty"`
-	StartIndex     int64    `protobuf:"varint,3,opt,name=startIndex" json:"startIndex,omitempty"`
-	Packets        []string `protobuf:"bytes,4,rep,name=packets" json:"packets,omitempty"`
-	End            bool     `protobuf:"varint,5,opt,name=end" json:"end,omitempty"`
+	ConversationID string   `protobuf:"bytes,1,opt,name=conversationID" json:"conversationID,omitempty"` // 会话ID
+	ClientMsgID    string   `protobuf:"bytes,2,opt,name=clientMsgID" json:"clientMsgID,omitempty"`       // 客户端消息ID
+	StartIndex     int64    `protobuf:"varint,3,opt,name=startIndex" json:"startIndex,omitempty"`        // 起始索引
+	Packets        []string `protobuf:"bytes,4,rep,name=packets" json:"packets,omitempty"`               // 数据包列表
+	End            bool     `protobuf:"varint,5,opt,name=end" json:"end,omitempty"`                      // 是否结束
 }
 
 func (x *StreamMsgTips) Reset() { *x = StreamMsgTips{} }

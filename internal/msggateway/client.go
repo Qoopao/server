@@ -14,14 +14,12 @@ import (
 
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/transport"
-	"github.com/openimsdk/tools/apiresp"
 	"github.com/openimsdk/tools/errs"
 	"github.com/openimsdk/tools/log"
 	"github.com/openimsdk/tools/mcontext"
 	"github.com/openimsdk/tools/utils/stringutil"
 	"github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
-	messageutil "github.com/roc/roc-im-server/pkg/messageUtil"
 	"github.com/roc/roc-im-server/protocol/constant"
 )
 
@@ -174,13 +172,16 @@ func (c *Client) handleMessage(message []byte) error {
 	// 	}
 	// }
 
-	var binaryReq = getReq()
-	defer freeReq(binaryReq)
-
-	err := c.Encoder.Decode(message, binaryReq)
+	sdkwsReq := &sdkws.SdkWSReq{}
+	err := sdkwsReq.Unmarshal(message)
 	if err != nil {
 		return err
 	}
+
+	// err := c.Encoder.Decode(message, binaryReq)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// if err := c.IsValidReq(binaryReq); err != nil {
 	// 	return err
@@ -190,64 +191,74 @@ func (c *Client) handleMessage(message []byte) error {
 	// 	return errs.New("exception conn userID not same to req userID", "binaryReq", binaryReq.String())
 	// }
 
-	binaryReq.Data, _ = mockMsg().Marshal(nil)
-	binaryReq.ReqIdentifier = WSSendMsg
-
-	ctx := mcontext.WithMustInfoCtx(
-		[]string{binaryReq.OperationID, binaryReq.SendID, constant.PlatformIDToName(c.PlatformID), c.ctx.GetConnID()},
-	)
+	// ctx := mcontext.WithMustInfoCtx(
+	// 	[]string{binaryReq.OperationID, binaryReq.SendID, constant.PlatformIDToName(c.PlatformID), c.ctx.GetConnID()},
+	// )
 
 	// log.ZDebug(ctx, "gateway req message", "req", binaryReq.String())
-
 	var (
-		resp       []byte
-		messageErr error
+		respBody []byte
 	)
 
-	switch binaryReq.ReqIdentifier {
-	case WSGetNewestSeq:
-		resp, messageErr = c.messsageHandler.GetSeq(ctx, binaryReq)
-	case WSSendMsg:
-		resp, messageErr = c.messsageHandler.SendMessage(ctx, binaryReq)
-	case WSSendSignalMsg:
-		resp, messageErr = c.messsageHandler.SendSignalMessage(ctx, binaryReq)
-	case WSPullMsgBySeqList:
-		resp, messageErr = c.messsageHandler.PullMessageBySeqList(ctx, binaryReq)
-	case WSPullMsg:
-		resp, messageErr = c.messsageHandler.GetSeqMessage(ctx, binaryReq)
-	case WSGetConvMaxReadSeq:
-		resp, messageErr = c.messsageHandler.GetConversationsHasReadAndMaxSeq(ctx, binaryReq)
-	case WsPullConvLastMessage:
-		resp, messageErr = c.messsageHandler.GetLastMessage(ctx, binaryReq)
-	case WsLogoutMsg:
-		resp, messageErr = c.messsageHandler.UserLogout(ctx, binaryReq)
-	case WsSetBackgroundStatus:
-		resp, messageErr = c.setAppBackgroundStatus(ctx, binaryReq)
-	case WsSubUserOnlineStatus:
-		// resp, messageErr = c.messsageHandler.SubUserOnlineStatus(ctx, c, binaryReq)
-	default:
-		return fmt.Errorf(
-			"ReqIdentifier failed,sendID:%s,msgIncr:%s,reqIdentifier:%d",
-			binaryReq.SendID,
-			binaryReq.MsgIncr,
-			binaryReq.ReqIdentifier,
-		)
+	switch sdkwsReq.Type {
+	case WSSendMessage:
+		resp, _ := c.messsageHandler.SendMessage(context.Background(), sdkwsReq)
+		respBody, err = resp.Marshal(nil)
 	}
 
-	return c.replyMessage(ctx, binaryReq, messageErr, resp)
-	return nil
-}
+	// switch binaryReq.ReqIdentifier {
+	// case WSGetNewestSeq:
+	// 	resp, messageErr = c.messsageHandler.GetSeq(ctx, sdkwsReq)
+	// case WSSendMsg:
+	// 	resp, messageErr = c.messsageHandler.SendMessage(ctx, sdkwsReq)
+	// case WSSendSignalMsg:
+	// 	resp, messageErr = c.messsageHandler.SendSignalMessage(ctx, sdkwsReq)
+	// case WSPullMsgBySeqList:
+	// 	resp, messageErr = c.messsageHandler.PullMessageBySeqList(ctx, sdkwsReq)
+	// case WSPullMsg:
+	// 	resp, messageErr = c.messsageHandler.GetSeqMessage(ctx, sdkwsReq)
+	// case WSGetConvMaxReadSeq:
+	// 	resp, messageErr = c.messsageHandler.GetConversationsHasReadAndMaxSeq(ctx, sdkwsReq)
+	// case WsPullConvLastMessage:
+	// 	resp, messageErr = c.messsageHandler.GetLastMessage(ctx, sdkwsReq)
+	// case WsLogoutMsg:
+	// 	resp, messageErr = c.messsageHandler.UserLogout(ctx, sdkwsReq)
+	// case WsSetBackgroundStatus:
+	// 	resp, messageErr = c.setAppBackgroundStatus(ctx, sdkwsReq)
+	// case WsSubUserOnlineStatus:
+	// 	// resp, messageErr = c.messsageHandler.SubUserOnlineStatus(ctx, c, binaryReq)
+	// default:
+	// 	return fmt.Errorf(
+	// 		"ReqIdentifier failed,sendID:%s,msgIncr:%s,reqIdentifier:%d",
+	// 		binaryReq.SendID,
+	// 		binaryReq.MsgIncr,
+	// 		binaryReq.ReqIdentifier,
+	// 	)
+	// }
 
-func (c *Client) setAppBackgroundStatus(ctx context.Context, req *Req) ([]byte, error) {
-	resp, isBackground, messageErr := c.messsageHandler.SetUserDeviceBackground(ctx, req)
-	if messageErr != nil {
-		return nil, messageErr
+	sdkwsResp := &sdkws.SdkWSResp{
+		Data:      respBody,
+		RequestId: sdkwsReq.RequestId,
+		Token:     sdkwsReq.Token,
+		UserID:    sdkwsReq.UserID,
+		DeviceID:  sdkwsReq.DeviceID,
+		ErrorCode: "",
 	}
+	binaryResp, _ := sdkwsResp.Marshal(nil)
 
-	c.IsBackground = isBackground
-	// TODO: callback
-	return resp, nil
+	return c.replyMessage(nil, binaryResp)
 }
+
+// func (c *Client) setAppBackgroundStatus(ctx context.Context, req *sdkws.SdkWSReq) ([]byte, error) {
+// 	resp, isBackground, messageErr := c.messsageHandler.SetUserDeviceBackground(ctx, req)
+// 	if messageErr != nil {
+// 		return nil, messageErr
+// 	}
+
+// 	c.IsBackground = isBackground
+// 	// TODO: callback
+// 	return resp, nil
+// }
 
 func (c *Client) close() {
 	c.w.Lock()
@@ -263,39 +274,36 @@ func (c *Client) close() {
 	// c.longConnServer.UnRegister(c)
 }
 
-func (c *Client) replyMessage(ctx context.Context, binaryReq *Req, err error, resp []byte) error {
-	errResp := apiresp.ParseError(err)
-	mReply := Resp{
-		ReqIdentifier: binaryReq.ReqIdentifier,
-		MsgIncr:       binaryReq.MsgIncr,
-		OperationID:   binaryReq.OperationID,
-		ErrCode:       errResp.ErrCode,
-		ErrMsg:        errResp.ErrMsg,
-		Data:          resp,
-	}
-	t := time.Now()
-	log.ZDebug(ctx, "gateway reply message", "resp", mReply.String())
-	err = c.writeBinaryMsg(mReply)
-	if err != nil {
-		log.ZWarn(ctx, "wireBinaryMsg replyMessage", err, "resp", mReply.String())
-	}
-	log.ZDebug(ctx, "wireBinaryMsg end", "time cost", time.Since(t))
+func (c *Client) replyMessage(ctx context.Context, resp []byte) error {
+	// errResp := apiresp.ParseError(err)
+	// mReply := Resp{
+	// 	ReqIdentifier: binaryReq.ReqIdentifier,
+	// 	MsgIncr:       binaryReq.MsgIncr,
+	// 	OperationID:   binaryReq.OperationID,
+	// 	ErrCode:       errResp.ErrCode,
+	// 	ErrMsg:        errResp.ErrMsg,
+	// 	Data:          resp,
+	// }
+	// t := time.Now()
+	// log.ZDebug(ctx, "gateway reply message", "resp", mReply.String())
+	// err = c.writeBinaryMsg(mReply)
+	// if err != nil {
+	// 	log.ZWarn(ctx, "wireBinaryMsg replyMessage", err, "resp", mReply.String())
+	// }
+	// log.ZDebug(ctx, "wireBinaryMsg end", "time cost", time.Since(t))
 
-	if binaryReq.ReqIdentifier == WsLogoutMsg {
-		return errs.New("user logout", "operationID", binaryReq.OperationID).Wrap()
-	}
-	return nil
+	// if binaryReq.ReqIdentifier == WsLogoutMsg {
+	// 	return errs.New("user logout", "operationID", binaryReq.OperationID).Wrap()
+	// }
+	// return nil
+	return c.conn.WriteMessage(MessageBinary, resp)
 }
 
 func (c *Client) PushMessage(ctx context.Context, msgData *sdkws.MsgData) error {
-	var msg sdkws.PushMessages
-	conversationID := messageutil.GetConversationIDByMsg(msgData)
-	m := map[string]*sdkws.PullMsgs{conversationID: {Msgs: []*sdkws.MsgData{msgData}}}
-	if messageutil.IsNotification(conversationID) {
-		msg.NotificationMsgs = m
-	} else {
-		msg.Msgs = m
+	msg := sdkws.PushMessages{
+		Msgs: []*sdkws.MessageUnion{{Msg: msgData, IsCmd: false}},
 	}
+
 	log.ZDebug(ctx, "PushMessage", "msg", &msg)
 	data, err := msgData.Marshal(nil)
 	if err != nil {

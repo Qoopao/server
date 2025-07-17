@@ -190,9 +190,9 @@ message SeqRange {
 // PullMsgs 拉取的消息集合
 // 包含拉取到的消息列表和分页信息
 message PullMsgs {
-  repeated MsgData Msgs = 1;            // 消息列表
+  repeated MessageUnion msgs = 1;            // 消息列表
   bool isEnd = 2;                       // 是否为最后一页
-  int64 endSeq = 3;                     // 最后一条消息的序列号
+  int64 endSeq = 3;                     // 最后一条消息的序列号 
 }
 
 // PullMessageBySeqsResp 按序列号拉取消息响应
@@ -228,7 +228,7 @@ message UserSendMsgResp {
 message MsgData {
   string sendID = 1;                    // 发送者用户ID
   string recvID = 2;                    // 接收者用户ID (单聊时使用)
-  string groupID = 3;                   // 群组ID (群聊时使用)
+  string convID = 3;                   // 群组ID (群聊时使用)
   string clientMsgID = 4;               // 客户端生成的消息ID
   string serverMsgID = 5;               // 服务器生成的消息ID
   int32 senderPlatformID = 6;           // 发送者平台ID (1:iOS 2:Android 3:Windows 4:Mac 5:Web)
@@ -248,13 +248,57 @@ message MsgData {
   repeated string atUserIDList = 21;    // @用户ID列表
   string attachedInfo = 22;             // 附加信息
   string ex = 23;                       // 扩展字段
+  int64 serverOrdIndex = 24;            // 服务端消息消息再会话内的索引
+  bool isDeleted = 25;                  // 是否已删除
+  bool isRecalled = 26;                 // 是否已撤回
+}
+
+// 发送消息 --------------------------------
+message SendMessageRespInfo {
+  string serverMsgID = 1;               // 服务器生成的消息ID
+  string clientMsgID = 2;               // 客户端生成的消息ID
+  int64 sendTime = 3;                   // 消息发送时间戳
+  bool isSuccess = 4;                   // 是否发送成功
+  string errorCode = 5;                 // 错误码
+  string errorMsg = 6;                  // 错误信息
+}
+
+message SendMessageReq {
+  repeated MsgData msgs = 1; // 消息列表f
+}
+
+message SendMessageResp {
+  repeated SendMessageRespInfo infos = 1;
+}
+// ----------------------------------------
+
+message CmdMessage {
+  int32 cmd = 1;                        // 命令
 }
 
 // PushMessages 推送消息
 // 用于向客户端推送消息和通知
 message PushMessages {
-  map<string, PullMsgs> msgs = 1;               // 普通消息 key:conversationID
-  map<string, PullMsgs> notificationMsgs = 2;  // 通知消息 key:conversationID
+  repeated MessageUnion msgs = 1; // 消息列表
+}
+
+message MessageUnion {
+  bool isCmd = 1;
+  CmdMessage cmdMsg = 2;
+  MsgData msg = 3;
+}
+
+message ConversationInfo {
+  string convID = 1;          // 会话ID
+  string ownerUserID = 2;     // 会话拥有者用户ID
+  int32 convType = 3;         // 会话类型
+  string convName = 4;        // 会话名称
+  string convAvatar = 5;      // 会话头像URL
+  repeated MessageUnion msgs = 6;  // 会话消息列表
+  MsgData lastMsg = 7;        // 会话最后一条消息
+  int64 convUnreadCount = 8;  // 会话未读消息数量
+  bool isMuted = 9;           // 会话是否静音
+  bool isTop = 10;             // 会话是否置顶
 }
 
 // OfflinePushInfo 离线推送信息
@@ -274,6 +318,49 @@ message TipsComm {
   bytes detail = 1;                     // 详细信息 (protobuf序列化的字节数组)
   string defaultTips = 2;               // 默认提示文本
   string jsonDetail = 3;                // JSON格式的详细信息
+}
+
+// 拉取混链
+message PullMixListReq {
+  int64 cursor = 1; // 游标
+  int32 convLimit = 2; // 会话数量限制
+  int32 msgLimit  = 3; // 消息数量限制
+  bool forward = 4; // 是否向前拉取
+}
+
+message PullMixListResp {
+  repeated ConversationInfo conversations = 1; // 会话列表
+}
+
+// 拉取单链
+message PullSingleListReq {
+  string conversationID = 1; // 会话ID
+  int32 msgLimit = 2; // 消息数量限制
+  bool forward = 3; // 是否向前拉取
+  int64 cursor = 4; // 游标
+}
+
+message PullSingleListResp {
+  repeated MsgData msgs = 1; // 消息列表
+}
+
+message SdkWSReq {
+  string requestId = 1; // 请求ID
+  string token = 2; // 令牌
+  string userID = 3; // 用户ID
+  string deviceID = 4; // 设备ID
+  bytes data = 5; // 数据
+  int32 type = 6; // 请求类型
+}
+
+message SdkWSResp {
+  string requestId = 1; // 请求ID
+  string token = 2; // 令牌
+  string userID = 3; // 用户ID
+  string deviceID = 4; // 设备ID
+  string errorCode = 5; // 错误码
+  string errorMsg = 6; // 错误信息
+  bytes data = 7; // 数据
 }
 
 //////////////////////group/////////////////////
@@ -629,12 +716,6 @@ message NotificationElem {
 }
 
 ////////////////////message///////////////////////
-
-// seqs 序列号集合
-// 用于批量处理消息序列号
-message seqs {
-  repeated int64 seqs = 1;                      // 序列号列表
-}
 
 // DeleteMessageTips 删除消息通知
 // 当消息被删除时发送的通知消息

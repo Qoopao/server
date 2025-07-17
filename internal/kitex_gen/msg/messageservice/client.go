@@ -20,7 +20,7 @@ type Client interface {
 	PullMessageBySeqs(ctx context.Context, Req *sdkws.PullMessageBySeqsReq, callOptions ...callopt.Option) (r *sdkws.PullMessageBySeqsResp, err error)
 	GetSeqMessage(ctx context.Context, Req *msg.GetSeqMessageReq, callOptions ...callopt.Option) (r *msg.GetSeqMessageResp, err error)
 	SearchMessage(ctx context.Context, Req *msg.SearchMessageReq, callOptions ...callopt.Option) (r *msg.SearchMessageResp, err error)
-	SendMsg(ctx context.Context, Req *msg.SendMsgReq, callOptions ...callopt.Option) (r *msg.SendMsgResp, err error)
+	SendMessages(ctx context.Context, Req *sdkws.SendMessageReq, callOptions ...callopt.Option) (r *sdkws.SendMessageResp, err error)
 	SendSimpleMsg(ctx context.Context, Req *msg.SendSimpleMsgReq, callOptions ...callopt.Option) (r *msg.SendSimpleMsgResp, err error)
 	SetUserConversationsMinSeq(ctx context.Context, Req *msg.SetUserConversationsMinSeqReq, callOptions ...callopt.Option) (r *msg.SetUserConversationsMinSeqResp, err error)
 	ClearConversationsMsg(ctx context.Context, Req *msg.ClearConversationsMsgReq, callOptions ...callopt.Option) (r *msg.ClearConversationsMsgResp, err error)
@@ -116,9 +116,9 @@ func (p *kMessageServiceClient) SearchMessage(ctx context.Context, Req *msg.Sear
 	return p.kClient.SearchMessage(ctx, Req)
 }
 
-func (p *kMessageServiceClient) SendMsg(ctx context.Context, Req *msg.SendMsgReq, callOptions ...callopt.Option) (r *msg.SendMsgResp, err error) {
+func (p *kMessageServiceClient) SendMessages(ctx context.Context, Req *sdkws.SendMessageReq, callOptions ...callopt.Option) (r *sdkws.SendMessageResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.SendMsg(ctx, Req)
+	return p.kClient.SendMessages(ctx, Req)
 }
 
 func (p *kMessageServiceClient) SendSimpleMsg(ctx context.Context, Req *msg.SendSimpleMsgReq, callOptions ...callopt.Option) (r *msg.SendSimpleMsgResp, err error) {

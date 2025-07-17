@@ -72,10 +72,10 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"SendMsg": kitex.NewMethodInfo(
-		sendMsgHandler,
-		newSendMsgArgs,
-		newSendMsgResult,
+	"SendMessages": kitex.NewMethodInfo(
+		sendMessagesHandler,
+		newSendMessagesArgs,
+		newSendMessagesResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -1201,52 +1201,52 @@ func (p *SearchMessageResult) GetResult() interface{} {
 	return p.Success
 }
 
-func sendMsgHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func sendMessagesHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(msg.SendMsgReq)
+		req := new(sdkws.SendMessageReq)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(msg.MessageService).SendMsg(ctx, req)
+		resp, err := handler.(msg.MessageService).SendMessages(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *SendMsgArgs:
-		success, err := handler.(msg.MessageService).SendMsg(ctx, s.Req)
+	case *SendMessagesArgs:
+		success, err := handler.(msg.MessageService).SendMessages(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*SendMsgResult)
+		realResult := result.(*SendMessagesResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newSendMsgArgs() interface{} {
-	return &SendMsgArgs{}
+func newSendMessagesArgs() interface{} {
+	return &SendMessagesArgs{}
 }
 
-func newSendMsgResult() interface{} {
-	return &SendMsgResult{}
+func newSendMessagesResult() interface{} {
+	return &SendMessagesResult{}
 }
 
-type SendMsgArgs struct {
-	Req *msg.SendMsgReq
+type SendMessagesArgs struct {
+	Req *sdkws.SendMessageReq
 }
 
-func (p *SendMsgArgs) Marshal(out []byte) ([]byte, error) {
+func (p *SendMessagesArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *SendMsgArgs) Unmarshal(in []byte) error {
-	msg := new(msg.SendMsgReq)
+func (p *SendMessagesArgs) Unmarshal(in []byte) error {
+	msg := new(sdkws.SendMessageReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1254,38 +1254,38 @@ func (p *SendMsgArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var SendMsgArgs_Req_DEFAULT *msg.SendMsgReq
+var SendMessagesArgs_Req_DEFAULT *sdkws.SendMessageReq
 
-func (p *SendMsgArgs) GetReq() *msg.SendMsgReq {
+func (p *SendMessagesArgs) GetReq() *sdkws.SendMessageReq {
 	if !p.IsSetReq() {
-		return SendMsgArgs_Req_DEFAULT
+		return SendMessagesArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *SendMsgArgs) IsSetReq() bool {
+func (p *SendMessagesArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *SendMsgArgs) GetFirstArgument() interface{} {
+func (p *SendMessagesArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type SendMsgResult struct {
-	Success *msg.SendMsgResp
+type SendMessagesResult struct {
+	Success *sdkws.SendMessageResp
 }
 
-var SendMsgResult_Success_DEFAULT *msg.SendMsgResp
+var SendMessagesResult_Success_DEFAULT *sdkws.SendMessageResp
 
-func (p *SendMsgResult) Marshal(out []byte) ([]byte, error) {
+func (p *SendMessagesResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *SendMsgResult) Unmarshal(in []byte) error {
-	msg := new(msg.SendMsgResp)
+func (p *SendMessagesResult) Unmarshal(in []byte) error {
+	msg := new(sdkws.SendMessageResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1293,22 +1293,22 @@ func (p *SendMsgResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *SendMsgResult) GetSuccess() *msg.SendMsgResp {
+func (p *SendMessagesResult) GetSuccess() *sdkws.SendMessageResp {
 	if !p.IsSetSuccess() {
-		return SendMsgResult_Success_DEFAULT
+		return SendMessagesResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *SendMsgResult) SetSuccess(x interface{}) {
-	p.Success = x.(*msg.SendMsgResp)
+func (p *SendMessagesResult) SetSuccess(x interface{}) {
+	p.Success = x.(*sdkws.SendMessageResp)
 }
 
-func (p *SendMsgResult) IsSetSuccess() bool {
+func (p *SendMessagesResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *SendMsgResult) GetResult() interface{} {
+func (p *SendMessagesResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -4066,11 +4066,11 @@ func (p *kClient) SearchMessage(ctx context.Context, Req *msg.SearchMessageReq) 
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) SendMsg(ctx context.Context, Req *msg.SendMsgReq) (r *msg.SendMsgResp, err error) {
-	var _args SendMsgArgs
+func (p *kClient) SendMessages(ctx context.Context, Req *sdkws.SendMessageReq) (r *sdkws.SendMessageResp, err error) {
+	var _args SendMessagesArgs
 	_args.Req = Req
-	var _result SendMsgResult
-	if err = p.c.Call(ctx, "SendMsg", &_args, &_result); err != nil {
+	var _result SendMessagesResult
+	if err = p.c.Call(ctx, "SendMessages", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

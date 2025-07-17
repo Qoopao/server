@@ -26,9 +26,9 @@ func GetNotificationConversationIDByMsg(msg *sdkws.MsgData) string {
 		sort.Strings(l)
 		return "n_" + strings.Join(l, "_")
 	case constant.WriteGroupChatType:
-		return "n_" + msg.GroupID
+		return "n_" + msg.ConvID
 	case constant.ReadGroupChatType:
-		return "n_" + msg.GroupID
+		return "n_" + msg.ConvID
 	case constant.NotificationChatType:
 		l := []string{msg.SendID, msg.RecvID}
 		sort.Strings(l)
@@ -44,9 +44,9 @@ func GetChatConversationIDByMsg(msg *sdkws.MsgData) string {
 		sort.Strings(l)
 		return "si_" + strings.Join(l, "_")
 	case constant.WriteGroupChatType:
-		return "g_" + msg.GroupID
+		return "g_" + msg.ConvID
 	case constant.ReadGroupChatType:
-		return "sg_" + msg.GroupID
+		return "sg_" + msg.ConvID
 	case constant.NotificationChatType:
 		l := []string{msg.SendID, msg.RecvID}
 		sort.Strings(l)
@@ -68,14 +68,14 @@ func GetConversationIDByMsg(msg *sdkws.MsgData) string {
 		return "si_" + strings.Join(l, "_") // single chat
 	case constant.WriteGroupChatType:
 		if !options.IsNotNotification() {
-			return "n_" + msg.GroupID // group chat
+			return "n_" + msg.ConvID // group chat
 		}
-		return "g_" + msg.GroupID // group chat
+		return "g_" + msg.ConvID // group chat
 	case constant.ReadGroupChatType:
 		if !options.IsNotNotification() {
-			return "n_" + msg.GroupID // super group chat
+			return "n_" + msg.ConvID // super group chat
 		}
-		return "sg_" + msg.GroupID // super group chat
+		return "sg_" + msg.ConvID // super group chat
 	case constant.NotificationChatType:
 		l := []string{msg.SendID, msg.RecvID}
 		sort.Strings(l)
