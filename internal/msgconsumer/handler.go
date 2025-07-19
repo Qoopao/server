@@ -74,7 +74,7 @@ func (m *ConsumerMessage) pushHandler(ctx context.Context, msg *mq.Message) erro
 		pushServiceClient, _ := pushservice.NewClient("push_service", client.WithHostPorts(address), client.WithTransportProtocol(transport.GRPC))
 		pushServiceClient.PushMsg(ctx, &push.PushMsgReq{
 			UserIDs:        []string{userID},
-			ConversationID: "conversation_id_mock",
+			ConversationID: message.ConvID,
 			MsgData:        message,
 		})
 	}

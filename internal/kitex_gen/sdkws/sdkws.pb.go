@@ -1375,7 +1375,7 @@ func (x *SendMessageRespInfo) GetErrorMsg() string {
 }
 
 type SendMessageReq struct {
-	Msgs []*MsgData `protobuf:"bytes,1,rep,name=msgs" json:"msgs,omitempty"` // 消息列表f
+	Msgs []*MsgData `protobuf:"bytes,1,rep,name=msgs" json:"msgs,omitempty"` // 消息列表
 }
 
 func (x *SendMessageReq) Reset() { *x = SendMessageReq{} }
@@ -1408,25 +1408,7 @@ func (x *SendMessageResp) GetInfos() []*SendMessageRespInfo {
 	return nil
 }
 
-type CmdMessage struct {
-	Cmd int32 `protobuf:"varint,1,opt,name=cmd" json:"cmd,omitempty"` // 命令
-}
-
-func (x *CmdMessage) Reset() { *x = CmdMessage{} }
-
-func (x *CmdMessage) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *CmdMessage) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *CmdMessage) GetCmd() int32 {
-	if x != nil {
-		return x.Cmd
-	}
-	return 0
-}
-
-// PushMessages 推送消息
-// 用于向客户端推送消息和通知
+// 长链消息推送 -----------------------------------
 type PushMessages struct {
 	Msgs []*MessageUnion `protobuf:"bytes,1,rep,name=msgs" json:"msgs,omitempty"` // 消息列表
 }
@@ -1442,6 +1424,23 @@ func (x *PushMessages) GetMsgs() []*MessageUnion {
 		return x.Msgs
 	}
 	return nil
+}
+
+type CmdMessage struct {
+	Cmd int32 `protobuf:"varint,1,opt,name=cmd" json:"cmd,omitempty"`
+}
+
+func (x *CmdMessage) Reset() { *x = CmdMessage{} }
+
+func (x *CmdMessage) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *CmdMessage) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CmdMessage) GetCmd() int32 {
+	if x != nil {
+		return x.Cmd
+	}
+	return 0
 }
 
 type MessageUnion struct {
@@ -1475,6 +1474,121 @@ func (x *MessageUnion) GetMsg() *MsgData {
 		return x.Msg
 	}
 	return nil
+}
+
+// 单链拉取 ------------------------------------
+type FetchConvMessageListReq struct {
+	ConvID  string `protobuf:"bytes,1,opt,name=convID" json:"convID,omitempty"`
+	Cursor  int64  `protobuf:"varint,2,opt,name=cursor" json:"cursor,omitempty"`
+	Limit   int64  `protobuf:"varint,3,opt,name=limit" json:"limit,omitempty"`
+	Forward bool   `protobuf:"varint,4,opt,name=forward" json:"forward,omitempty"`
+}
+
+func (x *FetchConvMessageListReq) Reset() { *x = FetchConvMessageListReq{} }
+
+func (x *FetchConvMessageListReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *FetchConvMessageListReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *FetchConvMessageListReq) GetConvID() string {
+	if x != nil {
+		return x.ConvID
+	}
+	return ""
+}
+
+func (x *FetchConvMessageListReq) GetCursor() int64 {
+	if x != nil {
+		return x.Cursor
+	}
+	return 0
+}
+
+func (x *FetchConvMessageListReq) GetLimit() int64 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *FetchConvMessageListReq) GetForward() bool {
+	if x != nil {
+		return x.Forward
+	}
+	return false
+}
+
+type FetchConvMessageListResp struct {
+	Message  []*MsgData `protobuf:"bytes,1,rep,name=message" json:"message,omitempty"`
+	HaveMore bool       `protobuf:"varint,2,opt,name=haveMore" json:"haveMore,omitempty"`
+}
+
+func (x *FetchConvMessageListResp) Reset() { *x = FetchConvMessageListResp{} }
+
+func (x *FetchConvMessageListResp) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *FetchConvMessageListResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *FetchConvMessageListResp) GetMessage() []*MsgData {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
+func (x *FetchConvMessageListResp) GetHaveMore() bool {
+	if x != nil {
+		return x.HaveMore
+	}
+	return false
+}
+
+// 混链拉取 ------------------------------------
+type FetchUserMessageListReq struct {
+	UserID  string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
+	Cursor  int64  `protobuf:"varint,2,opt,name=cursor" json:"cursor,omitempty"`
+	Limit   int64  `protobuf:"varint,3,opt,name=limit" json:"limit,omitempty"`
+	Forward bool   `protobuf:"varint,4,opt,name=forward" json:"forward,omitempty"`
+}
+
+func (x *FetchUserMessageListReq) Reset() { *x = FetchUserMessageListReq{} }
+
+func (x *FetchUserMessageListReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *FetchUserMessageListReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *FetchUserMessageListReq) GetUserID() string {
+	if x != nil {
+		return x.UserID
+	}
+	return ""
+}
+
+func (x *FetchUserMessageListReq) GetCursor() int64 {
+	if x != nil {
+		return x.Cursor
+	}
+	return 0
+}
+
+func (x *FetchUserMessageListReq) GetLimit() int64 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *FetchUserMessageListReq) GetForward() bool {
+	if x != nil {
+		return x.Forward
+	}
+	return false
 }
 
 type ConversationInfo struct {
@@ -1564,6 +1678,156 @@ func (x *ConversationInfo) GetIsTop() bool {
 		return x.IsTop
 	}
 	return false
+}
+
+type FetchUserMessageListResp struct {
+	ConvsInfo []*ConversationInfo `protobuf:"bytes,1,rep,name=convsInfo" json:"convsInfo,omitempty"`
+	HasMore   bool                `protobuf:"varint,2,opt,name=hasMore" json:"hasMore,omitempty"`
+}
+
+func (x *FetchUserMessageListResp) Reset() { *x = FetchUserMessageListResp{} }
+
+func (x *FetchUserMessageListResp) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *FetchUserMessageListResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *FetchUserMessageListResp) GetConvsInfo() []*ConversationInfo {
+	if x != nil {
+		return x.ConvsInfo
+	}
+	return nil
+}
+
+func (x *FetchUserMessageListResp) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
+}
+
+// sdkRequest ---------------------------------
+type SdkWSReq struct {
+	RequestId string `protobuf:"bytes,1,opt,name=requestId" json:"requestId,omitempty"` // 请求ID
+	Token     string `protobuf:"bytes,2,opt,name=token" json:"token,omitempty"`         // 令牌
+	UserID    string `protobuf:"bytes,3,opt,name=userID" json:"userID,omitempty"`       // 用户ID
+	DeviceID  string `protobuf:"bytes,4,opt,name=deviceID" json:"deviceID,omitempty"`   // 设备ID
+	Data      []byte `protobuf:"bytes,5,opt,name=data" json:"data,omitempty"`           // 数据
+	Type      int32  `protobuf:"varint,6,opt,name=type" json:"type,omitempty"`          // 请求类型
+}
+
+func (x *SdkWSReq) Reset() { *x = SdkWSReq{} }
+
+func (x *SdkWSReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *SdkWSReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *SdkWSReq) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *SdkWSReq) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *SdkWSReq) GetUserID() string {
+	if x != nil {
+		return x.UserID
+	}
+	return ""
+}
+
+func (x *SdkWSReq) GetDeviceID() string {
+	if x != nil {
+		return x.DeviceID
+	}
+	return ""
+}
+
+func (x *SdkWSReq) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *SdkWSReq) GetType() int32 {
+	if x != nil {
+		return x.Type
+	}
+	return 0
+}
+
+type SdkWSResp struct {
+	RequestId string `protobuf:"bytes,1,opt,name=requestId" json:"requestId,omitempty"` // 请求ID
+	Token     string `protobuf:"bytes,2,opt,name=token" json:"token,omitempty"`         // 令牌
+	UserID    string `protobuf:"bytes,3,opt,name=userID" json:"userID,omitempty"`       // 用户ID
+	DeviceID  string `protobuf:"bytes,4,opt,name=deviceID" json:"deviceID,omitempty"`   // 设备ID
+	ErrorCode string `protobuf:"bytes,5,opt,name=errorCode" json:"errorCode,omitempty"` // 错误码
+	ErrorMsg  string `protobuf:"bytes,6,opt,name=errorMsg" json:"errorMsg,omitempty"`   // 错误信息
+	Data      []byte `protobuf:"bytes,7,opt,name=data" json:"data,omitempty"`           // 数据
+}
+
+func (x *SdkWSResp) Reset() { *x = SdkWSResp{} }
+
+func (x *SdkWSResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *SdkWSResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *SdkWSResp) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *SdkWSResp) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *SdkWSResp) GetUserID() string {
+	if x != nil {
+		return x.UserID
+	}
+	return ""
+}
+
+func (x *SdkWSResp) GetDeviceID() string {
+	if x != nil {
+		return x.DeviceID
+	}
+	return ""
+}
+
+func (x *SdkWSResp) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
+func (x *SdkWSResp) GetErrorMsg() string {
+	if x != nil {
+		return x.ErrorMsg
+	}
+	return ""
+}
+
+func (x *SdkWSResp) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
 }
 
 // OfflinePushInfo 离线推送信息
@@ -1774,128 +2038,6 @@ func (x *PullSingleListResp) Unmarshal(in []byte) error { return prutal.Unmarsha
 func (x *PullSingleListResp) GetMsgs() []*MsgData {
 	if x != nil {
 		return x.Msgs
-	}
-	return nil
-}
-
-type SdkWSReq struct {
-	RequestId string `protobuf:"bytes,1,opt,name=requestId" json:"requestId,omitempty"` // 请求ID
-	Token     string `protobuf:"bytes,2,opt,name=token" json:"token,omitempty"`         // 令牌
-	UserID    string `protobuf:"bytes,3,opt,name=userID" json:"userID,omitempty"`       // 用户ID
-	DeviceID  string `protobuf:"bytes,4,opt,name=deviceID" json:"deviceID,omitempty"`   // 设备ID
-	Data      []byte `protobuf:"bytes,5,opt,name=data" json:"data,omitempty"`           // 数据
-	Type      int32  `protobuf:"varint,6,opt,name=type" json:"type,omitempty"`          // 请求类型
-}
-
-func (x *SdkWSReq) Reset() { *x = SdkWSReq{} }
-
-func (x *SdkWSReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *SdkWSReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *SdkWSReq) GetRequestId() string {
-	if x != nil {
-		return x.RequestId
-	}
-	return ""
-}
-
-func (x *SdkWSReq) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
-func (x *SdkWSReq) GetUserID() string {
-	if x != nil {
-		return x.UserID
-	}
-	return ""
-}
-
-func (x *SdkWSReq) GetDeviceID() string {
-	if x != nil {
-		return x.DeviceID
-	}
-	return ""
-}
-
-func (x *SdkWSReq) GetData() []byte {
-	if x != nil {
-		return x.Data
-	}
-	return nil
-}
-
-func (x *SdkWSReq) GetType() int32 {
-	if x != nil {
-		return x.Type
-	}
-	return 0
-}
-
-type SdkWSResp struct {
-	RequestId string `protobuf:"bytes,1,opt,name=requestId" json:"requestId,omitempty"` // 请求ID
-	Token     string `protobuf:"bytes,2,opt,name=token" json:"token,omitempty"`         // 令牌
-	UserID    string `protobuf:"bytes,3,opt,name=userID" json:"userID,omitempty"`       // 用户ID
-	DeviceID  string `protobuf:"bytes,4,opt,name=deviceID" json:"deviceID,omitempty"`   // 设备ID
-	ErrorCode string `protobuf:"bytes,5,opt,name=errorCode" json:"errorCode,omitempty"` // 错误码
-	ErrorMsg  string `protobuf:"bytes,6,opt,name=errorMsg" json:"errorMsg,omitempty"`   // 错误信息
-	Data      []byte `protobuf:"bytes,7,opt,name=data" json:"data,omitempty"`           // 数据
-}
-
-func (x *SdkWSResp) Reset() { *x = SdkWSResp{} }
-
-func (x *SdkWSResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *SdkWSResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *SdkWSResp) GetRequestId() string {
-	if x != nil {
-		return x.RequestId
-	}
-	return ""
-}
-
-func (x *SdkWSResp) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
-func (x *SdkWSResp) GetUserID() string {
-	if x != nil {
-		return x.UserID
-	}
-	return ""
-}
-
-func (x *SdkWSResp) GetDeviceID() string {
-	if x != nil {
-		return x.DeviceID
-	}
-	return ""
-}
-
-func (x *SdkWSResp) GetErrorCode() string {
-	if x != nil {
-		return x.ErrorCode
-	}
-	return ""
-}
-
-func (x *SdkWSResp) GetErrorMsg() string {
-	if x != nil {
-		return x.ErrorMsg
-	}
-	return ""
-}
-
-func (x *SdkWSResp) GetData() []byte {
-	if x != nil {
-		return x.Data
 	}
 	return nil
 }
