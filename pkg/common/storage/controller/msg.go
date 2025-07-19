@@ -16,6 +16,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	// "github.com/roc/roc-im-server/pkg/common/storage/database"
@@ -33,19 +34,22 @@ const (
 
 // CommonMsgDatabase defines the interface for message database operations.
 type CommonMsgDatabase interface {
-	MsgToMQ(ctx context.Context, key string, msg2mq *sdkws.MsgData) error
+	MsgToMQ(ctx context.Context, key string, msgID string) error
 	SaveMsgToDB(ctx context.Context, msg *sdkws.MsgData) error
+	GetMsgDataFromDB(ctx context.Context, messageID string) (*sdkws.MsgData, error)
 	AppendMsgToConvMsgList(ctx context.Context, conversationID string, msgID string) (int64, error)
+	AppendMsgToUserMsgList(ctx context.Context, userID string, msgID string) (int64, error)
 }
 
-func NewCommonMsgDatabase(mqi mq.MQ /*msgDocModel database.Msg msg cache.MsgCache, seqUser cache.SeqUser, seqConversation cache.SeqConversationCache, producer mq.Producer*/) CommonMsgDatabase {
+func NewCommonMsgDatabase(mqi mq.MQ, kvstore kvstore.KVStore /*msgDocModel database.Msg msg cache.MsgCache, seqUser cache.SeqUser, seqConversation cache.SeqConversationCache, producer mq.Producer*/) CommonMsgDatabase {
 	return &commonMsgDatabase{
 		// msgDocDatabase:  msgDocModel,
 		// msgCache:        msg,
 		// seqUser:         seqUser,
 		// seqConversation: seqConversation,
 		// producer:        producer,
-		mqi: mqi,
+		mqi:     mqi,
+		kvstore: kvstore,
 	}
 }
 
@@ -60,19 +64,13 @@ type commonMsgDatabase struct {
 	kvstore kvstore.KVStore
 }
 
-func (db *commonMsgDatabase) MsgToMQ(ctx context.Context, key string, msg2mq *sdkws.MsgData) error {
-	data, err := msg2mq.Marshal(nil)
-	if err != nil {
-		return err
-	}
-	err = db.mqi.Publish(ctx, &mq.Message{
+func (db *commonMsgDatabase) MsgToMQ(ctx context.Context, key string, msgID string) error {
+	err := db.mqi.Publish(ctx, &mq.Message{
 		Topic: "message_topic",
-		Body:  data,
-		// Timestamp: ,
+		Body:  []byte(msgID),
 	})
 
 	return err
-	// return db.producer.SendMessage(ctx, key, data)
 }
 
 func (db *commonMsgDatabase) SaveMsgToDB(ctx context.Context, msg *sdkws.MsgData) error {
@@ -85,12 +83,40 @@ func (db *commonMsgDatabase) SaveMsgToDB(ctx context.Context, msg *sdkws.MsgData
 		return err
 	}
 
-	db.kvstore.Set(ctx, msg.SendID, data, time.Hour*24*7)
+	db.kvstore.Set(ctx, msg.ServerMsgID, data, time.Hour*24*7)
 	return nil
 }
 
 func (db *commonMsgDatabase) AppendMsgToConvMsgList(ctx context.Context, conversationID string, msgID string) (int64, error) {
-	return db.kvstore.RPush(ctx, conversationID, []byte(msgID))
+	if conversationID == "" {
+		return 0, errors.New("conversationID is empty")
+	}
+	return db.kvstore.RPush(ctx, "conv_msg_list:"+conversationID, []byte(msgID))
+}
+
+func (db *commonMsgDatabase) GetMsgDataFromDB(ctx context.Context, messageID string) (*sdkws.MsgData, error) {
+	var (
+		data []byte
+		err  error
+	)
+
+	if data, err = db.kvstore.Get(ctx, messageID); err != nil {
+		return nil, err
+	}
+
+	message := &sdkws.MsgData{}
+	if err = message.Unmarshal(data); err != nil {
+		return nil, err
+	}
+
+	return message, nil
+}
+
+func (db *commonMsgDatabase) AppendMsgToUserMsgList(ctx context.Context, userID string, msgID string) (int64, error) {
+	if userID == "" {
+		return 0, errors.New("userID is empty")
+	}
+	return db.kvstore.RPush(ctx, "user_msg_list:"+userID, []byte(msgID))
 }
 
 // func (db *commonMsgDatabase) batchInsertBlock(ctx context.Context, conversationID string, fields []any, key int8, firstSeq int64) error {

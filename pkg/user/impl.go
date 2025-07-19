@@ -2,8 +2,10 @@ package user
 
 import (
 	"context"
-	"github.com/roc/roc-im-server/tools/kvstore"
+	"errors"
 	"strings"
+
+	"github.com/roc/roc-im-server/tools/kvstore"
 )
 
 type userServiceImpl struct {
@@ -45,4 +47,22 @@ func (s *userServiceImpl) SetUserAddress(ctx context.Context, userID, address st
 	}
 
 	return nil
+}
+
+func (s *userServiceImpl) GetUserIDsFromConv(ctx context.Context, convID string) ([]string, error) {
+	if len(convID) == 0 {
+		return nil, errors.New("convID is empty")
+	}
+
+	convIDParts := strings.Split(convID, ":")
+
+	switch convIDParts[0] {
+	case "0": // 单聊
+		if len(convIDParts) == 3 {
+			return convIDParts[1:3], nil
+		}
+	case "1":
+	}
+
+	return nil, errors.New("convID is Invaild")
 }

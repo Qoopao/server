@@ -119,6 +119,7 @@ func (g *messageHandler) SendMessage(ctx context.Context, data *sdkws.SdkWSReq) 
 
 	resp, err := g.msgClient.SendMessages(ctx, &sendMsgReq)
 	if err != nil {
+		println("SendMessage: error sending message", err.Error())
 		return nil, err
 	}
 	return resp, nil

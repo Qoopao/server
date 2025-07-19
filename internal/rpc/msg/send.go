@@ -21,45 +21,56 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 	}
 
 	// 构造返回信息
-	respInfos := make([]*sdkws.SendMessageRespInfo, 0, len(req.Msgs))
+	respInfos := make([]*sdkws.SendMessageRespInfo, len(req.Msgs))
 	for index := range req.Msgs {
 		respInfos[index] = &sdkws.SendMessageRespInfo{
 			ServerMsgID: "",
 			ClientMsgID: "",
 			SendTime:    0,
 			IsSuccess:   true,
-			ErrorCode:   "",
+			ErrorMsg:    "",
 		}
 	}
 
 	// 生成消息ID
 	for index, msg := range req.Msgs {
-		msg.ServerMsgID = uuid.New().String()
-
-		respInfos[index].ServerMsgID = msg.ServerMsgID
-		respInfos[index].ClientMsgID = msg.ClientMsgID
-	}
-
-	// 追加到单链（会话链） 并生成orderIndex
-	for index, msg := range req.Msgs {
-		orderIndex, err := s.MsgDatabase.AppendMsgToConvMsgList(ctx, msg.ConvID, msg.ServerMsgID)
-		if err != nil {
+		// 如果conv_id为空，则失败
+		if msg.ConvID == "" {
 			respInfos[index].IsSuccess = false
-			respInfos[index].ErrorCode = err.Error()
+			respInfos[index].ErrorMsg = "conv_id is empty"
 			continue
 		}
 
+		// 生成server_msg_id
+		msg.ServerMsgID = uuid.New().String()
+
+		// 生成orderIndex
+		orderIndex, err := s.MsgDatabase.AppendMsgToConvMsgList(ctx, msg.ConvID, msg.ServerMsgID)
+		if err != nil {
+			respInfos[index].IsSuccess = false
+			respInfos[index].ErrorMsg = err.Error()
+			continue
+		}
 		msg.ServerOrdIndex = orderIndex
-	}
 
-	// 存储消息
-	for _, msg := range req.Msgs {
-		s.MsgDatabase.SaveMsgToDB(ctx, msg)
-	}
+		// 存储消息
+		if err := s.MsgDatabase.SaveMsgToDB(ctx, msg); err != nil {
+			respInfos[index].IsSuccess = false
+			respInfos[index].ErrorMsg = err.Error()
+			continue
+		}
 
-	// 转发消息到MQ
-	for _, msg := range req.Msgs {
-		s.MsgDatabase.MsgToMQ(ctx, msg.SendID, msg)
+		// 转发消息到MQ
+		if err := s.MsgDatabase.MsgToMQ(ctx, msg.SendID, msg.ServerMsgID); err != nil {
+			respInfos[index].IsSuccess = false
+			respInfos[index].ErrorMsg = err.Error()
+			continue
+		}
+
+		// 设置返回信息
+		respInfos[index].ServerMsgID = msg.ServerMsgID
+		respInfos[index].ClientMsgID = msg.ClientMsgID
+		respInfos[index].SendTime = time.Now().Unix()
 	}
 
 	resp = &sdkws.SendMessageResp{

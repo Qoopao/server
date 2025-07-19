@@ -391,6 +391,7 @@ func (c *Client) activeHeartbeat(ctx context.Context) {
 		}()
 	}
 }
+
 func (c *Client) writePingMsg() error {
 	if c.closed.Load() {
 		return nil

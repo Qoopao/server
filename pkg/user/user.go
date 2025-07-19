@@ -9,6 +9,7 @@ import (
 type UserService interface {
 	UserAddress(ctx context.Context, userID string) (string, error)
 	SetUserAddress(ctx context.Context, userID, address string) error
+	GetUserIDsFromConv(ctx context.Context, convID string) ([]string, error)
 }
 
 // newUserService creates a new UserService implementation.
