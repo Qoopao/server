@@ -50,6 +50,8 @@ type Client struct {
 
 	messsageHandler MessageHandler
 	composer        Compressor
+
+	closeCallback func(err error)
 }
 
 // ResetClient updates the client's state with new connection and context information.
@@ -121,6 +123,7 @@ func (c *Client) readMessage() {
 		if returnErr != nil {
 			log.ZWarn(c.ctx, "readMessage", returnErr, "messageType", messageType)
 			c.closedErr = returnErr
+			c.closeCallback(returnErr)
 			return
 		}
 
@@ -128,6 +131,7 @@ func (c *Client) readMessage() {
 		if c.closed.Load() {
 			// The scenario where the connection has just been closed, but the coroutine has not exited
 			c.closedErr = ErrConnClosed
+			c.closeCallback(c.closedErr)
 			return
 		}
 
@@ -255,7 +259,7 @@ func (c *Client) activeHeartbeat(ctx context.Context) {
 			}
 		}()
 		log.ZDebug(ctx, "server initiative send heartbeat start.")
-		ticker := time.NewTicker(5)
+		ticker := time.NewTicker(pingPeriod)
 		defer ticker.Stop()
 
 		for {

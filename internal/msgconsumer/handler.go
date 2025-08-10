@@ -5,12 +5,14 @@ import (
 
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/transport"
+	"github.com/openimsdk/tools/log"
 	"github.com/roc/roc-im-server/internal/kitex_gen/push"
 	"github.com/roc/roc-im-server/internal/kitex_gen/push/pushservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/roc/roc-im-server/pkg/common/storage/controller"
 	"github.com/roc/roc-im-server/pkg/user"
 	"github.com/roc/roc-im-server/tools/mq"
+	"github.com/roc/roc-im-server/tools/utils"
 )
 
 type ConsumerMessage struct {
@@ -53,6 +55,8 @@ func (m *ConsumerMessage) pushHandler(ctx context.Context, msg *mq.Message) erro
 		message *sdkws.MsgData
 	)
 
+	log.ZDebug(ctx, "consume messsage_topic ", "msg", string(msg.Body))
+
 	messageID := string(msg.Body)
 	if message, err = m.MessageDB.GetMsgInfo(ctx, messageID); err != nil {
 		return err
@@ -64,6 +68,9 @@ func (m *ConsumerMessage) pushHandler(ctx context.Context, msg *mq.Message) erro
 	if userIDs, err = userService.GetUserIDsFromConv(ctx, message.ConvID); err != nil {
 		return err
 	}
+
+	// 对userIDs进行去重
+	userIDs = utils.RemoveDuplicate(userIDs)
 
 	for _, userID := range userIDs {
 		address, _ := userService.UserAddress(ctx, userID)

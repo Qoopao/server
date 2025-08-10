@@ -513,10 +513,9 @@ func (ws *WsServer) wsHandler(w http.ResponseWriter, r *http.Request) {
 	client := ws.clientPool.Get().(*Client)
 	client.ResetClient(connContext, wsLongConn)
 
-	wsLongConn.conn.SetCloseHandler(func(code int, text string) error {
+	client.closeCallback = func(err error) {
 		ws.unregisterChan <- client
-		return nil
-	})
+	}
 
 	// Register the client with the server and start message processing
 	ws.registerChan <- client
