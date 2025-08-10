@@ -10,6 +10,7 @@ import (
 	streaming "github.com/cloudwego/kitex/pkg/streaming"
 	proto "github.com/cloudwego/prutal"
 	conversation "github.com/roc/roc-im-server/internal/kitex_gen/conversation"
+	sdkws "github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 )
 
 var errInvalidMessageType = errors.New("invalid message type for service method handler")
@@ -187,6 +188,20 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		updateConversationsByUserHandler,
 		newUpdateConversationsByUserArgs,
 		newUpdateConversationsByUserResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"FetchConvMessaegList": kitex.NewMethodInfo(
+		fetchConvMessaegListHandler,
+		newFetchConvMessaegListArgs,
+		newFetchConvMessaegListResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"FetchUserMessaegList": kitex.NewMethodInfo(
+		fetchUserMessaegListHandler,
+		newFetchUserMessaegListArgs,
+		newFetchUserMessaegListResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -3031,6 +3046,228 @@ func (p *UpdateConversationsByUserResult) GetResult() interface{} {
 	return p.Success
 }
 
+func fetchConvMessaegListHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(sdkws.FetchConvMessageListReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(conversation.ConversationService).FetchConvMessaegList(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *FetchConvMessaegListArgs:
+		success, err := handler.(conversation.ConversationService).FetchConvMessaegList(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*FetchConvMessaegListResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newFetchConvMessaegListArgs() interface{} {
+	return &FetchConvMessaegListArgs{}
+}
+
+func newFetchConvMessaegListResult() interface{} {
+	return &FetchConvMessaegListResult{}
+}
+
+type FetchConvMessaegListArgs struct {
+	Req *sdkws.FetchConvMessageListReq
+}
+
+func (p *FetchConvMessaegListArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *FetchConvMessaegListArgs) Unmarshal(in []byte) error {
+	msg := new(sdkws.FetchConvMessageListReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var FetchConvMessaegListArgs_Req_DEFAULT *sdkws.FetchConvMessageListReq
+
+func (p *FetchConvMessaegListArgs) GetReq() *sdkws.FetchConvMessageListReq {
+	if !p.IsSetReq() {
+		return FetchConvMessaegListArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *FetchConvMessaegListArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *FetchConvMessaegListArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type FetchConvMessaegListResult struct {
+	Success *sdkws.FetchConvMessageListResp
+}
+
+var FetchConvMessaegListResult_Success_DEFAULT *sdkws.FetchConvMessageListResp
+
+func (p *FetchConvMessaegListResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *FetchConvMessaegListResult) Unmarshal(in []byte) error {
+	msg := new(sdkws.FetchConvMessageListResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *FetchConvMessaegListResult) GetSuccess() *sdkws.FetchConvMessageListResp {
+	if !p.IsSetSuccess() {
+		return FetchConvMessaegListResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *FetchConvMessaegListResult) SetSuccess(x interface{}) {
+	p.Success = x.(*sdkws.FetchConvMessageListResp)
+}
+
+func (p *FetchConvMessaegListResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *FetchConvMessaegListResult) GetResult() interface{} {
+	return p.Success
+}
+
+func fetchUserMessaegListHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(sdkws.FetchUserMessageListReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(conversation.ConversationService).FetchUserMessaegList(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *FetchUserMessaegListArgs:
+		success, err := handler.(conversation.ConversationService).FetchUserMessaegList(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*FetchUserMessaegListResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newFetchUserMessaegListArgs() interface{} {
+	return &FetchUserMessaegListArgs{}
+}
+
+func newFetchUserMessaegListResult() interface{} {
+	return &FetchUserMessaegListResult{}
+}
+
+type FetchUserMessaegListArgs struct {
+	Req *sdkws.FetchUserMessageListReq
+}
+
+func (p *FetchUserMessaegListArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *FetchUserMessaegListArgs) Unmarshal(in []byte) error {
+	msg := new(sdkws.FetchUserMessageListReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var FetchUserMessaegListArgs_Req_DEFAULT *sdkws.FetchUserMessageListReq
+
+func (p *FetchUserMessaegListArgs) GetReq() *sdkws.FetchUserMessageListReq {
+	if !p.IsSetReq() {
+		return FetchUserMessaegListArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *FetchUserMessaegListArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *FetchUserMessaegListArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type FetchUserMessaegListResult struct {
+	Success *sdkws.FetchUserMessageListResp
+}
+
+var FetchUserMessaegListResult_Success_DEFAULT *sdkws.FetchUserMessageListResp
+
+func (p *FetchUserMessaegListResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *FetchUserMessaegListResult) Unmarshal(in []byte) error {
+	msg := new(sdkws.FetchUserMessageListResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *FetchUserMessaegListResult) GetSuccess() *sdkws.FetchUserMessageListResp {
+	if !p.IsSetSuccess() {
+		return FetchUserMessaegListResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *FetchUserMessaegListResult) SetSuccess(x interface{}) {
+	p.Success = x.(*sdkws.FetchUserMessageListResp)
+}
+
+func (p *FetchUserMessaegListResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *FetchUserMessaegListResult) GetResult() interface{} {
+	return p.Success
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -3286,6 +3523,26 @@ func (p *kClient) UpdateConversationsByUser(ctx context.Context, Req *conversati
 	_args.Req = Req
 	var _result UpdateConversationsByUserResult
 	if err = p.c.Call(ctx, "UpdateConversationsByUser", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) FetchConvMessaegList(ctx context.Context, Req *sdkws.FetchConvMessageListReq) (r *sdkws.FetchConvMessageListResp, err error) {
+	var _args FetchConvMessaegListArgs
+	_args.Req = Req
+	var _result FetchConvMessaegListResult
+	if err = p.c.Call(ctx, "FetchConvMessaegList", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) FetchUserMessaegList(ctx context.Context, Req *sdkws.FetchUserMessageListReq) (r *sdkws.FetchUserMessageListResp, err error) {
+	var _args FetchUserMessaegListArgs
+	_args.Req = Req
+	var _result FetchUserMessaegListResult
+	if err = p.c.Call(ctx, "FetchUserMessaegList", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

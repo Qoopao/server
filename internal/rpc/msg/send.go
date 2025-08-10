@@ -6,7 +6,6 @@ package msg
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/openimsdk/tools/errs"
@@ -24,11 +23,8 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 	respInfos := make([]*sdkws.SendMessageRespInfo, len(req.Msgs))
 	for index := range req.Msgs {
 		respInfos[index] = &sdkws.SendMessageRespInfo{
-			ServerMsgID: "",
-			ClientMsgID: "",
-			SendTime:    0,
-			IsSuccess:   true,
-			ErrorMsg:    "",
+			ErrorCode: "0",
+			ErrorMsg:  "",
 		}
 	}
 
@@ -36,7 +32,7 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 	for index, msg := range req.Msgs {
 		// 如果conv_id为空，则失败
 		if msg.ConvID == "" {
-			respInfos[index].IsSuccess = false
+			respInfos[index].ErrorCode = "1"
 			respInfos[index].ErrorMsg = "conv_id is empty"
 			continue
 		}
@@ -47,30 +43,28 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 		// 生成orderIndex
 		orderIndex, err := s.MsgDatabase.AppendMsgToConvMsgList(ctx, msg.ConvID, msg.ServerMsgID)
 		if err != nil {
-			respInfos[index].IsSuccess = false
+			respInfos[index].ErrorCode = "1"
 			respInfos[index].ErrorMsg = err.Error()
 			continue
 		}
-		msg.ServerOrdIndex = orderIndex
+		msg.Seq = orderIndex
 
 		// 存储消息
-		if err := s.MsgDatabase.SaveMsgToDB(ctx, msg); err != nil {
-			respInfos[index].IsSuccess = false
+		if err := s.MsgDatabase.SaveMsgInfo(ctx, msg); err != nil {
+			respInfos[index].ErrorCode = "1"
 			respInfos[index].ErrorMsg = err.Error()
 			continue
 		}
 
 		// 转发消息到MQ
 		if err := s.MsgDatabase.MsgToMQ(ctx, msg.SendID, msg.ServerMsgID); err != nil {
-			respInfos[index].IsSuccess = false
+			respInfos[index].ErrorCode = "1"
 			respInfos[index].ErrorMsg = err.Error()
 			continue
 		}
 
 		// 设置返回信息
-		respInfos[index].ServerMsgID = msg.ServerMsgID
-		respInfos[index].ClientMsgID = msg.ClientMsgID
-		respInfos[index].SendTime = time.Now().Unix()
+		respInfos[index].Msg = msg
 	}
 
 	resp = &sdkws.SendMessageResp{

@@ -247,20 +247,21 @@ message MsgData {
   OfflinePushInfo offlinePushInfo = 20; // 离线推送信息
   repeated string atUserIDList = 21;    // @用户ID列表
   string attachedInfo = 22;             // 附加信息
-  string ex = 23;                       // 扩展字段
-  int64 serverOrdIndex = 24;            // 服务端消息消息再会话内的索引
-  bool isDeleted = 25;                  // 是否已删除
-  bool isRecalled = 26;                 // 是否已撤回
+  string ext = 23;                       // 扩展字段
+  bool isDeleted = 24;                  // 是否已删除
+  bool isRecalled = 25;                 // 是否已撤回
+  bool isPinned = 26;                   // 是否已置顶
+  bool isGroupMsg = 27;                 // 是否是群消息
+  int64 clientSendTime = 29;            // 客户端消息发送时间戳
+  int64 serverSendTime = 30;            // 服务端消息发送时间戳
+  string syncExt = 31;     // 同步扩展字段
 }
 
 // 发送消息 --------------------------------
 message SendMessageRespInfo {
-  string serverMsgID = 1;               // 服务器生成的消息ID
-  string clientMsgID = 2;               // 客户端生成的消息ID
-  int64 sendTime = 3;                   // 消息发送时间戳
-  bool isSuccess = 4;                   // 是否发送成功
-  string errorCode = 5;                 // 错误码
-  string errorMsg = 6;                  // 错误信息
+  string errorCode = 1;                 // 错误码
+  string errorMsg = 2;                  // 错误信息
+  MsgData msg = 3;                      // 消息
 }
 
 message SendMessageReq {
@@ -298,7 +299,7 @@ message FetchConvMessageListReq {
 }
 
 message FetchConvMessageListResp {
-  repeated MsgData message = 1;
+  repeated MsgData messages = 1;
   bool haveMore = 2;
 }
 // --------------------------------------------
@@ -306,9 +307,10 @@ message FetchConvMessageListResp {
 // 混链拉取 ------------------------------------
 message FetchUserMessageListReq {
   string userID = 1;
-  int64 cursor  = 2;
+  int64 cursor  = 2; // 水位
   int64 limit   = 3;
   bool forward  = 4;
+  bool news     = 5; // 是否拉取新消息
 }
 
 message ConversationInfo {
@@ -322,11 +324,15 @@ message ConversationInfo {
   int64 convUnreadCount = 8;  // 会话未读消息数量
   bool isMuted = 9;           // 会话是否静音
   bool isTop = 10;             // 会话是否置顶
+  bool isDelete = 11;
+  bool isBlocked = 12;
+  string syncExt = 13;
 }
 
 message FetchUserMessageListResp {
   repeated ConversationInfo convsInfo = 1;
-  bool hasMore = 2;
+  int64 cursor = 2;
+  bool hasMore = 3;
 }
 // --------------------------------------------
 
@@ -349,6 +355,7 @@ message SdkWSResp {
   string errorCode = 5; // 错误码
   string errorMsg = 6; // 错误信息
   bytes data = 7; // 数据
+  int32 type = 8; // 类型
 }
 // --------------------------------------------
 

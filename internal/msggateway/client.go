@@ -16,8 +16,8 @@ import (
 	"github.com/cloudwego/kitex/transport"
 	"github.com/openimsdk/tools/errs"
 	"github.com/openimsdk/tools/log"
-	"github.com/openimsdk/tools/mcontext"
 	"github.com/openimsdk/tools/utils/stringutil"
+	"github.com/roc/roc-im-server/internal/kitex_gen/conversation/conversationservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/roc/roc-im-server/protocol/constant"
@@ -77,8 +77,10 @@ func (c *Client) ResetClient(ctx *UserConnContext, conn LongConn) {
 		c.Encoder = NewJsonEncoder()
 	}
 	c.subUserIDs = make(map[string]struct{})
+
 	msgRpc, _ := messageservice.NewClient("example_service", client.WithHostPorts("0.0.0.0:10100"), client.WithTransportProtocol(transport.GRPC))
-	c.messsageHandler = NewMessageHandler(nil, msgRpc, nil)
+	convRpc, _ := conversationservice.NewClient("example_service", client.WithHostPorts("0.0.0.0:10200"), client.WithTransportProtocol(transport.GRPC))
+	c.messsageHandler = NewMessageHandler(msgRpc, convRpc)
 }
 
 func (c *Client) pingHandler(appData string) error {
@@ -157,108 +159,53 @@ func (c *Client) readMessage() {
 	}
 }
 
-// request is vali
-func (c *Client) IsValidReq(req *Req) error {
-	return nil
-}
-
 // handleMessage processes a single message received by the client.
 func (c *Client) handleMessage(message []byte) error {
-	// if c.IsCompress {
-	// 	var err error
-	// 	message, err = c.composer.DecompressWithPool(message)
-	// 	if err != nil {
-	// 		return errs.Wrap(err)
-	// 	}
-	// }
 
-	sdkwsReq := &sdkws.SdkWSReq{}
-	err := sdkwsReq.Unmarshal(message)
-	if err != nil {
+	var (
+		err      error
+		data     []byte
+		resp     *sdkws.SdkWSResp
+		sdkwsReq *sdkws.SdkWSReq = &sdkws.SdkWSReq{}
+		ctx      context.Context = context.Background()
+	)
+
+	if err = sdkwsReq.Unmarshal(message); err != nil {
+		log.ZError(ctx, "handleMessage", err)
 		return err
 	}
 
-	// err := c.Encoder.Decode(message, binaryReq)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// if err := c.IsValidReq(binaryReq); err != nil {
-	// 	return err
-	// }
-
-	// if binaryReq.SendID != c.UserID {
-	// 	return errs.New("exception conn userID not same to req userID", "binaryReq", binaryReq.String())
-	// }
-
-	// ctx := mcontext.WithMustInfoCtx(
-	// 	[]string{binaryReq.OperationID, binaryReq.SendID, constant.PlatformIDToName(c.PlatformID), c.ctx.GetConnID()},
-	// )
-
-	// log.ZDebug(ctx, "gateway req message", "req", binaryReq.String())
-	var (
-		respBody []byte
-	)
-
 	switch sdkwsReq.Type {
+
 	case WSSendMessage:
-		resp, _ := c.messsageHandler.SendMessage(context.Background(), sdkwsReq)
-		respBody, err = resp.Marshal(nil)
+		resp, err = c.messsageHandler.SendMessage(ctx, sdkwsReq)
+
+	case WSPullConvMsgList:
+		resp, err = c.messsageHandler.GetConvMsgList(ctx, sdkwsReq)
+
+	case WSPullUserMsgList:
+		resp, err = c.messsageHandler.GetUserMsgList(ctx, sdkwsReq)
+
 	}
 
-	// switch binaryReq.ReqIdentifier {
-	// case WSGetNewestSeq:
-	// 	resp, messageErr = c.messsageHandler.GetSeq(ctx, sdkwsReq)
-	// case WSSendMsg:
-	// 	resp, messageErr = c.messsageHandler.SendMessage(ctx, sdkwsReq)
-	// case WSSendSignalMsg:
-	// 	resp, messageErr = c.messsageHandler.SendSignalMessage(ctx, sdkwsReq)
-	// case WSPullMsgBySeqList:
-	// 	resp, messageErr = c.messsageHandler.PullMessageBySeqList(ctx, sdkwsReq)
-	// case WSPullMsg:
-	// 	resp, messageErr = c.messsageHandler.GetSeqMessage(ctx, sdkwsReq)
-	// case WSGetConvMaxReadSeq:
-	// 	resp, messageErr = c.messsageHandler.GetConversationsHasReadAndMaxSeq(ctx, sdkwsReq)
-	// case WsPullConvLastMessage:
-	// 	resp, messageErr = c.messsageHandler.GetLastMessage(ctx, sdkwsReq)
-	// case WsLogoutMsg:
-	// 	resp, messageErr = c.messsageHandler.UserLogout(ctx, sdkwsReq)
-	// case WsSetBackgroundStatus:
-	// 	resp, messageErr = c.setAppBackgroundStatus(ctx, sdkwsReq)
-	// case WsSubUserOnlineStatus:
-	// 	// resp, messageErr = c.messsageHandler.SubUserOnlineStatus(ctx, c, binaryReq)
-	// default:
-	// 	return fmt.Errorf(
-	// 		"ReqIdentifier failed,sendID:%s,msgIncr:%s,reqIdentifier:%d",
-	// 		binaryReq.SendID,
-	// 		binaryReq.MsgIncr,
-	// 		binaryReq.ReqIdentifier,
-	// 	)
-	// }
-
-	sdkwsResp := &sdkws.SdkWSResp{
-		Data:      respBody,
-		RequestId: sdkwsReq.RequestId,
-		Token:     sdkwsReq.Token,
-		UserID:    sdkwsReq.UserID,
-		DeviceID:  sdkwsReq.DeviceID,
-		ErrorCode: "",
+	if err != nil {
+		log.ZError(ctx, "handleMessage", err)
+		return err
 	}
-	binaryResp, _ := sdkwsResp.Marshal(nil)
 
-	return c.replyMessage(nil, binaryResp)
+	// 序列化
+	if data, err = resp.Marshal(nil); err != nil {
+		log.ZError(ctx, "handleMessage", err)
+		return err
+	}
+
+	// 回复
+	if err = c.replyMessage(ctx, data); err != nil {
+		log.ZError(ctx, "replyMessage", err)
+	}
+
+	return nil
 }
-
-// func (c *Client) setAppBackgroundStatus(ctx context.Context, req *sdkws.SdkWSReq) ([]byte, error) {
-// 	resp, isBackground, messageErr := c.messsageHandler.SetUserDeviceBackground(ctx, req)
-// 	if messageErr != nil {
-// 		return nil, messageErr
-// 	}
-
-// 	c.IsBackground = isBackground
-// 	// TODO: callback
-// 	return resp, nil
-// }
 
 func (c *Client) close() {
 	c.w.Lock()
@@ -275,27 +222,6 @@ func (c *Client) close() {
 }
 
 func (c *Client) replyMessage(ctx context.Context, resp []byte) error {
-	// errResp := apiresp.ParseError(err)
-	// mReply := Resp{
-	// 	ReqIdentifier: binaryReq.ReqIdentifier,
-	// 	MsgIncr:       binaryReq.MsgIncr,
-	// 	OperationID:   binaryReq.OperationID,
-	// 	ErrCode:       errResp.ErrCode,
-	// 	ErrMsg:        errResp.ErrMsg,
-	// 	Data:          resp,
-	// }
-	// t := time.Now()
-	// log.ZDebug(ctx, "gateway reply message", "resp", mReply.String())
-	// err = c.writeBinaryMsg(mReply)
-	// if err != nil {
-	// 	log.ZWarn(ctx, "wireBinaryMsg replyMessage", err, "resp", mReply.String())
-	// }
-	// log.ZDebug(ctx, "wireBinaryMsg end", "time cost", time.Since(t))
-
-	// if binaryReq.ReqIdentifier == WsLogoutMsg {
-	// 	return errs.New("user logout", "operationID", binaryReq.OperationID).Wrap()
-	// }
-	// return nil
 	return c.conn.WriteMessage(MessageBinary, resp)
 }
 
@@ -309,87 +235,42 @@ func (c *Client) PushMessage(ctx context.Context, msgData *sdkws.MsgData) error 
 	if err != nil {
 		return err
 	}
-	resp := Resp{
-		ReqIdentifier: WSPushMsg,
-		OperationID:   mcontext.GetOperationID(ctx),
-		Data:          data,
-	}
-	return c.writeBinaryMsg(resp)
-}
 
-func (c *Client) KickOnlineMessage() error {
-	resp := Resp{
-		ReqIdentifier: WSKickOnlineMsg,
-	}
-	log.ZDebug(c.ctx, "KickOnlineMessage debug ")
-	err := c.writeBinaryMsg(resp)
-	c.close()
-	return err
-}
-
-func (c *Client) PushUserOnlineStatus(data []byte) error {
-	resp := Resp{
-		ReqIdentifier: WsSubUserOnlineStatus,
-		Data:          data,
-	}
-	return c.writeBinaryMsg(resp)
-}
-
-func (c *Client) writeBinaryMsg(resp Resp) error {
-	if c.closed.Load() {
-		return nil
+	resp := sdkws.SdkWSResp{
+		Data: data,
+		Type: 4001,
 	}
 
-	encodedBuf, err := c.Encoder.Encode(resp)
-	if err != nil {
-		return err
-	}
-
-	c.w.Lock()
-	defer c.w.Unlock()
-
-	err = c.conn.SetWriteDeadline(writeWait)
-	if err != nil {
-		return err
-	}
-
-	if c.IsCompress {
-		resultBuf, compressErr := c.composer.CompressWithPool(encodedBuf)
-		if compressErr != nil {
-			return compressErr
-		}
-		return c.conn.WriteMessage(MessageBinary, resultBuf)
-	}
-
-	return c.conn.WriteMessage(MessageBinary, encodedBuf)
+	respBinary, _ := resp.Marshal(nil)
+	return c.conn.WriteMessage(MessageBinary, respBinary)
 }
 
 // Actively initiate Heartbeat when platform in Web.
 func (c *Client) activeHeartbeat(ctx context.Context) {
-	if c.PlatformID == constant.WebPlatformID {
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.ZPanic(ctx, "activeHeartbeat Panic", errs.ErrPanic(r))
-				}
-			}()
-			log.ZDebug(ctx, "server initiative send heartbeat start.")
-			ticker := time.NewTicker(pingPeriod)
-			defer ticker.Stop()
-
-			for {
-				select {
-				case <-ticker.C:
-					if err := c.writePingMsg(); err != nil {
-						log.ZWarn(c.ctx, "send Ping Message error.", err)
-						return
-					}
-				case <-c.hbCtx.Done():
-					return
-				}
+	// if c.PlatformID == constant.LinuxPlatformID {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.ZPanic(ctx, "activeHeartbeat Panic", errs.ErrPanic(r))
 			}
 		}()
-	}
+		log.ZDebug(ctx, "server initiative send heartbeat start.")
+		ticker := time.NewTicker(5)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				if err := c.writePingMsg(); err != nil {
+					log.ZWarn(c.ctx, "send Ping Message error.", err)
+					return
+				}
+			case <-c.hbCtx.Done():
+				return
+			}
+		}
+	}()
+	// }
 }
 
 func (c *Client) writePingMsg() error {

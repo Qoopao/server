@@ -154,6 +154,95 @@ func (x *Conversation) GetIsMsgDestruct() bool {
 	return false
 }
 
+type ConversationInfo struct {
+	ConversationID     string   `protobuf:"bytes,1,opt,name=conversationID" json:"conversationID,omitempty"`
+	OwnerUserID        string   `protobuf:"bytes,2,opt,name=ownerUserID" json:"ownerUserID,omitempty"`
+	ConversationType   int32    `protobuf:"varint,3,opt,name=conversationType" json:"conversationType,omitempty"` // 0: 单聊 1: 群聊
+	ConversationName   string   `protobuf:"bytes,4,opt,name=conversationName" json:"conversationName,omitempty"`
+	ConversationAvatar string   `protobuf:"bytes,5,opt,name=conversationAvatar" json:"conversationAvatar,omitempty"`
+	ParticipantUIDs    []string `protobuf:"bytes,6,rep,name=participantUIDs" json:"participantUIDs,omitempty"`
+	TopUIDs            []string `protobuf:"bytes,7,rep,name=topUIDs" json:"topUIDs,omitempty"` // 设置置顶的用户id
+	UnreadCount        int64    `protobuf:"varint,8,opt,name=unreadCount" json:"unreadCount,omitempty"`
+	MuteUIDs           []string `protobuf:"bytes,9,rep,name=muteUIDs" json:"muteUIDs,omitempty"`  // 设置免打扰的用户id
+	FoldUIDs           []string `protobuf:"bytes,10,rep,name=foldUIDs" json:"foldUIDs,omitempty"` // 设置折叠的用户id
+}
+
+func (x *ConversationInfo) Reset() { *x = ConversationInfo{} }
+
+func (x *ConversationInfo) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *ConversationInfo) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *ConversationInfo) GetConversationID() string {
+	if x != nil {
+		return x.ConversationID
+	}
+	return ""
+}
+
+func (x *ConversationInfo) GetOwnerUserID() string {
+	if x != nil {
+		return x.OwnerUserID
+	}
+	return ""
+}
+
+func (x *ConversationInfo) GetConversationType() int32 {
+	if x != nil {
+		return x.ConversationType
+	}
+	return 0
+}
+
+func (x *ConversationInfo) GetConversationName() string {
+	if x != nil {
+		return x.ConversationName
+	}
+	return ""
+}
+
+func (x *ConversationInfo) GetConversationAvatar() string {
+	if x != nil {
+		return x.ConversationAvatar
+	}
+	return ""
+}
+
+func (x *ConversationInfo) GetParticipantUIDs() []string {
+	if x != nil {
+		return x.ParticipantUIDs
+	}
+	return nil
+}
+
+func (x *ConversationInfo) GetTopUIDs() []string {
+	if x != nil {
+		return x.TopUIDs
+	}
+	return nil
+}
+
+func (x *ConversationInfo) GetUnreadCount() int64 {
+	if x != nil {
+		return x.UnreadCount
+	}
+	return 0
+}
+
+func (x *ConversationInfo) GetMuteUIDs() []string {
+	if x != nil {
+		return x.MuteUIDs
+	}
+	return nil
+}
+
+func (x *ConversationInfo) GetFoldUIDs() []string {
+	if x != nil {
+		return x.FoldUIDs
+	}
+	return nil
+}
+
 type ConversationReq struct {
 	ConversationID   string `protobuf:"bytes,1,opt,name=conversationID" json:"conversationID,omitempty"`
 	ConversationType int32  `protobuf:"varint,2,opt,name=conversationType" json:"conversationType,omitempty"`
@@ -1735,4 +1824,6 @@ type ConversationService interface {
 	GetPinnedConversationIDs(ctx context.Context, req *GetPinnedConversationIDsReq) (res *GetPinnedConversationIDsResp, err error)
 	ClearUserConversationMsg(ctx context.Context, req *ClearUserConversationMsgReq) (res *ClearUserConversationMsgResp, err error)
 	UpdateConversationsByUser(ctx context.Context, req *UpdateConversationsByUserReq) (res *UpdateConversationsByUserResp, err error)
+	FetchConvMessaegList(ctx context.Context, req *sdkws.FetchConvMessageListReq) (res *sdkws.FetchConvMessageListResp, err error)
+	FetchUserMessaegList(ctx context.Context, req *sdkws.FetchUserMessageListReq) (res *sdkws.FetchUserMessageListResp, err error)
 }

@@ -7,6 +7,7 @@ import (
 	client "github.com/cloudwego/kitex/client"
 	callopt "github.com/cloudwego/kitex/client/callopt"
 	conversation "github.com/roc/roc-im-server/internal/kitex_gen/conversation"
+	sdkws "github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 )
 
 // Client is designed to provide IDL-compatible methods with call-option parameter for kitex framework.
@@ -36,6 +37,8 @@ type Client interface {
 	GetPinnedConversationIDs(ctx context.Context, Req *conversation.GetPinnedConversationIDsReq, callOptions ...callopt.Option) (r *conversation.GetPinnedConversationIDsResp, err error)
 	ClearUserConversationMsg(ctx context.Context, Req *conversation.ClearUserConversationMsgReq, callOptions ...callopt.Option) (r *conversation.ClearUserConversationMsgResp, err error)
 	UpdateConversationsByUser(ctx context.Context, Req *conversation.UpdateConversationsByUserReq, callOptions ...callopt.Option) (r *conversation.UpdateConversationsByUserResp, err error)
+	FetchConvMessaegList(ctx context.Context, Req *sdkws.FetchConvMessageListReq, callOptions ...callopt.Option) (r *sdkws.FetchConvMessageListResp, err error)
+	FetchUserMessaegList(ctx context.Context, Req *sdkws.FetchUserMessageListReq, callOptions ...callopt.Option) (r *sdkws.FetchUserMessageListResp, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -190,4 +193,14 @@ func (p *kConversationServiceClient) ClearUserConversationMsg(ctx context.Contex
 func (p *kConversationServiceClient) UpdateConversationsByUser(ctx context.Context, Req *conversation.UpdateConversationsByUserReq, callOptions ...callopt.Option) (r *conversation.UpdateConversationsByUserResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.UpdateConversationsByUser(ctx, Req)
+}
+
+func (p *kConversationServiceClient) FetchConvMessaegList(ctx context.Context, Req *sdkws.FetchConvMessageListReq, callOptions ...callopt.Option) (r *sdkws.FetchConvMessageListResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.FetchConvMessaegList(ctx, Req)
+}
+
+func (p *kConversationServiceClient) FetchUserMessaegList(ctx context.Context, Req *sdkws.FetchUserMessageListReq, callOptions ...callopt.Option) (r *sdkws.FetchUserMessageListResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.FetchUserMessaegList(ctx, Req)
 }

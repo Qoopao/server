@@ -54,7 +54,7 @@ func (m *ConsumerMessage) pushHandler(ctx context.Context, msg *mq.Message) erro
 	)
 
 	messageID := string(msg.Body)
-	if message, err = m.MessageDB.GetMsgDataFromDB(ctx, messageID); err != nil {
+	if message, err = m.MessageDB.GetMsgInfo(ctx, messageID); err != nil {
 		return err
 	}
 
@@ -68,7 +68,7 @@ func (m *ConsumerMessage) pushHandler(ctx context.Context, msg *mq.Message) erro
 	for _, userID := range userIDs {
 		address, _ := userService.UserAddress(ctx, userID)
 		// 修改用户混链
-		m.MessageDB.AppendMsgToUserMsgList(ctx, userID, message.ServerMsgID)
+		m.MessageDB.UpdateUserConvList(ctx, userID, message.ConvID)
 
 		// 推送消息
 		pushServiceClient, _ := pushservice.NewClient("push_service", client.WithHostPorts(address), client.WithTransportProtocol(transport.GRPC))

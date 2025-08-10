@@ -245,6 +245,10 @@ func (r *redisStore) LRange(ctx context.Context, key string, start, stop int64) 
 	return result, nil
 }
 
+func (r *redisStore) LRem(ctx context.Context, key string, count int64, value []byte) error {
+	return r.client.LRem(ctx, key, count, value).Err()
+}
+
 // 集合操作实现
 
 func (r *redisStore) SAdd(ctx context.Context, key string, members ...[]byte) error {

@@ -1129,10 +1129,14 @@ type MsgData struct {
 	OfflinePushInfo  *OfflinePushInfo `protobuf:"bytes,20,opt,name=offlinePushInfo" json:"offlinePushInfo,omitempty"`                                                            // 离线推送信息
 	AtUserIDList     []string         `protobuf:"bytes,21,rep,name=atUserIDList" json:"atUserIDList,omitempty"`                                                                  // @用户ID列表
 	AttachedInfo     string           `protobuf:"bytes,22,opt,name=attachedInfo" json:"attachedInfo,omitempty"`                                                                  // 附加信息
-	Ex               string           `protobuf:"bytes,23,opt,name=ex" json:"ex,omitempty"`                                                                                      // 扩展字段
-	ServerOrdIndex   int64            `protobuf:"varint,24,opt,name=serverOrdIndex" json:"serverOrdIndex,omitempty"`                                                             // 服务端消息消息再会话内的索引
-	IsDeleted        bool             `protobuf:"varint,25,opt,name=isDeleted" json:"isDeleted,omitempty"`                                                                       // 是否已删除
-	IsRecalled       bool             `protobuf:"varint,26,opt,name=isRecalled" json:"isRecalled,omitempty"`                                                                     // 是否已撤回
+	Ext              string           `protobuf:"bytes,23,opt,name=ext" json:"ext,omitempty"`                                                                                    // 扩展字段
+	IsDeleted        bool             `protobuf:"varint,24,opt,name=isDeleted" json:"isDeleted,omitempty"`                                                                       // 是否已删除
+	IsRecalled       bool             `protobuf:"varint,25,opt,name=isRecalled" json:"isRecalled,omitempty"`                                                                     // 是否已撤回
+	IsPinned         bool             `protobuf:"varint,26,opt,name=isPinned" json:"isPinned,omitempty"`                                                                         // 是否已置顶
+	IsGroupMsg       bool             `protobuf:"varint,27,opt,name=isGroupMsg" json:"isGroupMsg,omitempty"`                                                                     // 是否是群消息
+	ClientSendTime   int64            `protobuf:"varint,29,opt,name=clientSendTime" json:"clientSendTime,omitempty"`                                                             // 客户端消息发送时间戳
+	ServerSendTime   int64            `protobuf:"varint,30,opt,name=serverSendTime" json:"serverSendTime,omitempty"`                                                             // 服务端消息发送时间戳
+	SyncExt          string           `protobuf:"bytes,31,opt,name=syncExt" json:"syncExt,omitempty"`                                                                            // 同步扩展字段
 }
 
 func (x *MsgData) Reset() { *x = MsgData{} }
@@ -1288,18 +1292,11 @@ func (x *MsgData) GetAttachedInfo() string {
 	return ""
 }
 
-func (x *MsgData) GetEx() string {
+func (x *MsgData) GetExt() string {
 	if x != nil {
-		return x.Ex
+		return x.Ext
 	}
 	return ""
-}
-
-func (x *MsgData) GetServerOrdIndex() int64 {
-	if x != nil {
-		return x.ServerOrdIndex
-	}
-	return 0
 }
 
 func (x *MsgData) GetIsDeleted() bool {
@@ -1316,14 +1313,46 @@ func (x *MsgData) GetIsRecalled() bool {
 	return false
 }
 
+func (x *MsgData) GetIsPinned() bool {
+	if x != nil {
+		return x.IsPinned
+	}
+	return false
+}
+
+func (x *MsgData) GetIsGroupMsg() bool {
+	if x != nil {
+		return x.IsGroupMsg
+	}
+	return false
+}
+
+func (x *MsgData) GetClientSendTime() int64 {
+	if x != nil {
+		return x.ClientSendTime
+	}
+	return 0
+}
+
+func (x *MsgData) GetServerSendTime() int64 {
+	if x != nil {
+		return x.ServerSendTime
+	}
+	return 0
+}
+
+func (x *MsgData) GetSyncExt() string {
+	if x != nil {
+		return x.SyncExt
+	}
+	return ""
+}
+
 // 发送消息 --------------------------------
 type SendMessageRespInfo struct {
-	ServerMsgID string `protobuf:"bytes,1,opt,name=serverMsgID" json:"serverMsgID,omitempty"` // 服务器生成的消息ID
-	ClientMsgID string `protobuf:"bytes,2,opt,name=clientMsgID" json:"clientMsgID,omitempty"` // 客户端生成的消息ID
-	SendTime    int64  `protobuf:"varint,3,opt,name=sendTime" json:"sendTime,omitempty"`      // 消息发送时间戳
-	IsSuccess   bool   `protobuf:"varint,4,opt,name=isSuccess" json:"isSuccess,omitempty"`    // 是否发送成功
-	ErrorCode   string `protobuf:"bytes,5,opt,name=errorCode" json:"errorCode,omitempty"`     // 错误码
-	ErrorMsg    string `protobuf:"bytes,6,opt,name=errorMsg" json:"errorMsg,omitempty"`       // 错误信息
+	ErrorCode string   `protobuf:"bytes,1,opt,name=errorCode" json:"errorCode,omitempty"` // 错误码
+	ErrorMsg  string   `protobuf:"bytes,2,opt,name=errorMsg" json:"errorMsg,omitempty"`   // 错误信息
+	Msg       *MsgData `protobuf:"bytes,3,opt,name=msg" json:"msg,omitempty"`             // 消息
 }
 
 func (x *SendMessageRespInfo) Reset() { *x = SendMessageRespInfo{} }
@@ -1331,34 +1360,6 @@ func (x *SendMessageRespInfo) Reset() { *x = SendMessageRespInfo{} }
 func (x *SendMessageRespInfo) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
 func (x *SendMessageRespInfo) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *SendMessageRespInfo) GetServerMsgID() string {
-	if x != nil {
-		return x.ServerMsgID
-	}
-	return ""
-}
-
-func (x *SendMessageRespInfo) GetClientMsgID() string {
-	if x != nil {
-		return x.ClientMsgID
-	}
-	return ""
-}
-
-func (x *SendMessageRespInfo) GetSendTime() int64 {
-	if x != nil {
-		return x.SendTime
-	}
-	return 0
-}
-
-func (x *SendMessageRespInfo) GetIsSuccess() bool {
-	if x != nil {
-		return x.IsSuccess
-	}
-	return false
-}
 
 func (x *SendMessageRespInfo) GetErrorCode() string {
 	if x != nil {
@@ -1372,6 +1373,13 @@ func (x *SendMessageRespInfo) GetErrorMsg() string {
 		return x.ErrorMsg
 	}
 	return ""
+}
+
+func (x *SendMessageRespInfo) GetMsg() *MsgData {
+	if x != nil {
+		return x.Msg
+	}
+	return nil
 }
 
 type SendMessageReq struct {
@@ -1521,7 +1529,7 @@ func (x *FetchConvMessageListReq) GetForward() bool {
 }
 
 type FetchConvMessageListResp struct {
-	Message  []*MsgData `protobuf:"bytes,1,rep,name=message" json:"message,omitempty"`
+	Messages []*MsgData `protobuf:"bytes,1,rep,name=messages" json:"messages,omitempty"`
 	HaveMore bool       `protobuf:"varint,2,opt,name=haveMore" json:"haveMore,omitempty"`
 }
 
@@ -1533,9 +1541,9 @@ func (x *FetchConvMessageListResp) Marshal(in []byte) ([]byte, error) {
 
 func (x *FetchConvMessageListResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *FetchConvMessageListResp) GetMessage() []*MsgData {
+func (x *FetchConvMessageListResp) GetMessages() []*MsgData {
 	if x != nil {
-		return x.Message
+		return x.Messages
 	}
 	return nil
 }
@@ -1550,9 +1558,10 @@ func (x *FetchConvMessageListResp) GetHaveMore() bool {
 // 混链拉取 ------------------------------------
 type FetchUserMessageListReq struct {
 	UserID  string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	Cursor  int64  `protobuf:"varint,2,opt,name=cursor" json:"cursor,omitempty"`
+	Cursor  int64  `protobuf:"varint,2,opt,name=cursor" json:"cursor,omitempty"` // 水位
 	Limit   int64  `protobuf:"varint,3,opt,name=limit" json:"limit,omitempty"`
 	Forward bool   `protobuf:"varint,4,opt,name=forward" json:"forward,omitempty"`
+	News    bool   `protobuf:"varint,5,opt,name=news" json:"news,omitempty"` // 是否拉取新消息
 }
 
 func (x *FetchUserMessageListReq) Reset() { *x = FetchUserMessageListReq{} }
@@ -1591,6 +1600,13 @@ func (x *FetchUserMessageListReq) GetForward() bool {
 	return false
 }
 
+func (x *FetchUserMessageListReq) GetNews() bool {
+	if x != nil {
+		return x.News
+	}
+	return false
+}
+
 type ConversationInfo struct {
 	ConvID          string          `protobuf:"bytes,1,opt,name=convID" json:"convID,omitempty"`                    // 会话ID
 	OwnerUserID     string          `protobuf:"bytes,2,opt,name=ownerUserID" json:"ownerUserID,omitempty"`          // 会话拥有者用户ID
@@ -1602,6 +1618,9 @@ type ConversationInfo struct {
 	ConvUnreadCount int64           `protobuf:"varint,8,opt,name=convUnreadCount" json:"convUnreadCount,omitempty"` // 会话未读消息数量
 	IsMuted         bool            `protobuf:"varint,9,opt,name=isMuted" json:"isMuted,omitempty"`                 // 会话是否静音
 	IsTop           bool            `protobuf:"varint,10,opt,name=isTop" json:"isTop,omitempty"`                    // 会话是否置顶
+	IsDelete        bool            `protobuf:"varint,11,opt,name=isDelete" json:"isDelete,omitempty"`
+	IsBlocked       bool            `protobuf:"varint,12,opt,name=isBlocked" json:"isBlocked,omitempty"`
+	SyncExt         string          `protobuf:"bytes,13,opt,name=syncExt" json:"syncExt,omitempty"`
 }
 
 func (x *ConversationInfo) Reset() { *x = ConversationInfo{} }
@@ -1680,9 +1699,31 @@ func (x *ConversationInfo) GetIsTop() bool {
 	return false
 }
 
+func (x *ConversationInfo) GetIsDelete() bool {
+	if x != nil {
+		return x.IsDelete
+	}
+	return false
+}
+
+func (x *ConversationInfo) GetIsBlocked() bool {
+	if x != nil {
+		return x.IsBlocked
+	}
+	return false
+}
+
+func (x *ConversationInfo) GetSyncExt() string {
+	if x != nil {
+		return x.SyncExt
+	}
+	return ""
+}
+
 type FetchUserMessageListResp struct {
 	ConvsInfo []*ConversationInfo `protobuf:"bytes,1,rep,name=convsInfo" json:"convsInfo,omitempty"`
-	HasMore   bool                `protobuf:"varint,2,opt,name=hasMore" json:"hasMore,omitempty"`
+	Cursor    int64               `protobuf:"varint,2,opt,name=cursor" json:"cursor,omitempty"`
+	HasMore   bool                `protobuf:"varint,3,opt,name=hasMore" json:"hasMore,omitempty"`
 }
 
 func (x *FetchUserMessageListResp) Reset() { *x = FetchUserMessageListResp{} }
@@ -1698,6 +1739,13 @@ func (x *FetchUserMessageListResp) GetConvsInfo() []*ConversationInfo {
 		return x.ConvsInfo
 	}
 	return nil
+}
+
+func (x *FetchUserMessageListResp) GetCursor() int64 {
+	if x != nil {
+		return x.Cursor
+	}
+	return 0
 }
 
 func (x *FetchUserMessageListResp) GetHasMore() bool {
@@ -1773,6 +1821,7 @@ type SdkWSResp struct {
 	ErrorCode string `protobuf:"bytes,5,opt,name=errorCode" json:"errorCode,omitempty"` // 错误码
 	ErrorMsg  string `protobuf:"bytes,6,opt,name=errorMsg" json:"errorMsg,omitempty"`   // 错误信息
 	Data      []byte `protobuf:"bytes,7,opt,name=data" json:"data,omitempty"`           // 数据
+	Type      int32  `protobuf:"varint,8,opt,name=type" json:"type,omitempty"`          // 类型
 }
 
 func (x *SdkWSResp) Reset() { *x = SdkWSResp{} }
@@ -1828,6 +1877,13 @@ func (x *SdkWSResp) GetData() []byte {
 		return x.Data
 	}
 	return nil
+}
+
+func (x *SdkWSResp) GetType() int32 {
+	if x != nil {
+		return x.Type
+	}
+	return 0
 }
 
 // OfflinePushInfo 离线推送信息

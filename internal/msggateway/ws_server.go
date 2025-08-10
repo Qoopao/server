@@ -173,8 +173,8 @@ func (ws *WsServer) Run(ctx context.Context) error {
 				return
 			case client = <-ws.registerChan:
 				ws.registerClient(client)
-				// case client = <-ws.unregisterChan:
-				// 	ws.unregisterClient(client)
+			case client = <-ws.unregisterChan:
+				ws.unregisterClient(client)
 				// case onlineInfo := <-ws.kickHandlerChan:
 				// 	ws.multiTerminalLoginChecker(onlineInfo.clientOK, onlineInfo.oldClients, onlineInfo.newClient)
 			}
@@ -216,8 +216,8 @@ func (ws *WsServer) pushToUser(ctx context.Context, userID string, message *sdkw
 		return ErrClientClosed.WrapMsg("client not found")
 	}
 
-	client[0].PushMessage(ctx, message)
-	return nil
+	err := client[0].PushMessage(ctx, message)
+	return err
 }
 
 const concurrentRequest = 3
@@ -415,21 +415,21 @@ func getRemoteAdders(client []*Client) string {
 // 	}
 // }
 
-// func (ws *WsServer) unregisterClient(client *Client) {
-// 	defer ws.clientPool.Put(client)
-// 	isDeleteUser := ws.clients.DeleteClients(client.UserID, []*Client{client})
-// 	if isDeleteUser {
-// 		ws.onlineUserNum.Add(-1)
-// 		prommetrics.OnlineUserGauge.Dec()
-// 	}
-// 	ws.onlineUserConnNum.Add(-1)
-// 	ws.subscription.DelClient(client)
-// 	//ws.SetUserOnlineStatus(client.ctx, client, constant.Offline)
-// 	log.ZDebug(client.ctx, "user offline", "close reason", client.closedErr, "online user Num",
-// 		ws.onlineUserNum.Load(), "online user conn Num",
-// 		ws.onlineUserConnNum.Load(),
-// 	)
-// }
+func (ws *WsServer) unregisterClient(client *Client) {
+	defer ws.clientPool.Put(client)
+	isDeleteUser := ws.clients.DeleteClients(client.UserID, []*Client{client})
+	if isDeleteUser {
+		ws.onlineUserNum.Add(-1)
+		// prommetrics.OnlineUserGauge.Dec()
+	}
+	ws.onlineUserConnNum.Add(-1)
+	// ws.subscription.DelClient(client)
+	//ws.SetUserOnlineStatus(client.ctx, client, constant.Offline)
+	log.ZDebug(client.ctx, "user offline", "close reason", client.closedErr, "online user Num",
+		ws.onlineUserNum.Load(), "online user conn Num",
+		ws.onlineUserConnNum.Load(),
+	)
+}
 
 // validateRespWithRequest checks if the response matches the expected userID and platformID.
 // func (ws *WsServer) validateRespWithRequest(ctx *UserConnContext, resp *pbAuth.ParseTokenResp) error {
@@ -512,6 +512,11 @@ func (ws *WsServer) wsHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve a client object from the client pool, reset its state, and associate it with the current WebSocket long connection
 	client := ws.clientPool.Get().(*Client)
 	client.ResetClient(connContext, wsLongConn)
+
+	wsLongConn.conn.SetCloseHandler(func(code int, text string) error {
+		ws.unregisterChan <- client
+		return nil
+	})
 
 	// Register the client with the server and start message processing
 	ws.registerChan <- client

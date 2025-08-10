@@ -58,8 +58,8 @@ func (s *userServiceImpl) GetUserIDsFromConv(ctx context.Context, convID string)
 
 	switch convIDParts[0] {
 	case "0": // 单聊
-		if len(convIDParts) == 3 {
-			return convIDParts[1:3], nil
+		if len(convIDParts) == 4 {
+			return convIDParts[2:4], nil
 		}
 	case "1":
 	}

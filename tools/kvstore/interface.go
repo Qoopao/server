@@ -36,6 +36,7 @@ type KVStore interface {
 	RPop(ctx context.Context, key string) ([]byte, error)
 	LLen(ctx context.Context, key string) (int64, error)
 	LRange(ctx context.Context, key string, start, stop int64) ([][]byte, error)
+	LRem(ctx context.Context, key string, count int64, value []byte) error
 
 	// 集合操作
 	SAdd(ctx context.Context, key string, members ...[]byte) error

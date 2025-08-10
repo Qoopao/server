@@ -39,6 +39,19 @@ message Conversation {
   bool isMsgDestruct = 17;
 }
 
+message ConversationInfo {
+  string conversationID = 1;
+  string ownerUserID = 2;
+  int32 conversationType = 3;  // 0: 单聊 1: 群聊
+  string conversationName = 4;
+  string conversationAvatar = 5;
+  repeated string participantUIDs = 6;
+  repeated string topUIDs = 7;  // 设置置顶的用户id
+  int64 unreadCount = 8;
+  repeated string muteUIDs = 9; // 设置免打扰的用户id
+  repeated string foldUIDs = 10; // 设置折叠的用户id
+}
+
 message ConversationReq {
   string conversationID = 1;
   int32 conversationType = 2;
@@ -336,4 +349,7 @@ service ConversationService {
   rpc GetPinnedConversationIDs(GetPinnedConversationIDsReq) returns (GetPinnedConversationIDsResp);
   rpc ClearUserConversationMsg(ClearUserConversationMsgReq) returns (ClearUserConversationMsgResp);
   rpc UpdateConversationsByUser(UpdateConversationsByUserReq) returns (UpdateConversationsByUserResp);
+
+  rpc FetchConvMessaegList(sdkws.FetchConvMessageListReq) returns(sdkws.FetchConvMessageListResp);
+  rpc FetchUserMessaegList(sdkws.FetchUserMessageListReq) returns(sdkws.FetchUserMessageListResp);
 }
