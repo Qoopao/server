@@ -324,32 +324,32 @@ message UpdateConversationsByUserReq{
 message UpdateConversationsByUserResp{}
 
 service ConversationService {
-  // rpc GetConversation(GetConversationReq) returns (GetConversationResp);
-  // rpc GetSortedConversationList(GetSortedConversationListReq) returns (GetSortedConversationListResp);
-  // rpc GetAllConversations(GetAllConversationsReq) returns (GetAllConversationsResp);
-  // rpc GetConversations(GetConversationsReq) returns (GetConversationsResp);
-  // rpc SetConversation(SetConversationReq) returns (SetConversationResp);
-  // rpc GetRecvMsgNotNotifyUserIDs(GetRecvMsgNotNotifyUserIDsReq) returns (GetRecvMsgNotNotifyUserIDsResp);
-  // rpc CreateSingleChatConversations(CreateSingleChatConversationsReq) returns (CreateSingleChatConversationsResp);
-  // rpc CreateGroupChatConversations(CreateGroupChatConversationsReq) returns (CreateGroupChatConversationsResp);
-  // rpc SetConversationMaxSeq(SetConversationMaxSeqReq) returns (SetConversationMaxSeqResp);
-  // rpc SetConversationMinSeq(SetConversationMinSeqReq) returns (SetConversationMinSeqResp);
-  // rpc GetConversationIDs(GetConversationIDsReq) returns (GetConversationIDsResp);
-  // rpc SetConversations(SetConversationsReq) returns (SetConversationsResp);
-  // rpc GetUserConversationIDsHash(GetUserConversationIDsHashReq) returns (GetUserConversationIDsHashResp);
-  // rpc GetConversationsByConversationID(GetConversationsByConversationIDReq) returns (GetConversationsByConversationIDResp);
-  // rpc GetConversationOfflinePushUserIDs(GetConversationOfflinePushUserIDsReq) returns (GetConversationOfflinePushUserIDsResp);
-  // rpc GetConversationNotReceiveMessageUserIDs(GetConversationNotReceiveMessageUserIDsReq) returns (GetConversationNotReceiveMessageUserIDsResp);
-  // rpc UpdateConversation(UpdateConversationReq) returns (UpdateConversationResp);
-  // rpc GetFullOwnerConversationIDs(GetFullOwnerConversationIDsReq) returns (GetFullOwnerConversationIDsResp);
-  // rpc GetIncrementalConversation(GetIncrementalConversationReq) returns (GetIncrementalConversationResp);
-  // rpc GetOwnerConversation(GetOwnerConversationReq) returns (GetOwnerConversationResp);
-  // rpc GetConversationsNeedClearMsg(GetConversationsNeedClearMsgReq) returns (GetConversationsNeedClearMsgResp);
-  // rpc GetNotNotifyConversationIDs(GetNotNotifyConversationIDsReq) returns (GetNotNotifyConversationIDsResp);
-  // rpc GetPinnedConversationIDs(GetPinnedConversationIDsReq) returns (GetPinnedConversationIDsResp);
-  // rpc ClearUserConversationMsg(ClearUserConversationMsgReq) returns (ClearUserConversationMsgResp);
-  // rpc UpdateConversationsByUser(UpdateConversationsByUserReq) returns (UpdateConversationsByUserResp);
+  rpc GetConversation(GetConversationReq) returns (GetConversationResp);
+  rpc GetSortedConversationList(GetSortedConversationListReq) returns (GetSortedConversationListResp);
+  rpc GetAllConversations(GetAllConversationsReq) returns (GetAllConversationsResp);
+  rpc GetConversations(GetConversationsReq) returns (GetConversationsResp);
+  rpc SetConversation(SetConversationReq) returns (SetConversationResp);
+  rpc GetRecvMsgNotNotifyUserIDs(GetRecvMsgNotNotifyUserIDsReq) returns (GetRecvMsgNotNotifyUserIDsResp);
+  rpc CreateSingleChatConversations(CreateSingleChatConversationsReq) returns (CreateSingleChatConversationsResp);
+  rpc CreateGroupChatConversations(CreateGroupChatConversationsReq) returns (CreateGroupChatConversationsResp);
+  rpc SetConversationMaxSeq(SetConversationMaxSeqReq) returns (SetConversationMaxSeqResp);
+  rpc SetConversationMinSeq(SetConversationMinSeqReq) returns (SetConversationMinSeqResp);
+  rpc GetConversationIDs(GetConversationIDsReq) returns (GetConversationIDsResp);
+  rpc SetConversations(SetConversationsReq) returns (SetConversationsResp);
+  rpc GetUserConversationIDsHash(GetUserConversationIDsHashReq) returns (GetUserConversationIDsHashResp);
+  rpc GetConversationsByConversationID(GetConversationsByConversationIDReq) returns (GetConversationsByConversationIDResp);
+  rpc GetConversationOfflinePushUserIDs(GetConversationOfflinePushUserIDsReq) returns (GetConversationOfflinePushUserIDsResp);
+  rpc GetConversationNotReceiveMessageUserIDs(GetConversationNotReceiveMessageUserIDsReq) returns (GetConversationNotReceiveMessageUserIDsResp);
+  rpc UpdateConversation(UpdateConversationReq) returns (UpdateConversationResp);
+  rpc GetFullOwnerConversationIDs(GetFullOwnerConversationIDsReq) returns (GetFullOwnerConversationIDsResp);
+  rpc GetIncrementalConversation(GetIncrementalConversationReq) returns (GetIncrementalConversationResp);
+  rpc GetOwnerConversation(GetOwnerConversationReq) returns (GetOwnerConversationResp);
+  rpc GetConversationsNeedClearMsg(GetConversationsNeedClearMsgReq) returns (GetConversationsNeedClearMsgResp);
+  rpc GetNotNotifyConversationIDs(GetNotNotifyConversationIDsReq) returns (GetNotNotifyConversationIDsResp);
+  rpc GetPinnedConversationIDs(GetPinnedConversationIDsReq) returns (GetPinnedConversationIDsResp);
+  rpc ClearUserConversationMsg(ClearUserConversationMsgReq) returns (ClearUserConversationMsgResp);
+  rpc UpdateConversationsByUser(UpdateConversationsByUserReq) returns (UpdateConversationsByUserResp);
 
-  rpc FetchConvMessageList(sdkws.FetchConvMessageListReq) returns(sdkws.FetchConvMessageListResp);
-  rpc FetchUserMessageList(sdkws.FetchUserMessageListReq) returns(sdkws.FetchUserMessageListResp);
+  rpc FetchConvMessaegList(sdkws.FetchConvMessageListReq) returns(sdkws.FetchConvMessageListResp);
+  rpc FetchUserMessaegList(sdkws.FetchUserMessageListReq) returns(sdkws.FetchUserMessageListResp);
 }

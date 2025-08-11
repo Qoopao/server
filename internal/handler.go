@@ -1,16 +1,13 @@
-package conversation
+package main
 
 import (
 	"context"
 	conversation "github.com/roc/roc-im-server/internal/kitex_gen/conversation"
 	sdkws "github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
-	"github.com/roc/roc-im-server/pkg/common/storage/controller"
 )
 
 // ConversationServiceImpl implements the last service interface defined in the IDL.
-type ConversationServiceImpl struct {
-	messageDB controller.CommonMsgDatabase
-}
+type ConversationServiceImpl struct{}
 
 // GetConversation implements the ConversationServiceImpl interface.
 func (s *ConversationServiceImpl) GetConversation(ctx context.Context, req *conversation.GetConversationReq) (resp *conversation.GetConversationResp, err error) {
@@ -165,11 +162,11 @@ func (s *ConversationServiceImpl) UpdateConversationsByUser(ctx context.Context,
 // FetchConvMessaegList implements the ConversationServiceImpl interface.
 func (s *ConversationServiceImpl) FetchConvMessaegList(ctx context.Context, req *sdkws.FetchConvMessageListReq) (resp *sdkws.FetchConvMessageListResp, err error) {
 	// TODO: Your code here...
-	return s.fetchConvMessaegList(ctx, req)
+	return
 }
 
 // FetchUserMessaegList implements the ConversationServiceImpl interface.
 func (s *ConversationServiceImpl) FetchUserMessaegList(ctx context.Context, req *sdkws.FetchUserMessageListReq) (resp *sdkws.FetchUserMessageListResp, err error) {
 	// TODO: Your code here...
-	return s.fetchUserMessaegList(ctx, req)
+	return
 }

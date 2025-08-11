@@ -8,8 +8,6 @@ import (
 	"context"
 	"encoding/json"
 
-	// "github.com/cloudwego/kitex/client"
-	// "github.com/cloudwego/kitex/transport"
 	"github.com/openimsdk/tools/errs"
 	"github.com/roc/roc-im-server/internal/kitex_gen/conversation/conversationservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
@@ -81,7 +79,7 @@ func (g *messageHandler) GetConvMsgList(ctx context.Context, data *sdkws.SdkWSRe
 		return nil, errs.WrapMsg(err, "GetConvMsgList: error unmarshaling message data", "action", "unmarshal", "dataType", "FetchConvMessageListReq")
 	}
 
-	if response, err = g.convClient.FetchConvMessageList(ctx, request); err != nil {
+	if response, err = g.convClient.FetchConvMessaegList(ctx, request); err != nil {
 		return nil, errs.WrapMsg(err, "GetConvMsgList: error fetching conversation message list", "action", "fetch", "dataType", "FetchConvMessageListResp")
 	}
 
@@ -104,7 +102,7 @@ func (g *messageHandler) GetUserMsgList(ctx context.Context, data *sdkws.SdkWSRe
 		return nil, errs.WrapMsg(err, "GetUserMsgList: error unmarshaling message data", "action", "unmarshal", "dataType", "FetchUserMessageListReq")
 	}
 
-	if response, err = g.convClient.FetchUserMessageList(ctx, request); err != nil {
+	if response, err = g.convClient.FetchUserMessaegList(ctx, request); err != nil {
 		return nil, errs.WrapMsg(err, "GetUserMsgList: error fetching user message list", "action", "fetch", "dataType", "FetchUserMessageListResp")
 	}
 
