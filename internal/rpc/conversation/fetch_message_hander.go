@@ -7,8 +7,8 @@ import (
 	sdkws "github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 )
 
-func (s *ConversationServiceImpl) fetchConvMessaegList(ctx context.Context, req *sdkws.FetchConvMessageListReq) (resp *sdkws.FetchConvMessageListResp, err error) {
-	msgList, haveMore, err := s.messageDB.GetConvMessageList(ctx, req.ConvID, req.Cursor, req.Limit, req.Forward)
+func (s *ConversationServiceImpl) fetchConvMessageList(ctx context.Context, req *sdkws.FetchConvMessageListReq) (resp *sdkws.FetchConvMessageListResp, err error) {
+	msgList, haveMore, err := s.MessageDB.GetConvMessageList(ctx, req.ConvID, req.Cursor, req.Limit, req.Forward)
 	if err != nil {
 		return nil, err
 	}
@@ -21,7 +21,7 @@ func (s *ConversationServiceImpl) fetchConvMessaegList(ctx context.Context, req 
 	return resp, nil
 }
 
-func (s *ConversationServiceImpl) fetchUserMessaegList(ctx context.Context, req *sdkws.FetchUserMessageListReq) (resp *sdkws.FetchUserMessageListResp, err error) {
+func (s *ConversationServiceImpl) fetchUserMessageList(ctx context.Context, req *sdkws.FetchUserMessageListReq) (resp *sdkws.FetchUserMessageListResp, err error) {
 	//1、获取有哪些会话
 	//2、获取会话消息
 	//3、获取会话信息
@@ -32,18 +32,20 @@ func (s *ConversationServiceImpl) fetchUserMessaegList(ctx context.Context, req 
 	)
 
 	// 获取有哪些会话
-	convList, haveMore, err = s.messageDB.GetUserConvList(ctx, req.UserID, req.Cursor, req.Limit, req.Forward)
+	convList, haveMore, err = s.MessageDB.GetUserConvList(ctx, req.UserID, req.Cursor, req.Limit, req.Forward)
 
 	for _, convID := range convList {
 		// 获取会话信息
-		serverConv, _ := s.messageDB.GetConversationInfo(ctx, convID)
+		serverConv, _ := s.MessageDB.GetConversationInfo(ctx, convID)
 		sdkConv, _ := convertServerConvToSDKConv(serverConv)
 
 		// 获取会话消息
-		msgList, _, _ := s.messageDB.GetConvMessageList(ctx, convID, -1, 10, true)
+		msgList, _, _ := s.MessageDB.GetConvMessageList(ctx, convID, -1, 10, true)
 		setConvMessages(msgList, sdkConv)
 
-		convsInfo = append(convsInfo, sdkConv)
+		if sdkConv != nil {
+			convsInfo = append(convsInfo, sdkConv)
+		}
 	}
 
 	if err != nil {
@@ -69,7 +71,7 @@ func convertServerConvToSDKConv(conv *conversation.ConversationInfo) (*sdkws.Con
 }
 
 func setConvMessages(messages []*sdkws.MsgData, sdkConv *sdkws.ConversationInfo) {
-	if len(messages) == 0 {
+	if len(messages) == 0 || sdkConv == nil {
 		return
 	}
 

@@ -80,8 +80,19 @@ func (c *Client) ResetClient(ctx *UserConnContext, conn LongConn) {
 	}
 	c.subUserIDs = make(map[string]struct{})
 
-	msgRpc, _ := messageservice.NewClient("example_service", client.WithHostPorts("0.0.0.0:10100"), client.WithTransportProtocol(transport.GRPC))
-	convRpc, _ := conversationservice.NewClient("example_service", client.WithHostPorts("0.0.0.0:10200"), client.WithTransportProtocol(transport.GRPC))
+	var (
+		err error
+	)
+	msgRpc, err := messageservice.NewClient("message_service", client.WithHostPorts("0.0.0.0:10100"), client.WithTransportProtocol(transport.GRPC))
+	if err != nil {
+		log.ZDebug(ctx, "msgGrpc connect error")
+	}
+
+	convRpc, err := conversationservice.NewClient("convsation_service", client.WithHostPorts("0.0.0.0:10200"), client.WithTransportProtocol(transport.GRPC))
+	if err != nil {
+		log.ZDebug(ctx, "convRpc connect error")
+	}
+
 	c.messsageHandler = NewMessageHandler(msgRpc, convRpc)
 }
 
