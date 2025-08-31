@@ -1110,7 +1110,7 @@ func (x *UserSendMsgResp) GetSendTime() int64 {
 type MsgData struct {
 	SendID           string           `protobuf:"bytes,1,opt,name=sendID" json:"sendID,omitempty"`                                                                               // 发送者用户ID
 	RecvID           string           `protobuf:"bytes,2,opt,name=recvID" json:"recvID,omitempty"`                                                                               // 接收者用户ID (单聊时使用)
-	ConvID           string           `protobuf:"bytes,3,opt,name=convID" json:"convID,omitempty"`                                                                               // 群组ID (群聊时使用)
+	ConvID           string           `protobuf:"bytes,3,opt,name=convID" json:"convID,omitempty"`                                                                               // 会话ID (群聊时使用)
 	ClientMsgID      string           `protobuf:"bytes,4,opt,name=clientMsgID" json:"clientMsgID,omitempty"`                                                                     // 客户端生成的消息ID
 	ServerMsgID      string           `protobuf:"bytes,5,opt,name=serverMsgID" json:"serverMsgID,omitempty"`                                                                     // 服务器生成的消息ID
 	SenderPlatformID int32            `protobuf:"varint,6,opt,name=senderPlatformID" json:"senderPlatformID,omitempty"`                                                          // 发送者平台ID (1:iOS 2:Android 3:Windows 4:Mac 5:Web)
@@ -1120,23 +1120,21 @@ type MsgData struct {
 	MsgFrom          int32            `protobuf:"varint,10,opt,name=msgFrom" json:"msgFrom,omitempty"`                                                                           // 消息来源 (100:用户 200:系统)
 	ContentType      int32            `protobuf:"varint,11,opt,name=contentType" json:"contentType,omitempty"`                                                                   // 消息内容类型 (101:文本 102:图片 103:语音 104:视频 105:文件 106:位置 107:合并 108:名片 109:通知)
 	Content          []byte           `protobuf:"bytes,12,opt,name=content" json:"content,omitempty"`                                                                            // 消息内容 (JSON格式的字节数组)
-	Seq              int64            `protobuf:"varint,14,opt,name=seq" json:"seq,omitempty"`                                                                                   // 消息序列号
-	SendTime         int64            `protobuf:"varint,15,opt,name=sendTime" json:"sendTime,omitempty"`                                                                         // 消息发送时间戳
-	CreateTime       int64            `protobuf:"varint,16,opt,name=createTime" json:"createTime,omitempty"`                                                                     // 消息创建时间戳
-	Status           int32            `protobuf:"varint,17,opt,name=status" json:"status,omitempty"`                                                                             // 消息状态 (1:发送中 2:发送成功 3:发送失败 4:已删除 5:已撤回)
-	IsRead           bool             `protobuf:"varint,18,opt,name=isRead" json:"isRead,omitempty"`                                                                             // 是否已读
-	Options          map[string]bool  `protobuf:"bytes,19,rep,name=options" json:"options,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"` // 消息选项 (如: 是否存储历史记录、是否推送等)
-	OfflinePushInfo  *OfflinePushInfo `protobuf:"bytes,20,opt,name=offlinePushInfo" json:"offlinePushInfo,omitempty"`                                                            // 离线推送信息
-	AtUserIDList     []string         `protobuf:"bytes,21,rep,name=atUserIDList" json:"atUserIDList,omitempty"`                                                                  // @用户ID列表
-	AttachedInfo     string           `protobuf:"bytes,22,opt,name=attachedInfo" json:"attachedInfo,omitempty"`                                                                  // 附加信息
-	Ext              string           `protobuf:"bytes,23,opt,name=ext" json:"ext,omitempty"`                                                                                    // 扩展字段
-	IsDeleted        bool             `protobuf:"varint,24,opt,name=isDeleted" json:"isDeleted,omitempty"`                                                                       // 是否已删除
-	IsRecalled       bool             `protobuf:"varint,25,opt,name=isRecalled" json:"isRecalled,omitempty"`                                                                     // 是否已撤回
-	IsPinned         bool             `protobuf:"varint,26,opt,name=isPinned" json:"isPinned,omitempty"`                                                                         // 是否已置顶
-	IsGroupMsg       bool             `protobuf:"varint,27,opt,name=isGroupMsg" json:"isGroupMsg,omitempty"`                                                                     // 是否是群消息
-	ClientSendTime   int64            `protobuf:"varint,29,opt,name=clientSendTime" json:"clientSendTime,omitempty"`                                                             // 客户端消息发送时间戳
-	ServerSendTime   int64            `protobuf:"varint,30,opt,name=serverSendTime" json:"serverSendTime,omitempty"`                                                             // 服务端消息发送时间戳
-	SyncExt          string           `protobuf:"bytes,31,opt,name=syncExt" json:"syncExt,omitempty"`                                                                            // 同步扩展字段
+	Seq              int64            `protobuf:"varint,13,opt,name=seq" json:"seq,omitempty"`                                                                                   // 消息序列号
+	SendTime         float64          `protobuf:"fixed64,14,opt,name=sendTime" json:"sendTime,omitempty"`                                                                        // 消息发送时间戳
+	Status           int32            `protobuf:"varint,15,opt,name=status" json:"status,omitempty"`                                                                             // 消息状态 (1:发送中 2:发送成功 3:发送失败 4:已删除 5:已撤回)
+	IsRead           bool             `protobuf:"varint,16,opt,name=isRead" json:"isRead,omitempty"`                                                                             // 是否已读
+	Options          map[string]bool  `protobuf:"bytes,17,rep,name=options" json:"options,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"` // 消息选项 (如: 是否存储历史记录、是否推送等)
+	OfflinePushInfo  *OfflinePushInfo `protobuf:"bytes,18,opt,name=offlinePushInfo" json:"offlinePushInfo,omitempty"`                                                            // 离线推送信息
+	AtUserIDList     []string         `protobuf:"bytes,19,rep,name=atUserIDList" json:"atUserIDList,omitempty"`                                                                  // @用户ID列表
+	AttachedInfo     string           `protobuf:"bytes,20,opt,name=attachedInfo" json:"attachedInfo,omitempty"`                                                                  // 附加信息
+	Ext              string           `protobuf:"bytes,21,opt,name=ext" json:"ext,omitempty"`                                                                                    // 扩展字段
+	IsDeleted        bool             `protobuf:"varint,22,opt,name=isDeleted" json:"isDeleted,omitempty"`                                                                       // 是否已删除
+	IsRecalled       bool             `protobuf:"varint,23,opt,name=isRecalled" json:"isRecalled,omitempty"`                                                                     // 是否已撤回
+	IsPinned         bool             `protobuf:"varint,24,opt,name=isPinned" json:"isPinned,omitempty"`                                                                         // 是否已置顶
+	IsGroupMsg       bool             `protobuf:"varint,25,opt,name=isGroupMsg" json:"isGroupMsg,omitempty"`                                                                     // 是否是群消息
+	SyncExt          string           `protobuf:"bytes,26,opt,name=syncExt" json:"syncExt,omitempty"`                                                                            // 同步扩展字段
+	DStatus          int32            `protobuf:"varint,27,opt,name=dStatus" json:"dStatus,omitempty"`                                                                           // 状态， 二进制掩码  0：实时消息 1：离线消息（没有被接收过） 2：消息更新
 }
 
 func (x *MsgData) Reset() { *x = MsgData{} }
@@ -1236,16 +1234,9 @@ func (x *MsgData) GetSeq() int64 {
 	return 0
 }
 
-func (x *MsgData) GetSendTime() int64 {
+func (x *MsgData) GetSendTime() float64 {
 	if x != nil {
 		return x.SendTime
-	}
-	return 0
-}
-
-func (x *MsgData) GetCreateTime() int64 {
-	if x != nil {
-		return x.CreateTime
 	}
 	return 0
 }
@@ -1327,25 +1318,18 @@ func (x *MsgData) GetIsGroupMsg() bool {
 	return false
 }
 
-func (x *MsgData) GetClientSendTime() int64 {
-	if x != nil {
-		return x.ClientSendTime
-	}
-	return 0
-}
-
-func (x *MsgData) GetServerSendTime() int64 {
-	if x != nil {
-		return x.ServerSendTime
-	}
-	return 0
-}
-
 func (x *MsgData) GetSyncExt() string {
 	if x != nil {
 		return x.SyncExt
 	}
 	return ""
+}
+
+func (x *MsgData) GetDStatus() int32 {
+	if x != nil {
+		return x.DStatus
+	}
+	return 0
 }
 
 // 发送消息 --------------------------------
@@ -1435,7 +1419,9 @@ func (x *PushMessages) GetMsgs() []*MessageUnion {
 }
 
 type CmdMessage struct {
-	Cmd int32 `protobuf:"varint,1,opt,name=cmd" json:"cmd,omitempty"`
+	Cmd      int32             `protobuf:"varint,1,opt,name=cmd" json:"cmd,omitempty"`
+	Msg      *MsgData          `protobuf:"bytes,2,opt,name=msg" json:"msg,omitempty"`
+	ConvInfo *ConversationInfo `protobuf:"bytes,3,opt,name=convInfo" json:"convInfo,omitempty"`
 }
 
 func (x *CmdMessage) Reset() { *x = CmdMessage{} }
@@ -1449,6 +1435,20 @@ func (x *CmdMessage) GetCmd() int32 {
 		return x.Cmd
 	}
 	return 0
+}
+
+func (x *CmdMessage) GetMsg() *MsgData {
+	if x != nil {
+		return x.Msg
+	}
+	return nil
+}
+
+func (x *CmdMessage) GetConvInfo() *ConversationInfo {
+	if x != nil {
+		return x.ConvInfo
+	}
+	return nil
 }
 
 type MessageUnion struct {
@@ -1722,8 +1722,9 @@ func (x *ConversationInfo) GetSyncExt() string {
 
 type FetchUserMessageListResp struct {
 	ConvsInfo []*ConversationInfo `protobuf:"bytes,1,rep,name=convsInfo" json:"convsInfo,omitempty"`
-	Cursor    int64               `protobuf:"varint,2,opt,name=cursor" json:"cursor,omitempty"`
-	HasMore   bool                `protobuf:"varint,3,opt,name=hasMore" json:"hasMore,omitempty"`
+	Start     int64               `protobuf:"varint,2,opt,name=start" json:"start,omitempty"` // 左右闭合
+	Stop      int64               `protobuf:"varint,3,opt,name=stop" json:"stop,omitempty"`
+	HasMore   bool                `protobuf:"varint,4,opt,name=hasMore" json:"hasMore,omitempty"`
 }
 
 func (x *FetchUserMessageListResp) Reset() { *x = FetchUserMessageListResp{} }
@@ -1741,9 +1742,16 @@ func (x *FetchUserMessageListResp) GetConvsInfo() []*ConversationInfo {
 	return nil
 }
 
-func (x *FetchUserMessageListResp) GetCursor() int64 {
+func (x *FetchUserMessageListResp) GetStart() int64 {
 	if x != nil {
-		return x.Cursor
+		return x.Start
+	}
+	return 0
+}
+
+func (x *FetchUserMessageListResp) GetStop() int64 {
+	if x != nil {
+		return x.Stop
 	}
 	return 0
 }

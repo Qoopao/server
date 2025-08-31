@@ -9,7 +9,7 @@ import (
 
 // ConversationServiceImpl implements the last service interface defined in the IDL.
 type ConversationServiceImpl struct {
-	messageDB controller.CommonMsgDatabase
+	MessageDB controller.CommonMsgDatabase
 }
 
 // GetConversation implements the ConversationServiceImpl interface.

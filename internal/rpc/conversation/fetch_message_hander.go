@@ -2,13 +2,14 @@ package conversation
 
 import (
 	"context"
+	"errors"
 
 	conversation "github.com/roc/roc-im-server/internal/kitex_gen/conversation"
 	sdkws "github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 )
 
 func (s *ConversationServiceImpl) fetchConvMessaegList(ctx context.Context, req *sdkws.FetchConvMessageListReq) (resp *sdkws.FetchConvMessageListResp, err error) {
-	msgList, haveMore, err := s.messageDB.GetConvMessageList(ctx, req.ConvID, req.Cursor, req.Limit, req.Forward)
+	msgList, haveMore, err := s.MessageDB.GetConvMessageList(ctx, req.ConvID, req.Cursor, req.Limit, req.Forward)
 	if err != nil {
 		return nil, err
 	}
@@ -26,24 +27,32 @@ func (s *ConversationServiceImpl) fetchUserMessaegList(ctx context.Context, req 
 	//2、获取会话消息
 	//3、获取会话信息
 	var (
-		convList  []string
+		cursor    = req.Cursor
 		haveMore  bool
+		convList  []string
 		convsInfo []*sdkws.ConversationInfo
+		start     int64
+		stop      int64
 	)
 
 	// 获取有哪些会话
-	convList, haveMore, err = s.messageDB.GetUserConvList(ctx, req.UserID, req.Cursor, req.Limit, req.Forward)
+	if req.News {
+		cursor = -1
+	}
+	convList, haveMore, start, stop, err = s.MessageDB.GetUserConvList(ctx, req.UserID, cursor, req.Limit, req.Forward)
 
 	for _, convID := range convList {
 		// 获取会话信息
-		serverConv, _ := s.messageDB.GetConversationInfo(ctx, convID)
+		serverConv, _ := s.MessageDB.GetConversationInfo(ctx, convID)
 		sdkConv, _ := convertServerConvToSDKConv(serverConv)
 
 		// 获取会话消息
-		msgList, _, _ := s.messageDB.GetConvMessageList(ctx, convID, -1, 10, true)
+		msgList, _, _ := s.MessageDB.GetConvMessageList(ctx, convID, -1, 10, true)
 		setConvMessages(msgList, sdkConv)
 
-		convsInfo = append(convsInfo, sdkConv)
+		if sdkConv != nil {
+			convsInfo = append(convsInfo, sdkConv)
+		}
 	}
 
 	if err != nil {
@@ -53,12 +62,18 @@ func (s *ConversationServiceImpl) fetchUserMessaegList(ctx context.Context, req 
 	resp = &sdkws.FetchUserMessageListResp{
 		HasMore:   haveMore,
 		ConvsInfo: convsInfo,
+		Start:     start,
+		Stop:      stop,
 	}
 
 	return resp, nil
 }
 
 func convertServerConvToSDKConv(conv *conversation.ConversationInfo) (*sdkws.ConversationInfo, error) {
+	if conv == nil {
+		return nil, errors.New("conv is nil")
+	}
+
 	return &sdkws.ConversationInfo{
 		ConvID:      conv.ConversationID,
 		OwnerUserID: conv.OwnerUserID,
@@ -69,9 +84,11 @@ func convertServerConvToSDKConv(conv *conversation.ConversationInfo) (*sdkws.Con
 }
 
 func setConvMessages(messages []*sdkws.MsgData, sdkConv *sdkws.ConversationInfo) {
-	if len(messages) == 0 {
+	if len(messages) == 0 || sdkConv == nil {
 		return
 	}
+
+	lastMsg := messages[len(messages)-1]
 
 	sdkConv.Msgs = make([]*sdkws.MessageUnion, 0)
 	for _, message := range messages {
@@ -80,7 +97,11 @@ func setConvMessages(messages []*sdkws.MsgData, sdkConv *sdkws.ConversationInfo)
 			Msg:    message,
 			CmdMsg: nil,
 		})
+
+		if message.Seq > lastMsg.Seq {
+			lastMsg = message
+		}
 	}
 
-	sdkConv.LastMsg = messages[len(messages)-1]
+	sdkConv.LastMsg = lastMsg
 }

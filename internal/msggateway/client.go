@@ -20,7 +20,6 @@ import (
 	"github.com/roc/roc-im-server/internal/kitex_gen/conversation/conversationservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
-	"github.com/roc/roc-im-server/protocol/constant"
 )
 
 var (
@@ -183,6 +182,7 @@ func (c *Client) handleMessage(message []byte) error {
 
 	case WSSendMessage:
 		resp, err = c.messsageHandler.SendMessage(ctx, sdkwsReq)
+		println("send message reply")
 
 	case WSPullConvMsgList:
 		resp, err = c.messsageHandler.GetConvMsgList(ctx, sdkwsReq)
@@ -230,6 +230,7 @@ func (c *Client) replyMessage(ctx context.Context, resp []byte) error {
 }
 
 func (c *Client) PushMessage(ctx context.Context, msgData *sdkws.MsgData) error {
+	msgData.DStatus = 1 // 实时消息
 	msg := sdkws.PushMessages{
 		Msgs: []*sdkws.MessageUnion{{Msg: msgData, IsCmd: false}},
 	}
@@ -242,7 +243,7 @@ func (c *Client) PushMessage(ctx context.Context, msgData *sdkws.MsgData) error 
 
 	resp := sdkws.SdkWSResp{
 		Data: data,
-		Type: 4001,
+		Type: 104,
 	}
 
 	respBinary, _ := resp.Marshal(nil)
@@ -338,18 +339,5 @@ func (c *Client) handlerTextMessage(b []byte) error {
 		return c.conn.WriteMessage(MessageText, msgData)
 	default:
 		return fmt.Errorf("not support message type %s", msg.Type)
-	}
-}
-
-func mockMsg() *sdkws.MsgData {
-	return &sdkws.MsgData{
-		ClientMsgID: "mockClientMsgID",
-		ServerMsgID: "mockServerMsgID",
-		SendTime:    time.Now().Unix(),
-		SendID:      "RhpUserID",
-		RecvID:      "RhpUserID",
-		ContentType: constant.Text,
-		SessionType: constant.SingleChatType,
-		Content:     []byte("mockContent"),
 	}
 }

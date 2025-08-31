@@ -8,6 +8,7 @@ import (
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/roc/roc-im-server/internal/msgconsumer"
 	"github.com/roc/roc-im-server/internal/msggateway"
+	convRpc "github.com/roc/roc-im-server/internal/rpc/conversation"
 	msgRpc "github.com/roc/roc-im-server/internal/rpc/msg"
 	"github.com/roc/roc-im-server/test/redis"
 	// "github.com/roc/roc-im-server/test/kafaka"
@@ -68,6 +69,11 @@ func main() {
 	// 开启 message_rpc
 	go func() {
 		msgRpc.Start()
+	}()
+
+	// 开启 conversation_rpc
+	go func() {
+		convRpc.Start()
 	}()
 
 	// go func() {

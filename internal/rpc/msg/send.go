@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/openimsdk/tools/errs"
+	"github.com/roc/roc-im-server/internal/kitex_gen/conversation"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 )
 
@@ -56,6 +57,13 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 			continue
 		}
 
+		// 如果没有会话则创建会话
+		if err := s.createConversationIfNeed(ctx, msg); err != nil {
+			respInfos[index].ErrorCode = "1"
+			respInfos[index].ErrorMsg = err.Error()
+			continue
+		}
+
 		// 转发消息到MQ
 		if err := s.MsgDatabase.MsgToMQ(ctx, msg.SendID, msg.ServerMsgID); err != nil {
 			respInfos[index].ErrorCode = "1"
@@ -71,4 +79,24 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 		Infos: respInfos,
 	}
 	return resp, nil
+}
+
+func (s *MessageServiceImpl) createConversationIfNeed(ctx context.Context, msg *sdkws.MsgData) error {
+	conv, _ := s.MsgDatabase.GetConversationInfo(ctx, msg.ConvID)
+
+	if conv == nil {
+		conv = &conversation.ConversationInfo{
+			ConversationID:     msg.ConvID,
+			OwnerUserID:        msg.SendID,
+			ConversationType:   0,
+			ConversationName:   "",
+			ConversationAvatar: "",
+		}
+
+	}
+
+	// TODO: 修改会话的最后一条消息
+
+	// TODO: 扩展到群聊
+	return s.MsgDatabase.SaveConversationInfo(ctx, msg.ConvID, conv)
 }

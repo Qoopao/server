@@ -226,35 +226,33 @@ message UserSendMsgResp {
 // MsgData 消息数据
 // 包含消息的完整信息，是系统中最核心的消息结构
 message MsgData {
-  string sendID = 1;                    // 发送者用户ID
-  string recvID = 2;                    // 接收者用户ID (单聊时使用)
-  string convID = 3;                   // 群组ID (群聊时使用)
-  string clientMsgID = 4;               // 客户端生成的消息ID
-  string serverMsgID = 5;               // 服务器生成的消息ID
-  int32 senderPlatformID = 6;           // 发送者平台ID (1:iOS 2:Android 3:Windows 4:Mac 5:Web)
-  string senderNickname = 7;            // 发送者昵称
-  string senderFaceURL = 8;             // 发送者头像URL
-  int32 sessionType = 9;                // 会话类型 (1:单聊 2:群聊 3:系统通知)
-  int32 msgFrom = 10;                   // 消息来源 (100:用户 200:系统)
-  int32 contentType = 11;               // 消息内容类型 (101:文本 102:图片 103:语音 104:视频 105:文件 106:位置 107:合并 108:名片 109:通知)
-  bytes content = 12;                   // 消息内容 (JSON格式的字节数组)
-  int64 seq = 14;                       // 消息序列号
-  int64 sendTime = 15;                  // 消息发送时间戳
-  int64 createTime = 16;                // 消息创建时间戳
-  int32 status = 17;                    // 消息状态 (1:发送中 2:发送成功 3:发送失败 4:已删除 5:已撤回)
-  bool isRead = 18;                     // 是否已读
-  map<string, bool> options = 19;       // 消息选项 (如: 是否存储历史记录、是否推送等)
-  OfflinePushInfo offlinePushInfo = 20; // 离线推送信息
-  repeated string atUserIDList = 21;    // @用户ID列表
-  string attachedInfo = 22;             // 附加信息
-  string ext = 23;                       // 扩展字段
-  bool isDeleted = 24;                  // 是否已删除
-  bool isRecalled = 25;                 // 是否已撤回
-  bool isPinned = 26;                   // 是否已置顶
-  bool isGroupMsg = 27;                 // 是否是群消息
-  int64 clientSendTime = 29;            // 客户端消息发送时间戳
-  int64 serverSendTime = 30;            // 服务端消息发送时间戳
-  string syncExt = 31;     // 同步扩展字段
+  string sendID                    = 1; // 发送者用户ID
+  string recvID                    = 2; // 接收者用户ID (单聊时使用)
+  string convID                    = 3; // 会话ID (群聊时使用)
+  string clientMsgID               = 4; // 客户端生成的消息ID
+  string serverMsgID               = 5; // 服务器生成的消息ID
+  int32 senderPlatformID           = 6; // 发送者平台ID (1:iOS 2:Android 3:Windows 4:Mac 5:Web)
+  string senderNickname            = 7; // 发送者昵称
+  string senderFaceURL             = 8; // 发送者头像URL
+  int32 sessionType                = 9; // 会话类型 (1:单聊 2:群聊 3:系统通知)
+  int32 msgFrom                    = 10; // 消息来源 (100:用户 200:系统)
+  int32 contentType                = 11; // 消息内容类型 (101:文本 102:图片 103:语音 104:视频 105:文件 106:位置 107:合并 108:名片 109:通知)
+  bytes content                    = 12; // 消息内容 (JSON格式的字节数组)
+  int64 seq                        = 13; // 消息序列号
+  double sendTime                  = 14; // 消息发送时间戳
+  int32 status                     = 15; // 消息状态 (1:发送中 2:发送成功 3:发送失败 4:已删除 5:已撤回)
+  bool isRead                      = 16; // 是否已读
+  map<string, bool> options        = 17; // 消息选项 (如: 是否存储历史记录、是否推送等)
+  OfflinePushInfo offlinePushInfo  = 18; // 离线推送信息
+  repeated string atUserIDList     = 19; // @用户ID列表
+  string attachedInfo              = 20; // 附加信息
+  string ext                       = 21; // 扩展字段
+  bool isDeleted                   = 22; // 是否已删除
+  bool isRecalled                  = 23; // 是否已撤回
+  bool isPinned                    = 24; // 是否已置顶
+  bool isGroupMsg                  = 25; // 是否是群消息
+  string syncExt                   = 26; // 同步扩展字段
+  int32 dStatus                    = 27; // 状态， 二进制掩码  0：实时消息 1：离线消息（没有被接收过） 2：消息更新
 }
 
 // 发送消息 --------------------------------
@@ -280,7 +278,9 @@ message PushMessages {
 }
 
 message CmdMessage {
-  int32 cmd = 1;
+  int32 cmd                 = 1;
+  MsgData msg               = 2;
+  ConversationInfo convInfo = 3;
 }
 
 message MessageUnion {
@@ -331,8 +331,9 @@ message ConversationInfo {
 
 message FetchUserMessageListResp {
   repeated ConversationInfo convsInfo = 1;
-  int64 cursor = 2;
-  bool hasMore = 3;
+  int64 start = 2; // 左右闭合
+  int64 stop = 3;
+  bool hasMore = 4;
 }
 // --------------------------------------------
 
@@ -345,6 +346,7 @@ message SdkWSReq {
   bytes data = 5; // 数据
   int32 type = 6; // 请求类型
   // 101: 发送消息  102：拉取单链  103：拉取混链
+  // 104: 下推用户消息  105: 下推命令消息
 }
 
 message SdkWSResp {

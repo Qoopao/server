@@ -17,6 +17,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"sort"
 
 	"github.com/roc/roc-im-server/internal/kitex_gen/conversation"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
@@ -41,7 +42,7 @@ type CommonMsgDatabase interface {
 	GetConvMessageList(ctx context.Context, conversationID string, cursor int64, limit int64, forward bool) ([]*sdkws.MsgData, bool, error)
 
 	UpdateUserConvList(ctx context.Context, userID string, conversationID string) error
-	GetUserConvList(ctx context.Context, userID string, cursor int64, limit int64, forward bool) ([]string, bool, error)
+	GetUserConvList(ctx context.Context, userID string, cursor int64, limit int64, forward bool) ([]string, bool, int64 /*start*/, int64 /*stop*/, error)
 
 	SaveConversationInfo(ctx context.Context, conversationID string, conversationInfo *conversation.ConversationInfo) error
 	GetConversationInfo(ctx context.Context, conversationID string) (*conversation.ConversationInfo, error)
@@ -121,6 +122,33 @@ func (db *commonMsgDatabase) UpdateUserConvList(ctx context.Context, userID stri
 	return err
 }
 
+func (db *commonMsgDatabase) GetUserConvList(ctx context.Context, userID string, cursor int64, limit int64, forward bool) ([]string, bool, int64, int64, error) {
+	var (
+		start int64
+		stop  int64
+	)
+
+	length, err := db.kvstore.LLen(ctx, keyForUserConvList(userID))
+	if err != nil {
+		return nil, false, 0, 0, err
+	}
+
+	// 修正区间
+	start, stop = modifyRange(cursor, limit, forward, length)
+
+	convList, err := db.kvstore.LRange(ctx, keyForUserConvList(userID), start, stop)
+	if err != nil {
+		return nil, false, 0, 0, err
+	}
+
+	convStrList := make([]string, 0)
+	for _, conv := range convList {
+		convStrList = append(convStrList, string(conv))
+	}
+
+	return convStrList, true, start, stop, nil
+}
+
 func (db *commonMsgDatabase) GetConvMessageList(ctx context.Context, conversationID string, cursor int64, limit int64, forward bool) ([]*sdkws.MsgData, bool, error) {
 	// todo 参数合法性校验和修正
 	var (
@@ -153,34 +181,30 @@ func (db *commonMsgDatabase) GetConvMessageList(ctx context.Context, conversatio
 		msgDataList = append(msgDataList, msgData)
 	}
 
-	return msgDataList, true, nil
-}
+	// TODO: hasmore 逻辑需要优化
+	hasMore := false
 
-func (db *commonMsgDatabase) GetUserConvList(ctx context.Context, userID string, cursor int64, limit int64, forward bool) ([]string, bool, error) {
-	var (
-		start int64
-		stop  int64
-	)
-
-	length, err := db.kvstore.LLen(ctx, keyForUserConvList(userID))
-	if err != nil {
-		return nil, false, err
+	if len(msgDataList) < int(stop-start+1) {
+		hasMore = true
+		return nil, hasMore, nil
 	}
 
-	// 修正区间
-	start, stop = modifyRange(cursor, limit, forward, length)
-
-	convList, err := db.kvstore.LRange(ctx, keyForUserConvList(userID), start, stop)
-	if err != nil {
-		return nil, false, err
+	/// TODO: delete 收集所有消息的 seq
+	seqList := make([]int64, 0)
+	for _, msg := range msgDataList {
+		seqList = append(seqList, msg.Seq)
+	}
+	sort.Slice(seqList, func(i, j int) bool {
+		return seqList[i] < seqList[j]
+	})
+	// 如果seq 中包含 2
+	for _, msg := range msgDataList {
+		if msg.Seq == 2 {
+			break
+		}
 	}
 
-	convStrList := make([]string, 0)
-	for _, conv := range convList {
-		convStrList = append(convStrList, string(conv))
-	}
-
-	return convStrList, true, nil
+	return msgDataList, hasMore, nil
 }
 
 func (db *commonMsgDatabase) SaveConversationInfo(ctx context.Context, conversationID string, conversationInfo *conversation.ConversationInfo) error {
@@ -244,5 +268,9 @@ func modifyRange(cursor int64, limit int64, forward bool, length int64) (int64, 
 		stop = math.Min(length-1, cursor+limit-1)
 	}
 
+	// 链表下标 = 消息 sqe -1
+	if start > 0 {
+		return start - 1, stop - 1
+	}
 	return start, stop
 }
