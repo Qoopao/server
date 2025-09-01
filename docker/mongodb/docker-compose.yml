@@ -1,0 +1,169 @@
+version: '3.8'
+
+services:
+  # MongoDB 单机版
+  mongodb-standalone:
+    image: mongo:7.0
+    container_name: mongodb-standalone
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongodb123
+      MONGO_INITDB_DATABASE: test
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    restart: unless-stopped
+    networks:
+      - mongodb-network
+
+  # MongoDB 副本集
+  mongodb-1:
+    image: mongo:7.0
+    container_name: mongodb-1
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongodb123
+    volumes:
+      - mongodb_data_1:/data/db
+      - ./replica-init.js:/docker-entrypoint-initdb.d/replica-init.js:ro
+    command: mongod --replSet rs0 --bind_ip_all
+    restart: unless-stopped
+    networks:
+      - mongodb-network
+
+  mongodb-2:
+    image: mongo:7.0
+    container_name: mongodb-2
+    ports:
+      - "27019:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongodb123
+    volumes:
+      - mongodb_data_2:/data/db
+    command: mongod --replSet rs0 --bind_ip_all
+    restart: unless-stopped
+    networks:
+      - mongodb-network
+
+  mongodb-3:
+    image: mongo:7.0
+    container_name: mongodb-3
+    ports:
+      - "27020:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongodb123
+    volumes:
+      - mongodb_data_3:/data/db
+    command: mongod --replSet rs0 --bind_ip_all
+    restart: unless-stopped
+    networks:
+      - mongodb-network
+
+  # MongoDB 分片集群
+  mongos:
+    image: mongo:7.0
+    container_name: mongos
+    ports:
+      - "27021:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongodb123
+    volumes:
+      - ./mongos-init.js:/docker-entrypoint-initdb.d/mongos-init.js:ro
+    command: mongos --configdb configReplSet/mongodb-config-1:27017,mongodb-config-2:27017,mongodb-config-3:27017 --bind_ip_all
+    depends_on:
+      - mongodb-config-1
+      - mongodb-config-2
+      - mongodb-config-3
+    restart: unless-stopped
+    networks:
+      - mongodb-network
+
+  mongodb-config-1:
+    image: mongo:7.0
+    container_name: mongodb-config-1
+    ports:
+      - "27022:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongodb123
+    volumes:
+      - mongodb_config_1:/data/db
+    command: mongod --configsvr --replSet configReplSet --bind_ip_all
+    restart: unless-stopped
+    networks:
+      - mongodb-network
+
+  mongodb-config-2:
+    image: mongo:7.0
+    container_name: mongodb-config-2
+    ports:
+      - "27023:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongodb123
+    volumes:
+      - mongodb_config_2:/data/db
+    command: mongod --configsvr --replSet configReplSet --bind_ip_all
+    restart: unless-stopped
+    networks:
+      - mongodb-network
+
+  mongodb-config-3:
+    image: mongo:7.0
+    container_name: mongodb-config-3
+    ports:
+      - "27024:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongodb123
+    volumes:
+      - mongodb_config_3:/data/db
+    command: mongod --configsvr --replSet configReplSet --bind_ip_all
+    restart: unless-stopped
+    networks:
+      - mongodb-network
+
+  # MongoDB 管理工具
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    ports:
+      - "8082:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: mongodb123
+      ME_CONFIG_MONGODB_URL: mongodb://admin:mongodb123@mongodb-standalone:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    depends_on:
+      - mongodb-standalone
+    restart: unless-stopped
+    networks:
+      - mongodb-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_data_1:
+    driver: local
+  mongodb_data_2:
+    driver: local
+  mongodb_data_3:
+    driver: local
+  mongodb_config_1:
+    driver: local
+  mongodb_config_2:
+    driver: local
+  mongodb_config_3:
+    driver: local
+
+networks:
+  mongodb-network:
+    driver: bridge

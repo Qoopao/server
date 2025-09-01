@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # RocketMQ Name Server
+  rmqnamesrv:
+    image: apache/rocketmq:5.1.4
+    container_name: rmqnamesrv
+    ports:
+      - "9876:9876"
+    environment:
+      - JAVA_OPT_EXT=-server -Xms512m -Xmx512m -Xmn256m
+    volumes:
+      - namesrv_logs:/home/rocketmq/logs
+      - namesrv_store:/home/rocketmq/store
+    command: sh mqnamesrv
+    restart: unless-stopped
+    networks:
+      - rocketmq-network
+
+  # RocketMQ Broker
+  rmqbroker:
+    image: apache/rocketmq:5.1.4
+    container_name: rmqbroker
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    environment:
+      - JAVA_OPT_EXT=-server -Xms1g -Xmx1g -Xmn512m
+    volumes:
+      - broker_logs:/home/rocketmq/logs
+      - broker_store:/home/rocketmq/store
+      - ./broker.conf:/home/rocketmq/rocketmq-5.1.4/conf/broker.conf
+    command: sh mqbroker -c /home/rocketmq/rocketmq-5.1.4/conf/broker.conf
+    depends_on:
+      - rmqnamesrv
+    restart: unless-stopped
+    networks:
+      - rocketmq-network
+
+  # RocketMQ Console
+  rmqconsole:
+    image: apacherocketmq/rocketmq-dashboard:1.0.0
+    container_name: rmqconsole
+    ports:
+      - "8083:8080"
+    environment:
+      - JAVA_OPTS=-Drocketmq.namesrv.addr=rmqnamesrv:9876
+    depends_on:
+      - rmqnamesrv
+      - rmqbroker
+    restart: unless-stopped
+    networks:
+      - rocketmq-network
+
+  # RocketMQ 集群模式 - Name Server 2
+  rmqnamesrv2:
+    image: apache/rocketmq:5.1.4
+    container_name: rmqnamesrv2
+    ports:
+      - "9877:9876"
+    environment:
+      - JAVA_OPT_EXT=-server -Xms512m -Xmx512m -Xmn256m
+    volumes:
+      - namesrv2_logs:/home/rocketmq/logs
+      - namesrv2_store:/home/rocketmq/store
+    command: sh mqnamesrv
+    restart: unless-stopped
+    networks:
+      - rocketmq-network
+
+  # RocketMQ 集群模式 - Broker 2
+  rmqbroker2:
+    image: apache/rocketmq:5.1.4
+    container_name: rmqbroker2
+    ports:
+      - "10919:10909"
+      - "10921:10911"
+      - "10922:10912"
+    environment:
+      - JAVA_OPT_EXT=-server -Xms1g -Xmx1g -Xmn512m
+    volumes:
+      - broker2_logs:/home/rocketmq/logs
+      - broker2_store:/home/rocketmq/store
+      - ./broker2.conf:/home/rocketmq/rocketmq-5.1.4/conf/broker.conf
+    command: sh mqbroker -c /home/rocketmq/rocketmq-5.1.4/conf/broker.conf
+    depends_on:
+      - rmqnamesrv
+      - rmqnamesrv2
+    restart: unless-stopped
+    networks:
+      - rocketmq-network
+
+volumes:
+  namesrv_logs:
+    driver: local
+  namesrv_store:
+    driver: local
+  broker_logs:
+    driver: local
+  broker_store:
+    driver: local
+  namesrv2_logs:
+    driver: local
+  namesrv2_store:
+    driver: local
+  broker2_logs:
+    driver: local
+  broker2_store:
+    driver: local
+
+networks:
+  rocketmq-network:
+    driver: bridge

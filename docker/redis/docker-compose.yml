@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # Redis 单机版
+  redis-standalone:
+    image: redis:7.2-alpine
+    container_name: redis-standalone
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=redis123
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: unless-stopped
+    networks:
+      - redis-network
+
+  # Redis 集群模式
+  redis-1:
+    image: redis:7.2-alpine
+    container_name: redis-1
+    ports:
+      - "6380:6379"
+    environment:
+      - REDIS_PASSWORD=redis123
+    volumes:
+      - redis_data_1:/data
+      - ./redis-cluster.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: unless-stopped
+    networks:
+      - redis-network
+
+  redis-2:
+    image: redis:7.2-alpine
+    container_name: redis-2
+    ports:
+      - "6381:6379"
+    environment:
+      - REDIS_PASSWORD=redis123
+    volumes:
+      - redis_data_2:/data
+      - ./redis-cluster.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: unless-stopped
+    networks:
+      - redis-network
+
+  redis-3:
+    image: redis:7.2-alpine
+    container_name: redis-3
+    ports:
+      - "6382:6379"
+    environment:
+      - REDIS_PASSWORD=redis123
+    volumes:
+      - redis_data_3:/data
+      - ./redis-cluster.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: unless-stopped
+    networks:
+      - redis-network
+
+  # Redis Sentinel
+  redis-sentinel-1:
+    image: redis:7.2-alpine
+    container_name: redis-sentinel-1
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    restart: unless-stopped
+    networks:
+      - redis-network
+
+  redis-sentinel-2:
+    image: redis:7.2-alpine
+    container_name: redis-sentinel-2
+    ports:
+      - "26380:26379"
+    volumes:
+      - ./sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    restart: unless-stopped
+    networks:
+      - redis-network
+
+  redis-sentinel-3:
+    image: redis:7.2-alpine
+    container_name: redis-sentinel-3
+    ports:
+      - "26381:26379"
+    volumes:
+      - ./sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    restart: unless-stopped
+    networks:
+      - redis-network
+
+  # Redis 管理工具
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis-standalone:6379:0:redis123
+    depends_on:
+      - redis-standalone
+    restart: unless-stopped
+    networks:
+      - redis-network
+
+volumes:
+  redis_data:
+    driver: local
+  redis_data_1:
+    driver: local
+  redis_data_2:
+    driver: local
+  redis_data_3:
+    driver: local
+
+networks:
+  redis-network:
+    driver: bridge
