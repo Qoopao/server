@@ -68,7 +68,8 @@ check_docker() {
         exit 1
     fi
 
-    if ! command -v docker-compose &> /dev/null; then
+    # 检查 Docker Compose（支持新旧两种格式）
+    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
         log_error "Docker Compose 未安装"
         log_info "请先安装 Docker Compose: https://docs.docker.com/compose/install/"
         exit 1
@@ -87,19 +88,50 @@ start_standalone() {
     log_info "启动单机版 etcd..."
     cd "$DOCKER_DIR"
     
-    docker-compose -f docker-compose.standalone.yml up -d
+    # 检查是否已经运行
+    if command -v docker-compose &> /dev/null; then
+        if docker-compose -f docker-compose.standalone.yml ps | grep -q "Up"; then
+            log_info "单机版 etcd 已经在运行中"
+            log_info "客户端端点: http://localhost:2379"
+            return 0
+        fi
+    else
+        if docker compose -f docker-compose.standalone.yml ps | grep -q "Up"; then
+            log_info "单机版 etcd 已经在运行中"
+            log_info "客户端端点: http://localhost:2379"
+            return 0
+        fi
+    fi
+    
+    # 使用兼容的 Docker Compose 命令
+    if command -v docker-compose &> /dev/null; then
+        docker-compose -f docker-compose.standalone.yml up -d
+    else
+        docker compose -f docker-compose.standalone.yml up -d
+    fi
     
     log_info "等待 etcd 启动..."
     sleep 5
     
     # 验证启动
-    if docker-compose -f docker-compose.standalone.yml ps | grep -q "Up"; then
-        log_info "单机版 etcd 启动成功"
-        log_info "客户端端点: http://localhost:2379"
+    if command -v docker-compose &> /dev/null; then
+        if docker-compose -f docker-compose.standalone.yml ps | grep -q "Up"; then
+            log_info "单机版 etcd 启动成功"
+            log_info "客户端端点: http://localhost:2379"
+        else
+            log_error "单机版 etcd 启动失败"
+            docker-compose -f docker-compose.standalone.yml logs
+            exit 1
+        fi
     else
-        log_error "单机版 etcd 启动失败"
-        docker-compose -f docker-compose.standalone.yml logs
-        exit 1
+        if docker compose -f docker-compose.standalone.yml ps | grep -q "Up"; then
+            log_info "单机版 etcd 启动成功"
+            log_info "客户端端点: http://localhost:2379"
+        else
+            log_error "单机版 etcd 启动失败"
+            docker compose -f docker-compose.standalone.yml logs
+            exit 1
+        fi
     fi
 }
 
@@ -108,22 +140,62 @@ start_cluster() {
     log_info "启动 3节点 etcd 集群..."
     cd "$DOCKER_DIR"
     
-    docker-compose -f docker-compose.cluster.yml up -d
+    # 检查是否已经运行
+    if command -v docker-compose &> /dev/null; then
+        if docker-compose -f docker-compose.cluster.yml ps | grep -c "Up" | grep -q "3"; then
+            log_info "3节点 etcd 集群已经在运行中"
+            log_info "集群端点:"
+            log_info "  - etcd-1: http://localhost:2379"
+            log_info "  - etcd-2: http://localhost:2381"
+            log_info "  - etcd-3: http://localhost:2383"
+            return 0
+        fi
+    else
+        if docker compose -f docker-compose.cluster.yml ps | grep -c "Up" | grep -q "3"; then
+            log_info "3节点 etcd 集群已经在运行中"
+            log_info "集群端点:"
+            log_info "  - etcd-1: http://localhost:2379"
+            log_info "  - etcd-2: http://localhost:2381"
+            log_info "  - etcd-3: http://localhost:2383"
+            return 0
+        fi
+    fi
+    
+    # 使用兼容的 Docker Compose 命令
+    if command -v docker-compose &> /dev/null; then
+        docker-compose -f docker-compose.cluster.yml up -d
+    else
+        docker compose -f docker-compose.cluster.yml up -d
+    fi
     
     log_info "等待 etcd 集群启动..."
     sleep 10
     
     # 验证启动
-    if docker-compose -f docker-compose.cluster.yml ps | grep -c "Up" | grep -q "3"; then
-        log_info "3节点 etcd 集群启动成功"
-        log_info "集群端点:"
-        log_info "  - etcd-1: http://localhost:2379"
-        log_info "  - etcd-2: http://localhost:2381"
-        log_info "  - etcd-3: http://localhost:2383"
+    if command -v docker-compose &> /dev/null; then
+        if docker-compose -f docker-compose.cluster.yml ps | grep -c "Up" | grep -q "3"; then
+            log_info "3节点 etcd 集群启动成功"
+            log_info "集群端点:"
+            log_info "  - etcd-1: http://localhost:2379"
+            log_info "  - etcd-2: http://localhost:2381"
+            log_info "  - etcd-3: http://localhost:2383"
+        else
+            log_error "3节点 etcd 集群启动失败"
+            docker-compose -f docker-compose.cluster.yml logs
+            exit 1
+        fi
     else
-        log_error "3节点 etcd 集群启动失败"
-        docker-compose -f docker-compose.cluster.yml logs
-        exit 1
+        if docker compose -f docker-compose.cluster.yml ps | grep -c "Up" | grep -q "3"; then
+            log_info "3节点 etcd 集群启动成功"
+            log_info "集群端点:"
+            log_info "  - etcd-1: http://localhost:2379"
+            log_info "  - etcd-2: http://localhost:2381"
+            log_info "  - etcd-3: http://localhost:2383"
+        else
+            log_error "3节点 etcd 集群启动失败"
+            docker compose -f docker-compose.cluster.yml logs
+            exit 1
+        fi
     fi
 }
 
@@ -133,8 +205,13 @@ stop_etcd() {
     cd "$DOCKER_DIR"
     
     # 停止所有etcd相关容器
-    docker-compose -f docker-compose.standalone.yml down 2>/dev/null || true
-    docker-compose -f docker-compose.cluster.yml down 2>/dev/null || true
+    if command -v docker-compose &> /dev/null; then
+        docker-compose -f docker-compose.standalone.yml down 2>/dev/null || true
+        docker-compose -f docker-compose.cluster.yml down 2>/dev/null || true
+    else
+        docker compose -f docker-compose.standalone.yml down 2>/dev/null || true
+        docker compose -f docker-compose.cluster.yml down 2>/dev/null || true
+    fi
     
     log_info "etcd 容器已停止"
 }

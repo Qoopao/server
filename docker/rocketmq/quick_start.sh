@@ -35,6 +35,23 @@ cd "$(dirname "$0")"
 
 echo -e "${GREEN}📦 启动单机版 RocketMQ...${NC}"
 
+# 检查是否已经运行
+if docker-compose ps | grep -c "Up" | grep -q "3"; then
+    echo -e "${GREEN}✅ RocketMQ 已经在运行中！${NC}"
+    echo ""
+    echo "📋 服务信息:"
+    echo "  - Name Server: localhost:9876"
+    echo "  - Broker: localhost:10911"
+    echo "  - Console: http://localhost:8083"
+    echo ""
+    echo "🔧 常用命令:"
+    echo "  ./scripts/deploy.sh status     # 查看状态"
+    echo "  ./scripts/deploy.sh test       # 测试连接"
+    echo "  ./scripts/deploy.sh logs       # 查看日志"
+    echo "  ./scripts/deploy.sh stop       # 停止服务"
+    exit 0
+fi
+
 # 启动 RocketMQ
 docker-compose up -d rmqnamesrv rmqbroker rmqconsole
 

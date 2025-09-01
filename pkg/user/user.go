@@ -16,7 +16,7 @@ type UserService interface {
 func NewUserService() UserService {
 	store, err := kvstore.NewKVStore(kvstore.Config{
 		Address:  "localhost:6379",
-		Password: "Rhp.Roc.666",
+		Password: "redis123",
 		DB:       0,
 	})
 	if err != nil {

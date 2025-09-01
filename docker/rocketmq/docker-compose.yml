@@ -26,7 +26,8 @@ services:
       - "10911:10911"
       - "10912:10912"
     environment:
-      - JAVA_OPT_EXT=-server -Xms1g -Xmx1g -Xmn512m
+      - JAVA_OPT_EXT=-server -Xms1g -Xmx1g -Xmn512m -XX:+UseG1GC -XX:MaxGCPauseMillis=20
+      - ROCKETMQ_HOME=/home/rocketmq/rocketmq-5.1.4
     volumes:
       - broker_logs:/home/rocketmq/logs
       - broker_store:/home/rocketmq/store
@@ -35,6 +36,7 @@ services:
     depends_on:
       - rmqnamesrv
     restart: unless-stopped
+    user: "0:0"
     networks:
       - rocketmq-network
 

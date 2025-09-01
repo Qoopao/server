@@ -69,7 +69,8 @@ check_docker() {
         exit 1
     fi
 
-    if ! command -v docker-compose &> /dev/null; then
+    # 检查 Docker Compose（支持新旧两种格式）
+    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
         log_error "Docker Compose 未安装"
         log_info "请先安装 Docker Compose: https://docs.docker.com/compose/install/"
         exit 1
@@ -88,21 +89,58 @@ start_standalone() {
     log_info "启动单机版 RocketMQ..."
     cd "$DOCKER_DIR"
     
-    docker-compose up -d rmqnamesrv rmqbroker rmqconsole
+    # 检查是否已经运行
+    if command -v docker-compose &> /dev/null; then
+        if docker-compose ps | grep -c "Up" | grep -q "3"; then
+            log_info "RocketMQ 已经在运行中"
+            log_info "Name Server: localhost:9876"
+            log_info "Broker: localhost:10911"
+            log_info "Console: http://localhost:8083"
+            return 0
+        fi
+    else
+        if docker compose ps | grep -c "Up" | grep -q "3"; then
+            log_info "RocketMQ 已经在运行中"
+            log_info "Name Server: localhost:9876"
+            log_info "Broker: localhost:10911"
+            log_info "Console: http://localhost:8083"
+            return 0
+        fi
+    fi
+    
+    # 使用兼容的 Docker Compose 命令
+    if command -v docker-compose &> /dev/null; then
+        docker-compose up -d rmqnamesrv rmqbroker rmqconsole
+    else
+        docker compose up -d rmqnamesrv rmqbroker rmqconsole
+    fi
     
     log_info "等待 RocketMQ 启动..."
     sleep 15
     
     # 验证启动
-    if docker-compose ps | grep -c "Up" | grep -q "3"; then
-        log_info "单机版 RocketMQ 启动成功"
-        log_info "Name Server: localhost:9876"
-        log_info "Broker: localhost:10911"
-        log_info "Console: http://localhost:8083"
+    if command -v docker-compose &> /dev/null; then
+        if docker-compose ps | grep -c "Up" | grep -q "3"; then
+            log_info "单机版 RocketMQ 启动成功"
+            log_info "Name Server: localhost:9876"
+            log_info "Broker: localhost:10911"
+            log_info "Console: http://localhost:8083"
+        else
+            log_error "单机版 RocketMQ 启动失败"
+            docker-compose logs
+            exit 1
+        fi
     else
-        log_error "单机版 RocketMQ 启动失败"
-        docker-compose logs
-        exit 1
+        if docker compose ps | grep -c "Up" | grep -q "3"; then
+            log_info "单机版 RocketMQ 启动成功"
+            log_info "Name Server: localhost:9876"
+            log_info "Broker: localhost:10911"
+            log_info "Console: http://localhost:8083"
+        else
+            log_error "单机版 RocketMQ 启动失败"
+            docker compose logs
+            exit 1
+        fi
     fi
 }
 
@@ -111,25 +149,74 @@ start_cluster() {
     log_info "启动集群版 RocketMQ..."
     cd "$DOCKER_DIR"
     
-    docker-compose up -d
+    # 检查是否已经运行
+    if command -v docker-compose &> /dev/null; then
+        if docker-compose ps | grep -c "Up" | grep -q "6"; then
+            log_info "集群版 RocketMQ 已经在运行中"
+            log_info "Name Server:"
+            log_info "  - namesrv-1: localhost:9876"
+            log_info "  - namesrv-2: localhost:9877"
+            log_info "Broker:"
+            log_info "  - broker-1: localhost:10911"
+            log_info "  - broker-2: localhost:10921"
+            log_info "Console: http://localhost:8083"
+            return 0
+        fi
+    else
+        if docker compose ps | grep -c "Up" | grep -q "6"; then
+            log_info "集群版 RocketMQ 已经在运行中"
+            log_info "Name Server:"
+            log_info "  - namesrv-1: localhost:9876"
+            log_info "  - namesrv-2: localhost:9877"
+            log_info "Broker:"
+            log_info "  - broker-1: localhost:10911"
+            log_info "  - broker-2: localhost:10921"
+            log_info "Console: http://localhost:8083"
+            return 0
+        fi
+    fi
+    
+    # 使用兼容的 Docker Compose 命令
+    if command -v docker-compose &> /dev/null; then
+        docker-compose up -d
+    else
+        docker compose up -d
+    fi
     
     log_info "等待 RocketMQ 集群启动..."
     sleep 20
     
     # 验证启动
-    if docker-compose ps | grep -c "Up" | grep -q "6"; then
-        log_info "集群版 RocketMQ 启动成功"
-        log_info "Name Server:"
-        log_info "  - namesrv-1: localhost:9876"
-        log_info "  - namesrv-2: localhost:9877"
-        log_info "Broker:"
-        log_info "  - broker-1: localhost:10911"
-        log_info "  - broker-2: localhost:10921"
-        log_info "Console: http://localhost:8083"
+    if command -v docker-compose &> /dev/null; then
+        if docker-compose ps | grep -c "Up" | grep -q "6"; then
+            log_info "集群版 RocketMQ 启动成功"
+            log_info "Name Server:"
+            log_info "  - namesrv-1: localhost:9876"
+            log_info "  - namesrv-2: localhost:9877"
+            log_info "Broker:"
+            log_info "  - broker-1: localhost:10911"
+            log_info "  - broker-2: localhost:10921"
+            log_info "Console: http://localhost:8083"
+        else
+            log_error "集群版 RocketMQ 启动失败"
+            docker-compose logs
+            exit 1
+        fi
     else
-        log_error "集群版 RocketMQ 启动失败"
-        docker-compose logs
-        exit 1
+        if docker compose ps | grep -c "Up" | grep -q "6"; then
+            log_info "集群版 RocketMQ 启动成功"
+            log_info "Name Server:"
+            log_info "  - namesrv-1: localhost:9876"
+            log_info "  - namesrv-2: localhost:9877"
+            log_info "Broker:"
+            log_info "  - broker-1: localhost:10911"
+            log_info "  - broker-2: localhost:10921"
+            log_info "Console: http://localhost:8083"
+        else
+            log_error "集群版 RocketMQ 启动失败"
+            docker compose logs
+            exit 1
+        fi
     fi
 }
 
@@ -138,7 +225,12 @@ stop_rocketmq() {
     log_info "停止 RocketMQ 容器..."
     cd "$DOCKER_DIR"
     
-    docker-compose down
+    # 使用兼容的 Docker Compose 命令
+    if command -v docker-compose &> /dev/null; then
+        docker-compose down
+    else
+        docker compose down
+    fi
     
     log_info "RocketMQ 容器已停止"
 }

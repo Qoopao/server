@@ -35,6 +35,24 @@ cd "$(dirname "$0")"
 
 echo -e "${GREEN}📦 启动 KRaft 模式 Kafka 集群...${NC}"
 
+# 检查是否已经运行
+if docker-compose -f docker-compose.kraft.yml ps | grep -c "Up" | grep -q "3"; then
+    echo -e "${GREEN}✅ Kafka 已经在运行中！${NC}"
+    echo ""
+    echo "📋 服务信息:"
+    echo "  - Kafka-1: localhost:9092"
+    echo "  - Kafka-2: localhost:9094" 
+    echo "  - Kafka-3: localhost:9096"
+    echo "  - Kafka UI: http://localhost:8080"
+    echo ""
+    echo "🔧 常用命令:"
+    echo "  ./scripts/deploy.sh status     # 查看状态"
+    echo "  ./scripts/deploy.sh test       # 测试连接"
+    echo "  ./scripts/deploy.sh logs       # 查看日志"
+    echo "  ./scripts/deploy.sh stop       # 停止服务"
+    exit 0
+fi
+
 # 启动 Kafka
 docker-compose -f docker-compose.kraft.yml up -d
 

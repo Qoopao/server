@@ -1,3 +1,10 @@
 {"level":"INFO","timestamp":"2025-08-31T21:40:04.343+0800","caller":"msg/handler.go:69","message":"SendMessages called","convID":"0:1:rhpop:rhpxmock","sendID":"rhpxmock","clientMsgID":"1756647604012545aIXKbleX","msgCount":1}
 {"level":"INFO","timestamp":"2025-08-31T21:40:04.344+0800","caller":"msg/send.go:115","message":"createConversationIfNeed: creating new conversation","convID":"0:1:rhpop:rhpxmock","ownerUserID":"rhpxmock"}
 {"level":"INFO","timestamp":"2025-08-31T21:40:04.347+0800","caller":"msg/handler.go:87","message":"SendMessages success","convID":"0:1:rhpop:rhpxmock","clientMsgID":"1756647604012545aIXKbleX"}
+{"level":"INFO","timestamp":"2025-09-01T19:40:29.877+0800","caller":"serviceRegistry/etcd_registry.go:107","message":"Service instance registered","service":"msg-service","instance":"msg-service-2bfab0dc","address":"10.255.255.254:10100"}
+{"level":"INFO","timestamp":"2025-09-01T19:40:29.877+0800","caller":"msg/start.go:105","message":"Message service starting","instance_id":"msg-service-2bfab0dc","address":"10.255.255.254:10100"}
+{"level":"INFO","timestamp":"2025-09-01T19:40:50.437+0800","caller":"msg/handler.go:69","message":"SendMessages called","convID":"0:1:rhp:test","sendID":"test","clientMsgID":"1756726845803481XeUhMHgc","msgCount":1}
+{"level":"INFO","timestamp":"2025-09-01T19:40:50.439+0800","caller":"msg/send.go:115","message":"createConversationIfNeed: creating new conversation","convID":"0:1:rhp:test","ownerUserID":"test"}
+{"level":"INFO","timestamp":"2025-09-01T19:40:50.461+0800","caller":"msg/handler.go:87","message":"SendMessages success","convID":"0:1:rhp:test","clientMsgID":"1756726845803481XeUhMHgc"}
+{"level":"INFO","timestamp":"2025-09-01T19:41:56.904+0800","caller":"msg/handler.go:69","message":"SendMessages called","convID":"0:1:rhp:test","sendID":"rhp","clientMsgID":"1756726916219985lHexzSqW","msgCount":1}
+{"level":"INFO","timestamp":"2025-09-01T19:41:56.906+0800","caller":"msg/handler.go:87","message":"SendMessages success","convID":"0:1:rhp:test","clientMsgID":"1756726916219985lHexzSqW"}

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # KRaft 模式的 Kafka 集群（无需 ZooKeeper）
   kafka-1:
@@ -11,6 +9,7 @@ services:
       - "9101:9101"
     environment:
       # KRaft 模式配置
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093"
@@ -51,6 +50,7 @@ services:
       - "9102:9101"
     environment:
       # KRaft 模式配置
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
       KAFKA_NODE_ID: 2
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093"
@@ -91,6 +91,7 @@ services:
       - "9103:9101"
     environment:
       # KRaft 模式配置
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
       KAFKA_NODE_ID: 3
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093"
