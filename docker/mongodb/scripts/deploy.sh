@@ -119,33 +119,49 @@ start_standalone() {
     fi
     
     log_info "等待 MongoDB 启动..."
-    sleep 10
+    sleep 3
     
     # 验证启动
     if command -v docker-compose &> /dev/null; then
-        if docker-compose ps | grep -q "mongodb-standalone.*Up"; then
-            log_info "单机版 MongoDB 启动成功"
-            log_info "MongoDB 端点: localhost:27017"
-            log_info "MongoDB UI: http://localhost:8082"
-            log_info "用户名: admin"
-            log_info "密码: admin123"
-        else
-            log_error "单机版 MongoDB 启动失败"
-            docker-compose logs mongodb-standalone
-            exit 1
-        fi
+        # 等待容器启动
+        local retry_count=0
+        while [ $retry_count -lt 3 ]; do
+            if docker-compose ps | grep -q "mongodb-standalone.*Up"; then
+                log_info "单机版 MongoDB 启动成功"
+                log_info "MongoDB 端点: localhost:27017"
+                log_info "MongoDB UI: http://localhost:8082"
+                log_info "用户名: admin"
+                log_info "密码: admin123"
+                return 0
+            fi
+            log_info "等待 MongoDB 容器完全启动... (重试 $((retry_count + 1))/3)"
+            sleep 5
+            retry_count=$((retry_count + 1))
+        done
+        
+        log_error "单机版 MongoDB 启动失败"
+        docker-compose logs mongodb-standalone
+        exit 1
     else
-        if docker compose ps | grep -q "mongodb-standalone.*Up"; then
-            log_info "单机版 MongoDB 启动成功"
-            log_info "MongoDB 端点: localhost:27017"
-            log_info "MongoDB UI: http://localhost:8082"
-            log_info "用户名: admin"
-            log_info "密码: admin123"
-        else
-            log_error "单机版 MongoDB 启动失败"
-            docker compose logs mongodb-standalone
-            exit 1
-        fi
+        # 等待容器启动
+        local retry_count=0
+        while [ $retry_count -lt 3 ]; do
+            if docker compose ps | grep -q "mongodb-standalone.*Up"; then
+                log_info "单机版 MongoDB 启动成功"
+                log_info "MongoDB 端点: localhost:27017"
+                log_info "MongoDB UI: http://localhost:8082"
+                log_info "用户名: admin"
+                log_info "密码: admin123"
+                return 0
+            fi
+            log_info "等待 MongoDB 容器完全启动... (重试 $((retry_count + 1))/3)"
+            sleep 5
+            retry_count=$((retry_count + 1))
+        done
+        
+        log_error "单机版 MongoDB 启动失败"
+        docker compose logs mongodb-standalone
+        exit 1
     fi
 }
 
@@ -162,7 +178,7 @@ start_replica() {
     fi
     
     log_info "等待 MongoDB 副本集启动..."
-    sleep 15
+    sleep 5
     
     # 验证启动
     if command -v docker-compose &> /dev/null; then
@@ -215,7 +231,7 @@ start_shard() {
     fi
     
     log_info "等待 MongoDB 分片集群启动..."
-    sleep 20
+    sleep 8
     
     # 验证启动
     if command -v docker-compose &> /dev/null; then

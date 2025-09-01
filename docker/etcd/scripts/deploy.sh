@@ -111,27 +111,43 @@ start_standalone() {
     fi
     
     log_info "等待 etcd 启动..."
-    sleep 5
+    sleep 2
     
     # 验证启动
     if command -v docker-compose &> /dev/null; then
-        if docker-compose -f docker-compose.standalone.yml ps | grep -q "Up"; then
-            log_info "单机版 etcd 启动成功"
-            log_info "客户端端点: http://localhost:2379"
-        else
-            log_error "单机版 etcd 启动失败"
-            docker-compose -f docker-compose.standalone.yml logs
-            exit 1
-        fi
+        # 等待容器启动
+        local retry_count=0
+        while [ $retry_count -lt 3 ]; do
+            if docker-compose -f docker-compose.standalone.yml ps | grep -q "Up"; then
+                log_info "单机版 etcd 启动成功"
+                log_info "客户端端点: http://localhost:2379"
+                return 0
+            fi
+            log_info "等待 etcd 容器完全启动... (重试 $((retry_count + 1))/3)"
+            sleep 3
+            retry_count=$((retry_count + 1))
+        done
+        
+        log_error "单机版 etcd 启动失败"
+        docker-compose -f docker-compose.standalone.yml logs
+        exit 1
     else
-        if docker compose -f docker-compose.standalone.yml ps | grep -q "Up"; then
-            log_info "单机版 etcd 启动成功"
-            log_info "客户端端点: http://localhost:2379"
-        else
-            log_error "单机版 etcd 启动失败"
-            docker compose -f docker-compose.standalone.yml logs
-            exit 1
-        fi
+        # 等待容器启动
+        local retry_count=0
+        while [ $retry_count -lt 3 ]; do
+            if docker compose -f docker-compose.standalone.yml ps | grep -q "Up"; then
+                log_info "单机版 etcd 启动成功"
+                log_info "客户端端点: http://localhost:2379"
+                return 0
+            fi
+            log_info "等待 etcd 容器完全启动... (重试 $((retry_count + 1))/3)"
+            sleep 3
+            retry_count=$((retry_count + 1))
+        done
+        
+        log_error "单机版 etcd 启动失败"
+        docker compose -f docker-compose.standalone.yml logs
+        exit 1
     fi
 }
 
@@ -169,33 +185,49 @@ start_cluster() {
     fi
     
     log_info "等待 etcd 集群启动..."
-    sleep 10
+    sleep 5
     
     # 验证启动
     if command -v docker-compose &> /dev/null; then
-        if docker-compose -f docker-compose.cluster.yml ps | grep -c "Up" | grep -q "3"; then
-            log_info "3节点 etcd 集群启动成功"
-            log_info "集群端点:"
-            log_info "  - etcd-1: http://localhost:2379"
-            log_info "  - etcd-2: http://localhost:2381"
-            log_info "  - etcd-3: http://localhost:2383"
-        else
-            log_error "3节点 etcd 集群启动失败"
-            docker-compose -f docker-compose.cluster.yml logs
-            exit 1
-        fi
+        # 等待所有容器启动
+        local retry_count=0
+        while [ $retry_count -lt 3 ]; do
+            if docker-compose -f docker-compose.cluster.yml ps | grep -c "Up" | grep -q "3"; then
+                log_info "3节点 etcd 集群启动成功"
+                log_info "集群端点:"
+                log_info "  - etcd-1: http://localhost:2379"
+                log_info "  - etcd-2: http://localhost:2381"
+                log_info "  - etcd-3: http://localhost:2383"
+                return 0
+            fi
+            log_info "等待 etcd 集群完全启动... (重试 $((retry_count + 1))/3)"
+            sleep 5
+            retry_count=$((retry_count + 1))
+        done
+        
+        log_error "3节点 etcd 集群启动失败"
+        docker-compose -f docker-compose.cluster.yml logs
+        exit 1
     else
-        if docker compose -f docker-compose.cluster.yml ps | grep -c "Up" | grep -q "3"; then
-            log_info "3节点 etcd 集群启动成功"
-            log_info "集群端点:"
-            log_info "  - etcd-1: http://localhost:2379"
-            log_info "  - etcd-2: http://localhost:2381"
-            log_info "  - etcd-3: http://localhost:2383"
-        else
-            log_error "3节点 etcd 集群启动失败"
-            docker compose -f docker-compose.cluster.yml logs
-            exit 1
-        fi
+        # 等待所有容器启动
+        local retry_count=0
+        while [ $retry_count -lt 3 ]; do
+            if docker compose -f docker-compose.cluster.yml ps | grep -c "Up" | grep -q "3"; then
+                log_info "3节点 etcd 集群启动成功"
+                log_info "集群端点:"
+                log_info "  - etcd-1: http://localhost:2379"
+                log_info "  - etcd-2: http://localhost:2381"
+                log_info "  - etcd-3: http://localhost:2383"
+                return 0
+            fi
+            log_info "等待 etcd 集群完全启动... (重试 $((retry_count + 1))/3)"
+            sleep 5
+            retry_count=$((retry_count + 1))
+        done
+        
+        log_error "3节点 etcd 集群启动失败"
+        docker compose -f docker-compose.cluster.yml logs
+        exit 1
     fi
 }
 

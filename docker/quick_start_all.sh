@@ -20,7 +20,8 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-if ! command -v docker-compose &> /dev/null; then
+# 检查 Docker Compose（支持新旧两种格式）
+if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
     echo -e "${YELLOW}❌ Docker Compose 未安装，请先安装 Docker Compose${NC}"
     exit 1
 fi
@@ -34,60 +35,83 @@ fi
 # 显示菜单
 show_menu() {
     echo ""
-    echo -e "${BLUE}请选择要启动的服务:${NC}"
-    echo "1) etcd (服务发现)"
-    echo "2) kafka (消息队列)"
-    echo "3) redis (缓存)"
-    echo "4) mongodb (数据库)"
-    echo "5) rocketmq (消息队列)"
-    echo "6) 全部启动"
+    echo -e "${BLUE}请选择操作:${NC}"
+    echo "1) 启动 etcd (服务发现)"
+    echo "2) 启动 kafka (消息队列)"
+    echo "3) 启动 redis (缓存)"
+    echo "4) 启动 mongodb (数据库)"
+    echo "5) 启动 rocketmq (消息队列)"
+    echo "6) 启动所有服务"
+    echo "7) 停止所有服务"
+    echo "8) 查看服务状态"
     echo "0) 退出"
     echo ""
-    read -p "请输入选择 (0-6): " choice
+    read -p "请输入选择 (0-8): " choice
 }
 
 # 启动 etcd
 start_etcd() {
     echo -e "${GREEN}📦 启动 etcd...${NC}"
-    cd docker/etcd
-    ./scripts/deploy.sh standalone
-    cd ../..
+    cd "$(dirname "$0")/etcd"
+    # 检查是否已经运行
+    if docker ps | grep -q "etcd-standalone"; then
+        echo -e "${YELLOW}⚠️  etcd 已经在运行中${NC}"
+    else
+        ./scripts/deploy.sh standalone
+    fi
+    cd ..
 }
 
 # 启动 kafka
 start_kafka() {
     echo -e "${GREEN}📦 启动 kafka...${NC}"
-    cd docker/kafka
-    ./quick_start.sh
-    cd ../..
+    cd "$(dirname "$0")/kafka"
+    # 检查是否已经运行
+    if docker ps | grep -q "kafka-[1-3]"; then
+        echo -e "${YELLOW}⚠️  kafka 已经在运行中${NC}"
+    else
+        ./scripts/deploy.sh kraft
+    fi
+    cd ..
 }
 
 # 启动 redis
 start_redis() {
     echo -e "${GREEN}📦 启动 redis...${NC}"
-    cd docker/redis
-    ./scripts/deploy.sh standalone
-    cd ../..
+    cd "$(dirname "$0")/redis"
+    # 检查是否已经运行
+    if docker ps | grep -q "redis-standalone"; then
+        echo -e "${YELLOW}⚠️  redis 已经在运行中${NC}"
+    else
+        ./scripts/deploy.sh standalone
+    fi
+    cd ..
 }
 
 # 启动 mongodb
 start_mongodb() {
     echo -e "${GREEN}📦 启动 mongodb...${NC}"
-    cd docker/mongodb
-    docker-compose up -d mongodb-standalone mongo-express
-    echo "等待 MongoDB 启动..."
-    sleep 10
-    cd ../..
+    cd "$(dirname "$0")/mongodb"
+    # 检查是否已经运行
+    if docker ps | grep -q "mongodb-standalone"; then
+        echo -e "${YELLOW}⚠️  mongodb 已经在运行中${NC}"
+    else
+        ./scripts/deploy.sh standalone
+    fi
+    cd ..
 }
 
 # 启动 rocketmq
 start_rocketmq() {
     echo -e "${GREEN}📦 启动 rocketmq...${NC}"
-    cd docker/rocketmq
-    docker-compose up -d rmqnamesrv rmqbroker rmqconsole
-    echo "等待 RocketMQ 启动..."
-    sleep 15
-    cd ../..
+    cd "$(dirname "$0")/rocketmq"
+    # 检查是否已经运行
+    if docker ps | grep -q "rmqnamesrv"; then
+        echo -e "${YELLOW}⚠️  rocketmq 已经在运行中${NC}"
+    else
+        ./scripts/deploy.sh standalone
+    fi
+    cd ..
 }
 
 # 启动全部服务
@@ -100,6 +124,86 @@ start_all() {
     start_rocketmq
 }
 
+# 停止所有服务
+stop_all() {
+    echo -e "${YELLOW}🛑 停止所有服务...${NC}"
+    
+    # 停止 etcd
+    echo -e "${YELLOW}停止 etcd...${NC}"
+    cd "$(dirname "$0")/etcd"
+    ./scripts/deploy.sh stop
+    cd ..
+    
+    # 停止 kafka
+    echo -e "${YELLOW}停止 kafka...${NC}"
+    cd "$(dirname "$0")/kafka"
+    ./scripts/deploy.sh stop
+    cd ..
+    
+    # 停止 redis
+    echo -e "${YELLOW}停止 redis...${NC}"
+    cd "$(dirname "$0")/redis"
+    ./scripts/deploy.sh stop
+    cd ..
+    
+    # 停止 mongodb
+    echo -e "${YELLOW}停止 mongodb...${NC}"
+    cd "$(dirname "$0")/mongodb"
+    ./scripts/deploy.sh stop
+    cd ..
+    
+    # 停止 rocketmq
+    echo -e "${YELLOW}停止 rocketmq...${NC}"
+    cd "$(dirname "$0")/rocketmq"
+    ./scripts/deploy.sh stop
+    cd ..
+    
+    echo -e "${GREEN}✅ 所有服务已停止${NC}"
+}
+
+# 查看服务状态
+show_status() {
+    echo -e "${BLUE}📊 服务状态:${NC}"
+    echo ""
+    
+    # 检查 etcd
+    if docker ps | grep -q "etcd-standalone"; then
+        echo -e "${GREEN}✅ etcd: 运行中${NC}"
+    else
+        echo -e "${YELLOW}❌ etcd: 未运行${NC}"
+    fi
+    
+    # 检查 kafka
+    if docker ps | grep -q "kafka-[1-3]"; then
+        echo -e "${GREEN}✅ kafka: 运行中${NC}"
+    else
+        echo -e "${YELLOW}❌ kafka: 未运行${NC}"
+    fi
+    
+    # 检查 redis
+    if docker ps | grep -q "redis-standalone"; then
+        echo -e "${GREEN}✅ redis: 运行中${NC}"
+    else
+        echo -e "${YELLOW}❌ redis: 未运行${NC}"
+    fi
+    
+    # 检查 mongodb
+    if docker ps | grep -q "mongodb-standalone"; then
+        echo -e "${GREEN}✅ mongodb: 运行中${NC}"
+    else
+        echo -e "${YELLOW}❌ mongodb: 未运行${NC}"
+    fi
+    
+    # 检查 rocketmq
+    if docker ps | grep -q "rmqnamesrv"; then
+        echo -e "${GREEN}✅ rocketmq: 运行中${NC}"
+    else
+        echo -e "${YELLOW}❌ rocketmq: 未运行${NC}"
+    fi
+    
+    echo ""
+}
+
 # 显示服务信息
 show_info() {
     echo ""
@@ -110,7 +214,7 @@ show_info() {
     echo "  - kafka: localhost:9092,9094,9096"
     echo "  - kafka-ui: http://localhost:8080"
     echo "  - redis: localhost:6379"
-    echo "  - redis-ui: http://localhost:8081"
+    echo "  - redis-ui: http://localhost:8081 (暂时不可用)"
     echo "  - mongodb: localhost:27017"
     echo "  - mongo-express: http://localhost:8082"
     echo "  - rocketmq: localhost:9876"
@@ -120,8 +224,8 @@ show_info() {
     echo "  docker/etcd/scripts/deploy.sh status"
     echo "  docker/kafka/scripts/deploy.sh status"
     echo "  docker/redis/scripts/deploy.sh status"
-    echo "  docker-compose -f docker/mongodb/docker-compose.yml ps"
-    echo "  docker-compose -f docker/rocketmq/docker-compose.yml ps"
+    echo "  docker/mongodb/scripts/deploy.sh status"
+    echo "  docker/rocketmq/scripts/deploy.sh status"
 }
 
 # 主循环
@@ -152,6 +256,12 @@ while true; do
         6)
             start_all
             show_info
+            ;;
+        7)
+            stop_all
+            ;;
+        8)
+            show_status
             ;;
         0)
             echo "退出..."

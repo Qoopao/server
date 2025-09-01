@@ -116,31 +116,47 @@ start_standalone() {
     fi
     
     log_info "等待 RocketMQ 启动..."
-    sleep 15
+    sleep 5
     
     # 验证启动
     if command -v docker-compose &> /dev/null; then
-        if docker-compose ps | grep -c "Up" | grep -q "3"; then
-            log_info "单机版 RocketMQ 启动成功"
-            log_info "Name Server: localhost:9876"
-            log_info "Broker: localhost:10911"
-            log_info "Console: http://localhost:8083"
-        else
-            log_error "单机版 RocketMQ 启动失败"
-            docker-compose logs
-            exit 1
-        fi
+        # 等待所有容器启动
+        local retry_count=0
+        while [ $retry_count -lt 3 ]; do
+            if docker-compose ps | grep -c "Up" | grep -q "3"; then
+                log_info "单机版 RocketMQ 启动成功"
+                log_info "Name Server: localhost:9876"
+                log_info "Broker: localhost:10911"
+                log_info "Console: http://localhost:8083"
+                return 0
+            fi
+            log_info "等待 RocketMQ 容器完全启动... (重试 $((retry_count + 1))/3)"
+            sleep 5
+            retry_count=$((retry_count + 1))
+        done
+        
+        log_error "单机版 RocketMQ 启动失败"
+        docker-compose logs
+        exit 1
     else
-        if docker compose ps | grep -c "Up" | grep -q "3"; then
-            log_info "单机版 RocketMQ 启动成功"
-            log_info "Name Server: localhost:9876"
-            log_info "Broker: localhost:10911"
-            log_info "Console: http://localhost:8083"
-        else
-            log_error "单机版 RocketMQ 启动失败"
-            docker compose logs
-            exit 1
-        fi
+        # 等待所有容器启动
+        local retry_count=0
+        while [ $retry_count -lt 3 ]; do
+            if docker compose ps | grep -c "Up" | grep -q "3"; then
+                log_info "单机版 RocketMQ 启动成功"
+                log_info "Name Server: localhost:9876"
+                log_info "Broker: localhost:10911"
+                log_info "Console: http://localhost:8083"
+                return 0
+            fi
+            log_info "等待 RocketMQ 容器完全启动... (重试 $((retry_count + 1))/3)"
+            sleep 5
+            retry_count=$((retry_count + 1))
+        done
+        
+        log_error "单机版 RocketMQ 启动失败"
+        docker compose logs
+        exit 1
     fi
 }
 
@@ -184,7 +200,7 @@ start_cluster() {
     fi
     
     log_info "等待 RocketMQ 集群启动..."
-    sleep 20
+    sleep 8
     
     # 验证启动
     if command -v docker-compose &> /dev/null; then

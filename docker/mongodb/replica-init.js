@@ -14,7 +14,7 @@ rs.initiate({
 });
 
 // 等待副本集稳定
-sleep(10000);
+sleep(8000);
 
 // 创建应用数据库和用户
 db = db.getSiblingDB('app');

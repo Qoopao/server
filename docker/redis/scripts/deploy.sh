@@ -118,25 +118,41 @@ start_standalone() {
     
     # 验证启动
     if command -v docker-compose &> /dev/null; then
-        if docker-compose ps | grep -q "redis-standalone.*Up"; then
-            log_info "单机版 Redis 启动成功"
-            log_info "Redis 端点: localhost:6379"
-            log_info "注意: Redis UI 暂时不可用（镜像拉取问题）"
-        else
-            log_error "单机版 Redis 启动失败"
-            docker-compose logs redis-standalone
-            exit 1
-        fi
+        # 等待容器启动
+        local retry_count=0
+        while [ $retry_count -lt 3 ]; do
+            if docker-compose ps | grep -q "redis-standalone.*Up"; then
+                log_info "单机版 Redis 启动成功"
+                log_info "Redis 端点: localhost:6379"
+                log_info "注意: Redis UI 暂时不可用（镜像拉取问题）"
+                return 0
+            fi
+            log_info "等待 Redis 容器完全启动... (重试 $((retry_count + 1))/3)"
+            sleep 3
+            retry_count=$((retry_count + 1))
+        done
+        
+        log_error "单机版 Redis 启动失败"
+        docker-compose logs redis-standalone
+        exit 1
     else
-        if docker compose ps | grep -q "redis-standalone.*Up"; then
-            log_info "单机版 Redis 启动成功"
-            log_info "Redis 端点: localhost:6379"
-            log_info "注意: Redis UI 暂时不可用（镜像拉取问题）"
-        else
-            log_error "单机版 Redis 启动失败"
-            docker compose logs redis-standalone
-            exit 1
-        fi
+        # 等待容器启动
+        local retry_count=0
+        while [ $retry_count -lt 3 ]; do
+            if docker compose ps | grep -q "redis-standalone.*Up"; then
+                log_info "单机版 Redis 启动成功"
+                log_info "Redis 端点: localhost:6379"
+                log_info "注意: Redis UI 暂时不可用（镜像拉取问题）"
+                return 0
+            fi
+            log_info "等待 Redis 容器完全启动... (重试 $((retry_count + 1))/3)"
+            sleep 3
+            retry_count=$((retry_count + 1))
+        done
+        
+        log_error "单机版 Redis 启动失败"
+        docker compose logs redis-standalone
+        exit 1
     fi
 }
 

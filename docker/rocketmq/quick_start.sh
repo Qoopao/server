@@ -56,7 +56,7 @@ fi
 docker-compose up -d rmqnamesrv rmqbroker rmqconsole
 
 echo -e "${GREEN}⏳ 等待 RocketMQ 启动...${NC}"
-sleep 15
+sleep 5
 
 # 检查启动状态
 if docker-compose ps | grep -c "Up" | grep -q "3"; then
