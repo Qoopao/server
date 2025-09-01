@@ -79,8 +79,20 @@ func (c *Client) ResetClient(ctx *UserConnContext, conn LongConn) {
 	}
 	c.subUserIDs = make(map[string]struct{})
 
-	msgRpc, _ := messageservice.NewClient("example_service", client.WithHostPorts("0.0.0.0:10100"), client.WithTransportProtocol(transport.GRPC))
-	convRpc, _ := conversationservice.NewClient("example_service", client.WithHostPorts("0.0.0.0:10200"), client.WithTransportProtocol(transport.GRPC))
+	// 使用服务发现获取 msg 服务客户端
+	msgRpc, err := GetMsgServiceClient()
+	if err != nil {
+		// 降级到硬编码地址
+		msgRpc, _ = messageservice.NewClient("example_service", client.WithHostPorts("0.0.0.0:10100"), client.WithTransportProtocol(transport.GRPC))
+	}
+
+	// 使用服务发现获取 conversation 服务客户端
+	convRpc, err := GetConversationServiceClient()
+	if err != nil {
+		// 降级到硬编码地址
+		convRpc, _ = conversationservice.NewClient("example_service", client.WithHostPorts("0.0.0.0:10200"), client.WithTransportProtocol(transport.GRPC))
+	}
+
 	c.messsageHandler = NewMessageHandler(msgRpc, convRpc)
 }
 

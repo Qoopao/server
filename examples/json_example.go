@@ -1,4 +1,4 @@
-package main
+package examples
 
 import (
 	"encoding/json"
@@ -50,7 +50,8 @@ type Message struct {
 	Metadata   map[string]interface{} `json:"metadata"`
 }
 
-func main() {
+// JSON_main JSON示例主函数
+func JSON_main() {
 	fmt.Println("=== Go encoding/json 使用范例 ===\n")
 
 	// 1. 结构体转JSON (Marshal)

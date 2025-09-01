@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"net"
+	"os"
 
+	"github.com/roc/roc-im-server/examples"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/roc/roc-im-server/internal/msgconsumer"
 	"github.com/roc/roc-im-server/internal/msggateway"
@@ -54,6 +56,11 @@ func GetLocalIP() (string, error) {
 }
 
 func main() {
+	// 检查是否要运行测试
+	if len(os.Args) > 1 && os.Args[1] == "test" {
+		examples.Test_main()
+		return
+	}
 
 	// test_mar()
 	redis.Redis_Test()

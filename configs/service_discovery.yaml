@@ -1,0 +1,41 @@
+# 服务发现配置示例
+
+# 注册中心配置
+registry:
+  type: etcd  # 支持: etcd, consul, zookeeper
+  
+  # Etcd 配置
+  etcd:
+    endpoints:
+      - localhost:2379
+      - localhost:2380
+      - localhost:2381
+    username: ""
+    password: ""
+    rootPath: "/roc-im-server/services"
+    dialTimeout: 5s
+  
+  # Consul 配置 (未来支持)
+  consul:
+    address: "localhost:8500"
+    username: ""
+    password: ""
+    token: ""
+  
+  # ZooKeeper 配置 (未来支持)
+  zookeeper:
+    servers:
+      - localhost:2181
+      - localhost:2182
+      - localhost:2183
+    rootPath: "/roc-im-server/services"
+    sessionTimeout: 30s
+
+# 负载均衡配置
+loadBalancer:
+  type: round_robin  # 支持: round_robin, random, consistent_hash, weighted_random, least_active
+
+# 缓存配置
+cache:
+  ttl: 30s           # 缓存过期时间
+  refreshPeriod: 10s # 刷新周期

@@ -1,5 +1,7 @@
 package serviceregistry
 
+import "context"
+
 // 服务实例信息
 type ServiceInstance struct {
 	InstanceID  string            // 实例唯一标识
@@ -11,6 +13,7 @@ type ServiceInstance struct {
 	Weight      int               // 负载权重
 }
 
+// InstanceStatus 实例状态
 type InstanceStatus int
 
 const (
@@ -20,26 +23,41 @@ const (
 	StatusDraining
 )
 
+// String 返回状态字符串表示
+func (s InstanceStatus) String() string {
+	switch s {
+	case StatusHealthy:
+		return "healthy"
+	case StatusUnhealthy:
+		return "unhealthy"
+	case StatusDraining:
+		return "draining"
+	default:
+		return "unknown"
+	}
+}
+
 // 服务实例变更监听器
 type InstanceChangeListener func(serviceName string, instances []ServiceInstance)
 
 // 服务注册中心接口
 type ServiceRegistry interface {
 	// 实例生命周期管理
-	RegisterInstance(instance *ServiceInstance) error
-	DeregisterInstance(instanceID string) error
+	RegisterInstance(ctx context.Context, instance *ServiceInstance) error
+	DeregisterInstance(ctx context.Context, instanceID string) error
 
 	// 服务发现
-	DiscoverInstances(serviceName string) ([]ServiceInstance, error)
-	SubscribeInstanceChanges(serviceName string, listener InstanceChangeListener) error
-	UnsubscribeInstanceChanges(serviceName string) error
+	DiscoverInstances(ctx context.Context, serviceName string) ([]ServiceInstance, error)
+	GetInstance(ctx context.Context, instanceID string) (*ServiceInstance, error)
+	GetAllServices(ctx context.Context) (map[string][]ServiceInstance, error)
 
-	// 实例状态管理
-	UpdateInstanceStatus(instanceID string, status InstanceStatus) error
-	UpdateInstanceMetadata(instanceID string, metadata map[string]string) error
+	// 服务变更监听
+	SubscribeInstanceChanges(ctx context.Context, serviceName string, listener InstanceChangeListener) error
+	UnsubscribeInstanceChanges(ctx context.Context, serviceName string) error
+	GetSubscribedServices(ctx context.Context) ([]string, error)
 
 	// 系统健康检查
-	CheckHealth() error
+	CheckHealth(ctx context.Context) error
 
 	// 关闭资源
 	Close() error
@@ -48,6 +66,19 @@ type ServiceRegistry interface {
 // 批量操作接口 (可选扩展)
 type BatchServiceRegistry interface {
 	ServiceRegistry
-	BatchRegisterInstances(instances []*ServiceInstance) error
-	BatchDeregisterInstances(instanceIDs []string) error
+	BatchRegisterInstances(ctx context.Context, instances []*ServiceInstance) error
+	BatchDeregisterInstances(ctx context.Context, instanceIDs []string) error
+}
+
+// 服务注册中心配置接口
+type RegistryConfig interface {
+	GetRegistryType() string
+	GetEndpoints() []string
+	GetRootPath() string
+	GetTimeout() int
+}
+
+// 服务注册中心工厂接口
+type RegistryFactory interface {
+	CreateRegistry(config RegistryConfig) (ServiceRegistry, error)
 }

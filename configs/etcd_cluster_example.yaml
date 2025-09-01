@@ -1,0 +1,41 @@
+# etcd 集群配置示例
+# 适用于分布式部署环境
+
+registry:
+  type: "etcd"
+  etcd:
+    # 集群端点配置 - 支持多个etcd节点
+    endpoints:
+      - "etcd-1:2379"      # 容器内通信
+      - "etcd-2:2379"
+      - "etcd-3:2379"
+      # 或者使用外部IP
+      # - "192.168.1.10:2379"
+      # - "192.168.1.11:2379"
+      # - "192.168.1.12:2379"
+    
+    # 认证配置（可选）
+    username: ""
+    password: ""
+    
+    # 根路径
+    rootPath: "/roc-im-server/services"
+    
+    # 连接超时
+    dialTimeout: 5s
+    
+    # 集群模式
+    clusterMode: true
+    
+    # 重试策略
+    retryPolicy:
+      maxRetries: 3
+      retryInterval: 1s
+      backoffFactor: 2.0
+
+loadBalancer:
+  type: "round_robin"  # 可选: round_robin, random, consistent_hash, weighted_random, least_active
+
+cache:
+  ttl: 30s
+  refreshPeriod: 10s
