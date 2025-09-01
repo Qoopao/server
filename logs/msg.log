@@ -1,0 +1,3 @@
+{"level":"INFO","timestamp":"2025-08-31T21:40:04.343+0800","caller":"msg/handler.go:69","message":"SendMessages called","convID":"0:1:rhpop:rhpxmock","sendID":"rhpxmock","clientMsgID":"1756647604012545aIXKbleX","msgCount":1}
+{"level":"INFO","timestamp":"2025-08-31T21:40:04.344+0800","caller":"msg/send.go:115","message":"createConversationIfNeed: creating new conversation","convID":"0:1:rhpop:rhpxmock","ownerUserID":"rhpxmock"}
+{"level":"INFO","timestamp":"2025-08-31T21:40:04.347+0800","caller":"msg/handler.go:87","message":"SendMessages success","convID":"0:1:rhpop:rhpxmock","clientMsgID":"1756647604012545aIXKbleX"}

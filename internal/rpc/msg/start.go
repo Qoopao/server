@@ -9,9 +9,15 @@ import (
 	"github.com/roc/roc-im-server/pkg/common/storage/controller"
 	"github.com/roc/roc-im-server/tools/kvstore"
 	"github.com/roc/roc-im-server/tools/mq" // 替换为实际的包路径
+	"go.uber.org/zap"
 )
 
 func Start() {
+	// 初始化日志
+	if err := InitLogger(); err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer Sync()
 
 	var (
 		err   error
@@ -43,6 +49,7 @@ func Start() {
 	err = svr.Run()
 
 	if err != nil {
+		Logger.Error("Failed to run server", zap.Error(err))
 		log.Println(err.Error())
 	}
 }

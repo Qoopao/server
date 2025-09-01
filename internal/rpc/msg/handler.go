@@ -2,9 +2,11 @@ package msg
 
 import (
 	"context"
+
 	msg "github.com/roc/roc-im-server/internal/kitex_gen/msg"
 	sdkws "github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/roc/roc-im-server/pkg/common/storage/controller"
+	"go.uber.org/zap"
 )
 
 // MessageServiceImpl implements the last service interface defined in the IDL.
@@ -62,8 +64,32 @@ func (s *MessageServiceImpl) SearchMessage(ctx context.Context, req *msg.SearchM
 
 // SendMessages implements the MessageServiceImpl interface.
 func (s *MessageServiceImpl) SendMessages(ctx context.Context, req *sdkws.SendMessageReq) (resp *sdkws.SendMessageResp, err error) {
-	// TODO: Your code here...
-	return s.sendMessages(ctx, req)
+	if len(req.Msgs) > 0 {
+		firstMsg := req.Msgs[0]
+		Logger.Info("SendMessages called",
+			zap.String("convID", firstMsg.ConvID),
+			zap.String("sendID", firstMsg.SendID),
+			zap.String("clientMsgID", firstMsg.ClientMsgID),
+			zap.Int("msgCount", len(req.Msgs)))
+	}
+
+	resp, err = s.sendMessages(ctx, req)
+	if err != nil {
+		if len(req.Msgs) > 0 {
+			firstMsg := req.Msgs[0]
+			Logger.Error("SendMessages failed",
+				zap.String("convID", firstMsg.ConvID),
+				zap.Error(err))
+		}
+	} else {
+		if len(req.Msgs) > 0 {
+			firstMsg := req.Msgs[0]
+			Logger.Info("SendMessages success",
+				zap.String("convID", firstMsg.ConvID),
+				zap.String("clientMsgID", firstMsg.ClientMsgID))
+		}
+	}
+	return
 }
 
 // SendSimpleMsg implements the MessageServiceImpl interface.
