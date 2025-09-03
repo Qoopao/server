@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/roc/roc-im-server/tools/db"
+	"github.com/roc/roc-im-server/tools/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.uber.org/zap"
 )
 
 // User 用户实体示例
@@ -35,12 +35,17 @@ type Message struct {
 
 // MongoDBExample_main MongoDB示例主函数
 func MongoDBExample_main() {
-	// 创建 zap logger - 输出到文件
-	dbConfig := zap.NewProductionConfig()
-	dbConfig.OutputPaths = []string{
+	// 创建日志配置
+	logConfig := log.ProductionConfig()
+	logConfig.OutputPaths = []string{
 		"logs/mongodb_example.log", // 输出到文件
 	}
-	logger, _ := dbConfig.Build()
+
+	// 创建日志器
+	logger, err := log.NewZapLogger(logConfig)
+	if err != nil {
+		panic(fmt.Sprintf("创建日志器失败: %v", err))
+	}
 	defer logger.Sync()
 
 	logger.Info("=== MongoDB 示例开始 ===")
@@ -61,13 +66,13 @@ func MongoDBExample_main() {
 	defer cancel()
 
 	if err := mongoDB.Connect(ctx); err != nil {
-		logger.Fatal("连接MongoDB失败", zap.Error(err))
+		logger.Fatal("连接MongoDB失败", log.Error(err))
 	}
 	defer mongoDB.Disconnect(ctx)
 
 	// 测试连接
 	if err := mongoDB.Ping(ctx); err != nil {
-		logger.Fatal("Ping MongoDB失败", zap.Error(err))
+		logger.Fatal("Ping MongoDB失败", log.Error(err))
 	}
 	logger.Info("✓ MongoDB连接成功")
 
@@ -94,7 +99,7 @@ func MongoDBExample_main() {
 }
 
 // testUserOperations 测试用户操作
-func testUserOperations(ctx context.Context, collection db.Collection, logger *zap.Logger) {
+func testUserOperations(ctx context.Context, collection db.Collection, logger log.Logger) {
 	logger.Info("--- 测试用户操作 ---")
 
 	// 创建用户
@@ -109,10 +114,10 @@ func testUserOperations(ctx context.Context, collection db.Collection, logger *z
 
 	result, err := collection.InsertOne(ctx, user)
 	if err != nil {
-		logger.Error("插入用户失败", zap.Error(err))
+		logger.Error("插入用户失败", log.Error(err))
 		return
 	}
-	logger.Info("✓ 创建用户成功", zap.Any("ID", result.InsertedID))
+	logger.Info("✓ 创建用户成功", log.Any("ID", result.InsertedID))
 
 	// 批量创建用户
 	users := []interface{}{
@@ -141,7 +146,7 @@ func testUserOperations(ctx context.Context, collection db.Collection, logger *z
 
 	_, err = collection.InsertMany(ctx, users)
 	if err != nil {
-		logger.Error("批量插入用户失败", zap.Error(err))
+		logger.Error("批量插入用户失败", log.Error(err))
 		return
 	}
 	logger.Info("✓ 批量创建用户成功")
@@ -150,17 +155,17 @@ func testUserOperations(ctx context.Context, collection db.Collection, logger *z
 	filter := bson.M{"is_active": true}
 	cursor, err := collection.Find(ctx, filter)
 	if err != nil {
-		logger.Error("查询用户失败", zap.Error(err))
+		logger.Error("查询用户失败", log.Error(err))
 		return
 	}
 	defer cursor.Close(ctx)
 
 	var activeUsers []User
 	if err = cursor.All(ctx, &activeUsers); err != nil {
-		logger.Error("解析用户数据失败", zap.Error(err))
+		logger.Error("解析用户数据失败", log.Error(err))
 		return
 	}
-	logger.Info("✓ 查询到活跃用户", zap.Int("count", len(activeUsers)))
+	logger.Info("✓ 查询到活跃用户", log.Int("count", len(activeUsers)))
 
 	// 更新用户
 	update := bson.M{
@@ -171,22 +176,22 @@ func testUserOperations(ctx context.Context, collection db.Collection, logger *z
 	}
 	updateResult, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		logger.Error("更新用户失败", zap.Error(err))
+		logger.Error("更新用户失败", log.Error(err))
 		return
 	}
-	logger.Info("✓ 更新了用户", zap.Int64("count", updateResult.ModifiedCount))
+	logger.Info("✓ 更新了用户", log.Int64("count", updateResult.ModifiedCount))
 
 	// 统计用户数量
 	count, err := collection.CountDocuments(ctx, bson.M{})
 	if err != nil {
-		logger.Error("统计用户数量失败", zap.Error(err))
+		logger.Error("统计用户数量失败", log.Error(err))
 		return
 	}
-	logger.Info("✓ 总用户数", zap.Int64("count", count))
+	logger.Info("✓ 总用户数", log.Int64("count", count))
 }
 
 // testMessageOperations 测试消息操作
-func testMessageOperations(ctx context.Context, collection db.Collection, logger *zap.Logger) {
+func testMessageOperations(ctx context.Context, collection db.Collection, logger log.Logger) {
 	logger.Info("--- 测试消息操作 ---")
 
 	// 创建消息
@@ -202,7 +207,7 @@ func testMessageOperations(ctx context.Context, collection db.Collection, logger
 
 	result, err := collection.InsertOne(ctx, message)
 	if err != nil {
-		logger.Error("插入消息失败", zap.Error(err))
+		logger.Error("插入消息失败", log.Error(err))
 		return
 	}
 	fmt.Printf("✓ 创建消息成功，ID: %v\n", result.InsertedID)
@@ -212,14 +217,14 @@ func testMessageOperations(ctx context.Context, collection db.Collection, logger
 	opts := options.Find().SetSort(bson.M{"created_at": -1}).SetLimit(10)
 	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
-		logger.Error("查询消息失败", zap.Error(err))
+		logger.Error("查询消息失败", log.Error(err))
 		return
 	}
 	defer cursor.Close(ctx)
 
 	var messages []Message
 	if err = cursor.All(ctx, &messages); err != nil {
-		logger.Error("解析消息数据失败", zap.Error(err))
+		logger.Error("解析消息数据失败", log.Error(err))
 		return
 	}
 	fmt.Printf("✓ 查询到 %d 条文本消息\n", len(messages))
@@ -234,14 +239,14 @@ func testMessageOperations(ctx context.Context, collection db.Collection, logger
 	}
 	updateResult, err := collection.UpdateMany(ctx, updateFilter, update)
 	if err != nil {
-		logger.Error("更新消息状态失败", zap.Error(err))
+		logger.Error("更新消息状态失败", log.Error(err))
 		return
 	}
 	fmt.Printf("✓ 更新了 %d 条消息状态\n", updateResult.ModifiedCount)
 }
 
 // testAggregation 测试聚合查询
-func testAggregation(ctx context.Context, collection db.Collection, logger *zap.Logger) {
+func testAggregation(ctx context.Context, collection db.Collection, logger log.Logger) {
 	logger.Info("--- 测试聚合查询 ---")
 
 	// 按类型统计消息数量
@@ -259,14 +264,14 @@ func testAggregation(ctx context.Context, collection db.Collection, logger *zap.
 
 	cursor, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {
-		logger.Error("聚合查询失败", zap.Error(err))
+		logger.Error("聚合查询失败", log.Error(err))
 		return
 	}
 	defer cursor.Close(ctx)
 
 	var results []bson.M
 	if err = cursor.All(ctx, &results); err != nil {
-		logger.Error("解析聚合结果失败", zap.Error(err))
+		logger.Error("解析聚合结果失败", log.Error(err))
 		return
 	}
 
@@ -277,7 +282,7 @@ func testAggregation(ctx context.Context, collection db.Collection, logger *zap.
 }
 
 // testTransaction 测试事务
-func testTransaction(ctx context.Context, mongoDB db.Database, logger *zap.Logger) {
+func testTransaction(ctx context.Context, mongoDB db.Database, logger log.Logger) {
 	logger.Info("--- 测试事务 ---")
 	logger.Info("注意：单机MongoDB不支持事务，需要副本集或分片集群")
 
@@ -297,7 +302,7 @@ func testTransaction(ctx context.Context, mongoDB db.Database, logger *zap.Logge
 
 	userResult, err := userCollection.InsertOne(ctx, user)
 	if err != nil {
-		logger.Error("创建用户失败", zap.Error(err))
+		logger.Error("创建用户失败", log.Error(err))
 		return
 	}
 
@@ -314,7 +319,7 @@ func testTransaction(ctx context.Context, mongoDB db.Database, logger *zap.Logge
 
 	_, err = messageCollection.InsertOne(ctx, message)
 	if err != nil {
-		logger.Error("创建消息失败", zap.Error(err))
+		logger.Error("创建消息失败", log.Error(err))
 		return
 	}
 
@@ -322,7 +327,7 @@ func testTransaction(ctx context.Context, mongoDB db.Database, logger *zap.Logge
 }
 
 // testIndexes 测试索引
-func testIndexes(ctx context.Context, mongoDB db.Database, logger *zap.Logger) {
+func testIndexes(ctx context.Context, mongoDB db.Database, logger log.Logger) {
 	logger.Info("--- 测试索引 ---")
 
 	// 创建用户邮箱唯一索引（检查是否已存在）
@@ -338,7 +343,7 @@ func testIndexes(ctx context.Context, mongoDB db.Database, logger *zap.Logger) {
 		if strings.Contains(err.Error(), "duplicate key error") || strings.Contains(err.Error(), "already exists") {
 			logger.Info("✓ 邮箱唯一索引已存在")
 		} else {
-			logger.Error("创建邮箱索引失败", zap.Error(err))
+			logger.Error("创建邮箱索引失败", log.Error(err))
 		}
 	} else {
 		logger.Info("✓ 创建邮箱唯一索引成功")
@@ -361,7 +366,7 @@ func testIndexes(ctx context.Context, mongoDB db.Database, logger *zap.Logger) {
 		if strings.Contains(err.Error(), "duplicate key error") || strings.Contains(err.Error(), "already exists") {
 			logger.Info("✓ 消息复合索引已存在")
 		} else {
-			logger.Error("创建消息复合索引失败", zap.Error(err))
+			logger.Error("创建消息复合索引失败", log.Error(err))
 		}
 	} else {
 		logger.Info("✓ 创建消息复合索引成功")
@@ -370,9 +375,9 @@ func testIndexes(ctx context.Context, mongoDB db.Database, logger *zap.Logger) {
 	// 列出索引
 	indexes, err := mongoDB.ListIndexes(ctx, "users")
 	if err != nil {
-		logger.Error("列出索引失败", zap.Error(err))
+		logger.Error("列出索引失败", log.Error(err))
 		return
 	}
 
-	logger.Info("✓ 用户集合索引数量", zap.Int("count", len(indexes)))
+	logger.Info("✓ 用户集合索引数量", log.Int("count", len(indexes)))
 }
