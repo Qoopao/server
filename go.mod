@@ -26,10 +26,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb // indirect
 )
 
-require (
-	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/stretchr/testify v1.10.0
-)
+require github.com/stretchr/testify v1.10.0
 
 require (
 	github.com/IBM/sarama v1.43.0
