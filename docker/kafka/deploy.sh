@@ -31,7 +31,7 @@ log_debug() {
 
 # 脚本目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOCKER_DIR="$(dirname "$SCRIPT_DIR")"
+DOCKER_DIR="$SCRIPT_DIR"
 
 # 显示帮助信息
 show_help() {
@@ -73,8 +73,8 @@ check_docker() {
         exit 1
     fi
 
-    # 检查 Docker Compose（支持新旧两种格式）
-    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+    # 检查 Docker Compose
+    if ! command -v docker-compose &> /dev/null; then
         log_error "Docker Compose 未安装"
         log_info "请先安装 Docker Compose: https://docs.docker.com/compose/install/"
         exit 1
@@ -94,82 +94,43 @@ start_kraft() {
     cd "$DOCKER_DIR"
     
     # 检查是否已经运行
-    if command -v docker-compose &> /dev/null; then
-        if docker-compose -f docker-compose.kraft.yml ps | grep -q "kafka-[1-3].*Up"; then
-            log_info "KRaft 模式 Kafka 已经在运行中"
-            log_info "Kafka 端点:"
-            log_info "  - kafka-1: localhost:9092"
-            log_info "  - kafka-2: localhost:9094"
-            log_info "  - kafka-3: localhost:9096"
-            log_info "Kafka UI: http://localhost:8080"
-            return 0
-        fi
-    else
-        if docker compose -f docker-compose.kraft.yml ps | grep -q "kafka-[1-3].*Up"; then
-            log_info "KRaft 模式 Kafka 已经在运行中"
-            log_info "Kafka 端点:"
-            log_info "  - kafka-1: localhost:9092"
-            log_info "  - kafka-2: localhost:9094"
-            log_info "  - kafka-3: localhost:9096"
-            log_info "Kafka UI: http://localhost:8080"
-            return 0
-        fi
+    if docker-compose -f docker-compose.kraft.yml ps | grep -q "kafka-[1-3].*Up"; then
+        log_info "KRaft 模式 Kafka 已经在运行中"
+        log_info "Kafka 端点:"
+        log_info "  - kafka-1: localhost:9092"
+        log_info "  - kafka-2: localhost:9094"
+        log_info "  - kafka-3: localhost:9096"
+        log_info "Kafka UI: http://localhost:8080"
+        return 0
     fi
     
-    # 使用兼容的 Docker Compose 命令
-    if command -v docker-compose &> /dev/null; then
-        docker-compose -f docker-compose.kraft.yml up -d
-    else
-        docker compose -f docker-compose.kraft.yml up -d
-    fi
+    # 使用 Docker Compose 命令
+    docker-compose -f docker-compose.kraft.yml up -d
     
     log_info "等待 Kafka 启动..."
     sleep 10
     
     # 验证启动
-    if command -v docker-compose &> /dev/null; then
-        # 等待所有容器启动
-        local retry_count=0
-        while [ $retry_count -lt 3 ]; do
-            if docker-compose -f docker-compose.kraft.yml ps | grep -q "kafka-[1-3].*Up"; then
-                log_info "KRaft 模式 Kafka 启动成功"
-                log_info "Kafka 端点:"
-                log_info "  - kafka-1: localhost:9092"
-                log_info "  - kafka-2: localhost:9094"
-                log_info "  - kafka-3: localhost:9096"
-                log_info "Kafka UI: http://localhost:8080"
-                return 0
-            fi
-            log_info "等待 Kafka 容器完全启动... (重试 $((retry_count + 1))/3)"
-            sleep 5
-            retry_count=$((retry_count + 1))
-        done
-        
-        log_error "KRaft 模式 Kafka 启动失败"
-        docker-compose -f docker-compose.kraft.yml logs
-        exit 1
-    else
-        # 等待所有容器启动
-        local retry_count=0
-        while [ $retry_count -lt 3 ]; do
-            if docker compose -f docker-compose.kraft.yml ps | grep -q "kafka-[1-3].*Up"; then
-                log_info "KRaft 模式 Kafka 启动成功"
-                log_info "Kafka 端点:"
-                log_info "  - kafka-1: localhost:9092"
-                log_info "  - kafka-2: localhost:9094"
-                log_info "  - kafka-3: localhost:9096"
-                log_info "Kafka UI: http://localhost:8080"
-                return 0
-            fi
-            log_info "等待 Kafka 容器完全启动... (重试 $((retry_count + 1))/3)"
-            sleep 5
-            retry_count=$((retry_count + 1))
-        done
-        
-        log_error "KRaft 模式 Kafka 启动失败"
-        docker compose -f docker-compose.kraft.yml logs
-        exit 1
-    fi
+    # 等待所有容器启动
+    local retry_count=0
+    while [ $retry_count -lt 3 ]; do
+        if docker-compose -f docker-compose.kraft.yml ps | grep -q "kafka-[1-3].*Up"; then
+            log_info "KRaft 模式 Kafka 启动成功"
+            log_info "Kafka 端点:"
+            log_info "  - kafka-1: localhost:9092"
+            log_info "  - kafka-2: localhost:9094"
+            log_info "  - kafka-3: localhost:9096"
+            log_info "Kafka UI: http://localhost:8080"
+            return 0
+        fi
+        log_info "等待 Kafka 容器完全启动... (重试 $((retry_count + 1))/3)"
+        sleep 5
+        retry_count=$((retry_count + 1))
+    done
+    
+    log_error "KRaft 模式 Kafka 启动失败"
+    docker-compose -f docker-compose.kraft.yml logs
+    exit 1
 }
 
 # 启动 ZooKeeper 模式 Kafka
@@ -184,12 +145,8 @@ stop_kafka() {
     log_info "停止 Kafka 容器..."
     cd "$DOCKER_DIR"
     
-    # 停止所有 Kafka 相关容器（使用兼容的 Docker Compose 命令）
-    if command -v docker-compose &> /dev/null; then
-        docker-compose -f docker-compose.kraft.yml down 2>/dev/null || true
-    else
-        docker compose -f docker-compose.kraft.yml down 2>/dev/null || true
-    fi
+    # 停止所有 Kafka 相关容器
+    docker-compose -f docker-compose.kraft.yml down 2>/dev/null || true
     
     log_info "Kafka 容器已停止"
 }
@@ -265,11 +222,7 @@ clean_kafka() {
         cd "$DOCKER_DIR"
         
         # 停止并删除容器
-        if command -v docker-compose &> /dev/null; then
-            docker-compose -f docker-compose.kraft.yml down -v 2>/dev/null || true
-        else
-            docker compose -f docker-compose.kraft.yml down -v 2>/dev/null || true
-        fi
+        docker-compose -f docker-compose.kraft.yml down -v 2>/dev/null || true
         
         # 删除 Kafka 相关镜像
         docker rmi confluentinc/cp-kafka:7.4.0 2>/dev/null || true

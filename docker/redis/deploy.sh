@@ -31,7 +31,7 @@ log_debug() {
 
 # 脚本目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOCKER_DIR="$(dirname "$SCRIPT_DIR")"
+DOCKER_DIR="$SCRIPT_DIR"
 
 # 显示帮助信息
 show_help() {
@@ -69,8 +69,8 @@ check_docker() {
         exit 1
     fi
 
-    # 检查 Docker Compose（支持新旧两种格式）
-    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+    # 检查 Docker Compose
+    if ! command -v docker-compose &> /dev/null; then
         log_error "Docker Compose 未安装"
         log_info "请先安装 Docker Compose: https://docs.docker.com/compose/install/"
         exit 1
@@ -90,70 +90,37 @@ start_standalone() {
     cd "$DOCKER_DIR"
     
     # 检查是否已经运行
-    if command -v docker-compose &> /dev/null; then
-        if docker-compose ps | grep -q "redis-standalone.*Up"; then
-            log_info "单机版 Redis 已经在运行中"
-            log_info "Redis 端点: localhost:6379"
-            log_info "Redis UI: http://localhost:8081"
-            return 0
-        fi
-    else
-        if docker compose ps | grep -q "redis-standalone.*Up"; then
-            log_info "单机版 Redis 已经在运行中"
-            log_info "Redis 端点: localhost:6379"
-            log_info "Redis UI: http://localhost:8081"
-            return 0
-        fi
+    if docker-compose ps | grep -q "redis-standalone.*Up"; then
+        log_info "单机版 Redis 已经在运行中"
+        log_info "Redis 端点: localhost:6379"
+        log_info "Redis UI: http://localhost:8081"
+        return 0
     fi
     
-    # 使用兼容的 Docker Compose 命令（暂时不启动 redis-commander）
-    if command -v docker-compose &> /dev/null; then
-        docker-compose up -d redis-standalone
-    else
-        docker compose up -d redis-standalone
-    fi
+    # 使用 Docker Compose 命令（暂时不启动 redis-commander）
+    docker-compose up -d redis-standalone
     
     log_info "等待 Redis 启动..."
     sleep 3
     
     # 验证启动
-    if command -v docker-compose &> /dev/null; then
-        # 等待容器启动
-        local retry_count=0
-        while [ $retry_count -lt 3 ]; do
-            if docker-compose ps | grep -q "redis-standalone.*Up"; then
-                log_info "单机版 Redis 启动成功"
-                log_info "Redis 端点: localhost:6379"
-                log_info "注意: Redis UI 暂时不可用（镜像拉取问题）"
-                return 0
-            fi
-            log_info "等待 Redis 容器完全启动... (重试 $((retry_count + 1))/3)"
-            sleep 3
-            retry_count=$((retry_count + 1))
-        done
-        
-        log_error "单机版 Redis 启动失败"
-        docker-compose logs redis-standalone
-        exit 1
-    else
-        # 等待容器启动
-        local retry_count=0
-        while [ $retry_count -lt 3 ]; do
-            if docker compose ps | grep -q "redis-standalone.*Up"; then
-                log_info "单机版 Redis 启动成功"
-                log_info "Redis 端点: localhost:6379"
-                log_info "注意: Redis UI 暂时不可用（镜像拉取问题）"
-                return 0
-            fi
-            log_info "等待 Redis 容器完全启动... (重试 $((retry_count + 1))/3)"
-            sleep 3
-            retry_count=$((retry_count + 1))
-        done
-        
-        log_error "单机版 Redis 启动失败"
-        docker compose logs redis-standalone
-        exit 1
-    fi
+    # 等待容器启动
+    local retry_count=0
+    while [ $retry_count -lt 3 ]; do
+        if docker-compose ps | grep -q "redis-standalone.*Up"; then
+            log_info "单机版 Redis 启动成功"
+            log_info "Redis 端点: localhost:6379"
+            log_info "注意: Redis UI 暂时不可用（镜像拉取问题）"
+            return 0
+        fi
+        log_info "等待 Redis 容器完全启动... (重试 $((retry_count + 1))/3)"
+        sleep 3
+        retry_count=$((retry_count + 1))
+    done
+    
+    log_error "单机版 Redis 启动失败"
+    docker-compose logs redis-standalone
+    exit 1
 }
 
 # 启动集群版 Redis
@@ -162,73 +129,38 @@ start_cluster() {
     cd "$DOCKER_DIR"
     
     # 检查是否已经运行
-    if command -v docker-compose &> /dev/null; then
-        if docker-compose ps | grep -c "redis-[1-3].*Up" | grep -q "3"; then
-            log_info "集群版 Redis 已经在运行中"
-            log_info "Redis 集群端点:"
-            log_info "  - redis-1: localhost:6380"
-            log_info "  - redis-2: localhost:6381"
-            log_info "  - redis-3: localhost:6382"
-            return 0
-        fi
-    else
-        if docker compose ps | grep -c "redis-[1-3].*Up" | grep -q "3"; then
-            log_info "集群版 Redis 已经在运行中"
-            log_info "Redis 集群端点:"
-            log_info "  - redis-1: localhost:6380"
-            log_info "  - redis-2: localhost:6381"
-            log_info "  - redis-3: localhost:6382"
-            return 0
-        fi
+    if docker-compose ps | grep -c "redis-[1-3].*Up" | grep -q "3"; then
+        log_info "集群版 Redis 已经在运行中"
+        log_info "Redis 集群端点:"
+        log_info "  - redis-1: localhost:6380"
+        log_info "  - redis-2: localhost:6381"
+        log_info "  - redis-3: localhost:6382"
+        return 0
     fi
     
-    # 使用兼容的 Docker Compose 命令
-    if command -v docker-compose &> /dev/null; then
-        docker-compose up -d redis-1 redis-2 redis-3
-    else
-        docker compose up -d redis-1 redis-2 redis-3
-    fi
+    # 使用 Docker Compose 命令
+    docker-compose up -d redis-1 redis-2 redis-3
     
     log_info "等待 Redis 集群启动..."
     sleep 5
     
     # 验证启动
-    if command -v docker-compose &> /dev/null; then
-        if docker-compose ps | grep -c "redis-[1-3].*Up" | grep -q "3"; then
-            log_info "集群版 Redis 启动成功"
-            log_info "Redis 集群端点:"
-            log_info "  - redis-1: localhost:6380"
-            log_info "  - redis-2: localhost:6381"
-            log_info "  - redis-3: localhost:6382"
-            
-            # 初始化集群
-            log_info "初始化 Redis 集群..."
-            docker exec redis-1 redis-cli -a redis123 --cluster create \
-                127.0.0.1:6380 127.0.0.1:6381 127.0.0.1:6382 \
-                --cluster-replicas 0 --cluster-yes
-        else
-            log_error "集群版 Redis 启动失败"
-            docker-compose logs redis-1 redis-2 redis-3
-            exit 1
-        fi
+    if docker-compose ps | grep -c "redis-[1-3].*Up" | grep -q "3"; then
+        log_info "集群版 Redis 启动成功"
+        log_info "Redis 集群端点:"
+        log_info "  - redis-1: localhost:6380"
+        log_info "  - redis-2: localhost:6381"
+        log_info "  - redis-3: localhost:6382"
+        
+        # 初始化集群
+        log_info "初始化 Redis 集群..."
+        docker exec redis-1 redis-cli -a redis123 --cluster create \
+            127.0.0.1:6380 127.0.0.1:6381 127.0.0.1:6382 \
+            --cluster-replicas 0 --cluster-yes
     else
-        if docker compose ps | grep -c "redis-[1-3].*Up" | grep -q "3"; then
-            log_info "集群版 Redis 启动成功"
-            log_info "Redis 集群端点:"
-            log_info "  - redis-1: localhost:6380"
-            log_info "  - redis-2: localhost:6381"
-            log_info "  - redis-3: localhost:6382"
-            
-            # 初始化集群
-            log_info "初始化 Redis 集群..."
-            docker exec redis-1 redis-cli -a redis123 --cluster create \
-                127.0.0.1:6380 127.0.0.1:6381 127.0.0.1:6382 \
-                --cluster-replicas 0 --cluster-yes
-        else
-            log_error "集群版 Redis 启动失败"
-            docker compose logs redis-1 redis-2 redis-3
-            exit 1
-        fi
+        log_error "集群版 Redis 启动失败"
+        docker-compose logs redis-1 redis-2 redis-3
+        exit 1
     fi
 }
 
@@ -262,7 +194,7 @@ stop_redis() {
     log_info "停止 Redis 容器..."
     cd "$DOCKER_DIR"
     
-    docker compose down
+    docker-compose down
     
     log_info "Redis 容器已停止"
 }

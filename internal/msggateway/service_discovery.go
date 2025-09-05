@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/cloudwego/kitex/client"
+	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/transport"
+	"github.com/kitex-contrib/obs-opentelemetry/tracing"
 	"github.com/roc/roc-im-server/internal/kitex_gen/conversation/conversationservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
 	"github.com/roc/roc-im-server/tools/loadbalancer"
@@ -75,7 +77,10 @@ func GetMsgServiceClient() (messageservice.Client, error) {
 	clientInterface, err := discoveryClient.GetKitexClient("msg-service", func(hostPort string) (interface{}, error) {
 		return messageservice.NewClient("msg-service",
 			client.WithHostPorts(hostPort),
-			client.WithTransportProtocol(transport.GRPC))
+			client.WithTransportProtocol(transport.GRPC),
+			client.WithSuite(tracing.NewClientSuite()),
+			client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "msg-service"}),
+		)
 	})
 
 	if err != nil {

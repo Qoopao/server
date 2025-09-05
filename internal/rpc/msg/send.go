@@ -7,6 +7,7 @@ package msg
 import (
 	"context"
 
+	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/google/uuid"
 	"github.com/openimsdk/tools/errs"
 	"github.com/roc/roc-im-server/internal/kitex_gen/conversation"
@@ -16,6 +17,9 @@ import (
 
 // SendMsg implements the MessageServiceImpl interface.
 func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMessageReq) (resp *sdkws.SendMessageResp, err error) {
+
+	klog.CtxDebugf(ctx, "echo called: %s", "sendMessages")
+
 	// 1、check
 	if len(req.Msgs) == 0 {
 		Logger.Warn("sendMessages: msgs is empty")

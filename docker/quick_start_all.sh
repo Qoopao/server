@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 统一快速启动脚本
-# 支持 etcd, kafka, redis, mongodb, rocketmq
+# 支持 etcd, kafka, redis, mongodb, rocketmq, otel (OpenTelemetry监控栈)
 
 set -e
 
@@ -20,8 +20,8 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-# 检查 Docker Compose（支持新旧两种格式）
-if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+# 检查 Docker Compose
+if ! command -v docker-compose &> /dev/null; then
     echo -e "${YELLOW}❌ Docker Compose 未安装，请先安装 Docker Compose${NC}"
     exit 1
 fi
@@ -41,12 +41,13 @@ show_menu() {
     echo "3) 启动 redis (缓存)"
     echo "4) 启动 mongodb (数据库)"
     echo "5) 启动 rocketmq (消息队列)"
-    echo "6) 启动所有服务"
-    echo "7) 停止所有服务"
-    echo "8) 查看服务状态"
+    echo "6) 启动 otel (OpenTelemetry监控栈)"
+    echo "7) 启动所有服务"
+    echo "8) 停止所有服务"
+    echo "9) 查看服务状态"
     echo "0) 退出"
     echo ""
-    read -p "请输入选择 (0-8): " choice
+    read -p "请输入选择 (0-9): " choice
 }
 
 # 启动 etcd
@@ -57,7 +58,7 @@ start_etcd() {
     if docker ps | grep -q "etcd-standalone"; then
         echo -e "${YELLOW}⚠️  etcd 已经在运行中${NC}"
     else
-        ./scripts/deploy.sh standalone
+        ./deploy.sh standalone
     fi
     cd ..
 }
@@ -70,7 +71,7 @@ start_kafka() {
     if docker ps | grep -q "kafka-[1-3]"; then
         echo -e "${YELLOW}⚠️  kafka 已经在运行中${NC}"
     else
-        ./scripts/deploy.sh kraft
+        ./deploy.sh kraft
     fi
     cd ..
 }
@@ -83,7 +84,7 @@ start_redis() {
     if docker ps | grep -q "redis-standalone"; then
         echo -e "${YELLOW}⚠️  redis 已经在运行中${NC}"
     else
-        ./scripts/deploy.sh standalone
+        ./deploy.sh standalone
     fi
     cd ..
 }
@@ -96,7 +97,7 @@ start_mongodb() {
     if docker ps | grep -q "mongodb-standalone"; then
         echo -e "${YELLOW}⚠️  mongodb 已经在运行中${NC}"
     else
-        ./scripts/deploy.sh standalone
+        ./deploy.sh standalone
     fi
     cd ..
 }
@@ -109,7 +110,25 @@ start_rocketmq() {
     if docker ps | grep -q "rmqnamesrv"; then
         echo -e "${YELLOW}⚠️  rocketmq 已经在运行中${NC}"
     else
-        ./scripts/deploy.sh standalone
+        ./deploy.sh standalone
+    fi
+    cd ..
+}
+
+# 启动 OpenTelemetry 监控栈
+start_otel() {
+    echo -e "${GREEN}📦 启动 OpenTelemetry 监控栈...${NC}"
+    cd "$(dirname "$0")/otel"
+    # 检查是否已经运行
+    if docker ps | grep -q "otel-collector"; then
+        echo -e "${YELLOW}⚠️  OpenTelemetry 监控栈已经在运行中${NC}"
+    else
+        # 先尝试简化版本，如果失败则提示网络问题
+        if ./deploy.sh start-simple; then
+            echo -e "${GREEN}✅ 简化版 OpenTelemetry 监控栈启动成功${NC}"
+        else
+            echo -e "${YELLOW}❌ OpenTelemetry 监控栈启动失败${NC}"
+        fi
     fi
     cd ..
 }
@@ -122,6 +141,7 @@ start_all() {
     start_redis
     start_mongodb
     start_rocketmq
+    start_otel
 }
 
 # 停止所有服务
@@ -131,31 +151,37 @@ stop_all() {
     # 停止 etcd
     echo -e "${YELLOW}停止 etcd...${NC}"
     cd "$(dirname "$0")/etcd"
-    ./scripts/deploy.sh stop
+    ./deploy.sh stop
     cd ..
     
     # 停止 kafka
     echo -e "${YELLOW}停止 kafka...${NC}"
     cd "$(dirname "$0")/kafka"
-    ./scripts/deploy.sh stop
+    ./deploy.sh stop
     cd ..
     
     # 停止 redis
     echo -e "${YELLOW}停止 redis...${NC}"
     cd "$(dirname "$0")/redis"
-    ./scripts/deploy.sh stop
+    ./deploy.sh stop
     cd ..
     
     # 停止 mongodb
     echo -e "${YELLOW}停止 mongodb...${NC}"
     cd "$(dirname "$0")/mongodb"
-    ./scripts/deploy.sh stop
+    ./deploy.sh stop
     cd ..
     
     # 停止 rocketmq
     echo -e "${YELLOW}停止 rocketmq...${NC}"
     cd "$(dirname "$0")/rocketmq"
-    ./scripts/deploy.sh stop
+    ./deploy.sh stop
+    cd ..
+    
+    # 停止 otel
+    echo -e "${YELLOW}停止 OpenTelemetry 监控栈...${NC}"
+    cd "$(dirname "$0")/otel"
+    ./deploy.sh stop
     cd ..
     
     echo -e "${GREEN}✅ 所有服务已停止${NC}"
@@ -201,6 +227,13 @@ show_status() {
         echo -e "${YELLOW}❌ rocketmq: 未运行${NC}"
     fi
     
+    # 检查 otel
+    if docker ps | grep -q "otel-collector"; then
+        echo -e "${GREEN}✅ otel: 运行中${NC}"
+    else
+        echo -e "${YELLOW}❌ otel: 未运行${NC}"
+    fi
+    
     echo ""
 }
 
@@ -219,13 +252,18 @@ show_info() {
     echo "  - mongo-express: http://localhost:8082"
     echo "  - rocketmq: localhost:9876"
     echo "  - rocketmq-console: http://localhost:8083"
+    echo "  - grafana: http://localhost:3000 (admin/admin123)"
+    echo "  - jaeger: http://localhost:16686"
+    echo "  - prometheus: http://localhost:9090"
+    echo "  - loki: http://localhost:3100"
     echo ""
     echo "🔧 管理命令:"
-    echo "  docker/etcd/scripts/deploy.sh status"
-    echo "  docker/kafka/scripts/deploy.sh status"
-    echo "  docker/redis/scripts/deploy.sh status"
-    echo "  docker/mongodb/scripts/deploy.sh status"
-    echo "  docker/rocketmq/scripts/deploy.sh status"
+    echo "  docker/etcd/deploy.sh status"
+    echo "  docker/kafka/deploy.sh status"
+    echo "  docker/redis/deploy.sh status"
+    echo "  docker/mongodb/deploy.sh status"
+    echo "  docker/rocketmq/deploy.sh status"
+    echo "  docker/otel/deploy.sh status"
 }
 
 # 主循环
@@ -254,13 +292,17 @@ while true; do
             show_info
             ;;
         6)
-            start_all
+            start_otel
             show_info
             ;;
         7)
-            stop_all
+            start_all
+            show_info
             ;;
         8)
+            stop_all
+            ;;
+        9)
             show_status
             ;;
         0)
@@ -273,5 +315,4 @@ while true; do
     esac
     
     echo ""
-    read -p "按回车键继续..."
 done

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
 	"github.com/google/uuid"
 	msg "github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
@@ -17,6 +18,9 @@ import (
 	"github.com/roc/roc-im-server/tools/mq"
 	serviceregistry "github.com/roc/roc-im-server/tools/serviceRegistry"
 	"go.uber.org/zap"
+
+	"github.com/kitex-contrib/obs-opentelemetry/provider"
+	"github.com/kitex-contrib/obs-opentelemetry/tracing"
 )
 
 func Start() {
@@ -86,12 +90,21 @@ func Start() {
 		log.Fatalf("Failed to register service instance: %v", err)
 	}
 
+	p := provider.NewOpenTelemetryProvider(
+		provider.WithServiceName("msg-service"),
+		provider.WithExportEndpoint("localhost:4317"),
+		provider.WithInsecure(),
+	)
+	defer p.Shutdown(context.Background())
+
 	// 创建服务器
 	svr := msg.NewServer(
 		&MessageServiceImpl{
 			MsgDatabase: controller.NewCommonMsgDatabase(mqi, store),
 		},
 		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP(localIP), Port: port}),
+		server.WithSuite(tracing.NewServerSuite()),
+		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "msg-service"}),
 	)
 
 	// 优雅关闭处理

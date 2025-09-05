@@ -16,9 +16,11 @@ import (
 	// "github.com/openimsdk/tools/mcontext"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/kitex-contrib/obs-opentelemetry/provider"
 	// "github.com/openimsdk/open-im-server/v3/pkg/common/prommetrics"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/roc/roc-im-server/pkg/common/servererrs"
+
 	// "github.com/openimsdk/protocol/constant"
 	// "github.com/openimsdk/protocol/msggateway"
 	"github.com/openimsdk/tools/discovery"
@@ -132,6 +134,19 @@ func NewWsServer( /*msgGatewayConfig *Config,*/ opts ...Option) *WsServer {
 		o(&config)
 	}
 	//userRpcClient := rpcclient.NewUserRpcClient(client, config.Discovery.RpcService.User, config.Share.IMAdminUserID)
+
+	// 创建 OpenTelemetry Provider，这是连接应用程序与OpenTelemetry的核心组件
+	p := provider.NewOpenTelemetryProvider(
+		// 设置当前服务的名称，在追踪系统中会显示为此名称
+		provider.WithServiceName("msggateway"),
+		// 指定OpenTelemetry Collector的端点地址
+		// 这里使用localhost:4317，表示Collector运行在同一台机器上
+		provider.WithExportEndpoint("localhost:4317"),
+		// 使用非安全连接（不启用TLS），适用于开发环境
+		// 生产环境应使用安全连接并配置证书
+		provider.WithInsecure(),
+	)
+	defer p.Shutdown(context.Background())
 
 	v := validator.New()
 	return &WsServer{

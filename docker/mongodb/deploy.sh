@@ -31,7 +31,7 @@ log_debug() {
 
 # 脚本目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOCKER_DIR="$(dirname "$SCRIPT_DIR")"
+DOCKER_DIR="$SCRIPT_DIR"
 
 # 显示帮助信息
 show_help() {
@@ -70,8 +70,8 @@ check_docker() {
         exit 1
     fi
 
-    # 检查 Docker Compose（支持新旧两种格式）
-    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+    # 检查 Docker Compose
+    if ! command -v docker-compose &> /dev/null; then
         log_error "Docker Compose 未安装"
         log_info "请先安装 Docker Compose: https://docs.docker.com/compose/install/"
         exit 1
@@ -91,78 +91,41 @@ start_standalone() {
     cd "$DOCKER_DIR"
     
     # 检查是否已经运行
-    if command -v docker-compose &> /dev/null; then
-        if docker-compose ps | grep -q "mongodb-standalone.*Up"; then
-            log_info "单机版 MongoDB 已经在运行中"
-            log_info "MongoDB 端点: localhost:27017"
-            log_info "MongoDB UI: http://localhost:8082"
-            log_info "用户名: admin"
-            log_info "密码: admin123"
-            return 0
-        fi
-    else
-        if docker compose ps | grep -q "mongodb-standalone.*Up"; then
-            log_info "单机版 MongoDB 已经在运行中"
-            log_info "MongoDB 端点: localhost:27017"
-            log_info "MongoDB UI: http://localhost:8082"
-            log_info "用户名: admin"
-            log_info "密码: admin123"
-            return 0
-        fi
+    if docker-compose ps | grep -q "mongodb-standalone.*Up"; then
+        log_info "单机版 MongoDB 已经在运行中"
+        log_info "MongoDB 端点: localhost:27017"
+        log_info "MongoDB UI: http://localhost:8082"
+        log_info "用户名: admin"
+        log_info "密码: admin123"
+        return 0
     fi
     
-    # 使用兼容的 Docker Compose 命令
-    if command -v docker-compose &> /dev/null; then
-        docker-compose up -d mongodb-standalone mongo-express
-    else
-        docker compose up -d mongodb-standalone mongo-express
-    fi
+    # 使用 Docker Compose 命令
+    docker-compose up -d mongodb-standalone mongo-express
     
     log_info "等待 MongoDB 启动..."
     sleep 3
     
     # 验证启动
-    if command -v docker-compose &> /dev/null; then
-        # 等待容器启动
-        local retry_count=0
-        while [ $retry_count -lt 3 ]; do
-            if docker-compose ps | grep -q "mongodb-standalone.*Up"; then
-                log_info "单机版 MongoDB 启动成功"
-                log_info "MongoDB 端点: localhost:27017"
-                log_info "MongoDB UI: http://localhost:8082"
-                log_info "用户名: admin"
-                log_info "密码: admin123"
-                return 0
-            fi
-            log_info "等待 MongoDB 容器完全启动... (重试 $((retry_count + 1))/3)"
-            sleep 5
-            retry_count=$((retry_count + 1))
-        done
-        
-        log_error "单机版 MongoDB 启动失败"
-        docker-compose logs mongodb-standalone
-        exit 1
-    else
-        # 等待容器启动
-        local retry_count=0
-        while [ $retry_count -lt 3 ]; do
-            if docker compose ps | grep -q "mongodb-standalone.*Up"; then
-                log_info "单机版 MongoDB 启动成功"
-                log_info "MongoDB 端点: localhost:27017"
-                log_info "MongoDB UI: http://localhost:8082"
-                log_info "用户名: admin"
-                log_info "密码: admin123"
-                return 0
-            fi
-            log_info "等待 MongoDB 容器完全启动... (重试 $((retry_count + 1))/3)"
-            sleep 5
-            retry_count=$((retry_count + 1))
-        done
-        
-        log_error "单机版 MongoDB 启动失败"
-        docker compose logs mongodb-standalone
-        exit 1
-    fi
+    # 等待容器启动
+    local retry_count=0
+    while [ $retry_count -lt 3 ]; do
+        if docker-compose ps | grep -q "mongodb-standalone.*Up"; then
+            log_info "单机版 MongoDB 启动成功"
+            log_info "MongoDB 端点: localhost:27017"
+            log_info "MongoDB UI: http://localhost:8082"
+            log_info "用户名: admin"
+            log_info "密码: admin123"
+            return 0
+        fi
+        log_info "等待 MongoDB 容器完全启动... (重试 $((retry_count + 1))/3)"
+        sleep 5
+        retry_count=$((retry_count + 1))
+    done
+    
+    log_error "单机版 MongoDB 启动失败"
+    docker-compose logs mongodb-standalone
+    exit 1
 }
 
 # 启动副本集 MongoDB
@@ -170,51 +133,28 @@ start_replica() {
     log_info "启动副本集 MongoDB..."
     cd "$DOCKER_DIR"
     
-    # 使用兼容的 Docker Compose 命令
-    if command -v docker-compose &> /dev/null; then
-        docker-compose up -d mongodb-1 mongodb-2 mongodb-3 mongo-express
-    else
-        docker compose up -d mongodb-1 mongodb-2 mongodb-3 mongo-express
-    fi
+    # 使用 Docker Compose 命令
+    docker-compose up -d mongodb-1 mongodb-2 mongodb-3 mongo-express
     
     log_info "等待 MongoDB 副本集启动..."
     sleep 5
     
     # 验证启动
-    if command -v docker-compose &> /dev/null; then
-        if docker-compose ps | grep -c "mongodb-[1-3].*Up" | grep -q "3"; then
-            log_info "副本集 MongoDB 启动成功"
-            log_info "副本集端点:"
-            log_info "  - mongodb-1: localhost:27018"
-            log_info "  - mongodb-2: localhost:27019"
-            log_info "  - mongodb-3: localhost:27020"
-            log_info "MongoDB UI: http://localhost:8082"
-            
-            # 初始化副本集
-            log_info "初始化副本集..."
-            docker exec mongodb-1 mongosh --eval "$(cat replica-init.js)"
-        else
-            log_error "副本集 MongoDB 启动失败"
-            docker-compose logs mongodb-1 mongodb-2 mongodb-3
-            exit 1
-        fi
+    if docker-compose ps | grep -c "mongodb-[1-3].*Up" | grep -q "3"; then
+        log_info "副本集 MongoDB 启动成功"
+        log_info "副本集端点:"
+        log_info "  - mongodb-1: localhost:27018"
+        log_info "  - mongodb-2: localhost:27019"
+        log_info "  - mongodb-3: localhost:27020"
+        log_info "MongoDB UI: http://localhost:8082"
+        
+        # 初始化副本集
+        log_info "初始化副本集..."
+        docker exec mongodb-1 mongosh --eval "$(cat replica-init.js)"
     else
-        if docker compose ps | grep -c "mongodb-[1-3].*Up" | grep -q "3"; then
-            log_info "副本集 MongoDB 启动成功"
-            log_info "副本集端点:"
-            log_info "  - mongodb-1: localhost:27018"
-            log_info "  - mongodb-2: localhost:27019"
-            log_info "  - mongodb-3: localhost:27020"
-            log_info "MongoDB UI: http://localhost:8082"
-            
-            # 初始化副本集
-            log_info "初始化副本集..."
-            docker exec mongodb-1 mongosh --eval "$(cat replica-init.js)"
-        else
-            log_error "副本集 MongoDB 启动失败"
-            docker compose logs mongodb-1 mongodb-2 mongodb-3
-            exit 1
-        fi
+        log_error "副本集 MongoDB 启动失败"
+        docker-compose logs mongodb-1 mongodb-2 mongodb-3
+        exit 1
     fi
 }
 
@@ -223,43 +163,24 @@ start_shard() {
     log_info "启动分片集群 MongoDB..."
     cd "$DOCKER_DIR"
     
-    # 使用兼容的 Docker Compose 命令
-    if command -v docker-compose &> /dev/null; then
-        docker-compose up -d mongodb-1 mongodb-2 mongodb-3 mongodb-config-1 mongodb-config-2 mongodb-config-3 mongos mongo-express
-    else
-        docker compose up -d mongodb-1 mongodb-2 mongodb-3 mongodb-config-1 mongodb-config-2 mongodb-config-3 mongos mongo-express
-    fi
+    # 使用 Docker Compose 命令
+    docker-compose up -d mongodb-1 mongodb-2 mongodb-3 mongodb-config-1 mongodb-config-2 mongodb-config-3 mongos mongo-express
     
     log_info "等待 MongoDB 分片集群启动..."
     sleep 8
     
     # 验证启动
-    if command -v docker-compose &> /dev/null; then
-        if docker-compose ps | grep -c "mongodb.*Up" | grep -q "7"; then
-            log_info "分片集群 MongoDB 启动成功"
-            log_info "分片集群端点:"
-            log_info "  - mongos: localhost:27017"
-            log_info "  - config servers: localhost:27018,27019,27020"
-            log_info "  - shard servers: localhost:27021,27022,27023"
-            log_info "MongoDB UI: http://localhost:8082"
-        else
-            log_error "分片集群 MongoDB 启动失败"
-            docker-compose logs mongodb-1 mongodb-config-1 mongos
-            exit 1
-        fi
+    if docker-compose ps | grep -c "mongodb.*Up" | grep -q "7"; then
+        log_info "分片集群 MongoDB 启动成功"
+        log_info "分片集群端点:"
+        log_info "  - mongos: localhost:27017"
+        log_info "  - config servers: localhost:27018,27019,27020"
+        log_info "  - shard servers: localhost:27021,27022,27023"
+        log_info "MongoDB UI: http://localhost:8082"
     else
-        if docker compose ps | grep -c "mongodb.*Up" | grep -q "7"; then
-            log_info "分片集群 MongoDB 启动成功"
-            log_info "分片集群端点:"
-            log_info "  - mongos: localhost:27017"
-            log_info "  - config servers: localhost:27018,27019,27020"
-            log_info "  - shard servers: localhost:27021,27022,27023"
-            log_info "MongoDB UI: http://localhost:8082"
-        else
-            log_error "分片集群 MongoDB 启动失败"
-            docker compose logs mongodb-1 mongodb-config-1 mongos
-            exit 1
-        fi
+        log_error "分片集群 MongoDB 启动失败"
+        docker-compose logs mongodb-1 mongodb-config-1 mongos
+        exit 1
     fi
 }
 
@@ -268,12 +189,8 @@ stop_mongodb() {
     log_info "停止 MongoDB 容器..."
     cd "$DOCKER_DIR"
     
-    # 使用兼容的 Docker Compose 命令
-    if command -v docker-compose &> /dev/null; then
-        docker-compose down
-    else
-        docker compose down
-    fi
+    # 使用 Docker Compose 命令
+    docker-compose down
     
     log_info "MongoDB 容器已停止"
 }
@@ -314,12 +231,8 @@ clean_mongodb() {
         log_info "清理 MongoDB 容器和数据..."
         cd "$DOCKER_DIR"
         
-        # 使用兼容的 Docker Compose 命令
-        if command -v docker-compose &> /dev/null; then
-            docker-compose down -v
-        else
-            docker compose down -v
-        fi
+        # 使用 Docker Compose 命令
+        docker-compose down -v
         
         docker rmi mongo:6 mongo-express:latest 2>/dev/null || true
         
