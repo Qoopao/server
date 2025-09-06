@@ -6,19 +6,67 @@ package msg
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/google/uuid"
 	"github.com/openimsdk/tools/errs"
 	"github.com/roc/roc-im-server/internal/kitex_gen/conversation"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
+// extractOtelInfo 从context中提取OTEL的trace_id和span_id信息
+func extractOtelInfo(ctx context.Context) map[string]string {
+	otelInfo := make(map[string]string)
+
+	// 获取当前span
+	span := trace.SpanFromContext(ctx)
+	if span.IsRecording() {
+		spanCtx := span.SpanContext()
+
+		// 提取trace_id
+		if spanCtx.HasTraceID() {
+			otelInfo["trace_id"] = spanCtx.TraceID().String()
+		}
+
+		// 提取span_id
+		if spanCtx.HasSpanID() {
+			otelInfo["span_id"] = spanCtx.SpanID().String()
+		}
+
+		// 提取trace_flags
+		otelInfo["trace_flags"] = fmt.Sprintf("%02x", spanCtx.TraceFlags())
+
+		// 提取trace_state (如果有)
+		if spanCtx.TraceState().Len() > 0 {
+			otelInfo["trace_state"] = spanCtx.TraceState().String()
+		}
+	}
+
+	return otelInfo
+}
+
 // SendMsg implements the MessageServiceImpl interface.
 func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMessageReq) (resp *sdkws.SendMessageResp, err error) {
+	// 提取OTEL信息
+	otelInfo := extractOtelInfo(ctx)
 
-	klog.CtxDebugf(ctx, "echo called: %s", "sendMessages")
+	klog.CtxDebugf(ctx, "rhpmark")
+
+	// 使用otelLogger上报OTEL信息
+	if len(otelInfo) > 0 {
+		otelLogger.Info("sendMessages started with OTEL context",
+			"trace_id", otelInfo["trace_id"],
+			"span_id", otelInfo["span_id"],
+			"trace_flags", otelInfo["trace_flags"],
+			"trace_state", otelInfo["trace_state"],
+			"message_count", len(req.Msgs))
+	} else {
+		otelLogger.Info("sendMessages started without OTEL context",
+			"message_count", len(req.Msgs))
+	}
 
 	// 1、check
 	if len(req.Msgs) == 0 {
@@ -104,11 +152,33 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 			zap.String("convID", msg.ConvID),
 			zap.String("serverMsgID", msg.ServerMsgID),
 			zap.Int64("seq", msg.Seq))
+
+		// 使用otelLogger上报消息处理成功
+		if len(otelInfo) > 0 {
+			otelLogger.Info("message processed successfully",
+				"trace_id", otelInfo["trace_id"],
+				"span_id", otelInfo["span_id"],
+				"conv_id", msg.ConvID,
+				"server_msg_id", msg.ServerMsgID,
+				"client_msg_id", msg.ClientMsgID,
+				"send_id", msg.SendID,
+				"seq", msg.Seq)
+		}
 	}
 
 	resp = &sdkws.SendMessageResp{
 		Infos: respInfos,
 	}
+
+	// 使用otelLogger上报函数执行完成
+	if len(otelInfo) > 0 {
+		otelLogger.Info("sendMessages completed",
+			"trace_id", otelInfo["trace_id"],
+			"span_id", otelInfo["span_id"],
+			"total_messages", len(req.Msgs),
+			"success_count", len(resp.Infos))
+	}
+
 	return resp, nil
 }
 

@@ -8,7 +8,8 @@ exporters:
   prometheusremotewrite:
     endpoint: "http://victoriametrics:8428/api/v1/write"
 
-  debug:
+  debug: # 在 Collector 控制台打印日志，用于调试和验证
+    verbosity: detailed
 
   otlp/jaeger:
     endpoint: jaeger-all-in-one:4317
@@ -31,8 +32,12 @@ service:
     traces:
       receivers: [ otlp ]
       processors: [ batch ]
-      exporters: [ debug, otlp/jaeger ]
+      exporters: [otlp/jaeger ]
     metrics:
       receivers: [ otlp ]
       processors: [ batch ]
-      exporters: [ debug, prometheusremotewrite ]
+      exporters: [prometheusremotewrite ]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, otlp/jaeger]

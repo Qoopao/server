@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
 	"github.com/google/uuid"
@@ -18,10 +19,18 @@ import (
 	"github.com/roc/roc-im-server/tools/mq"
 	serviceregistry "github.com/roc/roc-im-server/tools/serviceRegistry"
 	"go.uber.org/zap"
+	"log/slog"
 
+	zalog "github.com/kitex-contrib/obs-opentelemetry/logging/zerolog"
 	"github.com/kitex-contrib/obs-opentelemetry/provider"
 	"github.com/kitex-contrib/obs-opentelemetry/tracing"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
+	"go.opentelemetry.io/otel/log/global"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 )
+
+var otelLogger *slog.Logger
 
 func Start() {
 	// 初始化日志
@@ -107,6 +116,16 @@ func Start() {
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "msg-service"}),
 	)
 
+	// 3. 初始化 otel log provider
+	lp := initLog(context.Background())
+	defer lp.Shutdown(context.Background())
+
+	// 4. 使用第三方 logger 打印日志，日志会自动上报至后台服务
+	otelLogger.Info("rhpmark logger successfully")
+
+	klog.SetLogger(zalog.NewLogger())
+	klog.SetLevel(klog.LevelInfo)
+
 	// 优雅关闭处理
 	defer func() {
 		if err := registry.DeregisterInstance(context.Background(), instanceID); err != nil {
@@ -125,6 +144,26 @@ func Start() {
 		Logger.Error("Failed to run server", zap.Error(err))
 		log.Println(err.Error())
 	}
+}
+
+func initLog(ctx context.Context) *sdklog.LoggerProvider {
+	logExporter, err := otlploggrpc.New(ctx, otlploggrpc.WithInsecure())
+	if err != nil {
+		panic("failed to initialize exporter")
+	}
+
+	lp := sdklog.NewLoggerProvider(
+		sdklog.WithProcessor(
+			sdklog.NewSimpleProcessor(logExporter),
+		),
+	)
+
+	global.SetLoggerProvider(lp)
+
+	// init otelLogger, then use it directly anywhere in your app to record your log, and the
+	// log content will be sent to apmplus backend.
+	otelLogger = otelslog.NewLogger("slog")
+	return lp
 }
 
 // getLocalIP 获取本机IP地址
