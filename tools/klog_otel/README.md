@@ -12,6 +12,8 @@ OpenTelemetry 日志实现，实现了 CloudWeGo Kitex 的 klog 接口。
 - 支持自定义 LoggerProvider
 - **完全兼容 CloudWeGo Kitex 的 klog 接口**
 - 提供适配器模式，无缝集成到现有 Kitex 项目中
+- **自动 JSON 格式输出**，支持结构化日志记录
+- **智能键值对解析**，自动识别 Kitex 风格的日志参数
 
 ## 快速开始
 
@@ -127,6 +129,45 @@ func main() {
 }
 ```
 
+### JSON 格式输出
+
+```go
+package main
+
+import (
+    "context"
+    "github.com/roc/roc-im-server/tools/klog_otel"
+)
+
+func main() {
+    ctx := context.Background()
+    
+    // 创建 Kitex 兼容的 logger（默认使用 JSON 格式）
+    kitexLogger, lp, err := klog_otel.NewKitexLoggerWithConfig(ctx, "my-service", "localhost:4317", true)
+    if err != nil {
+        panic(err)
+    }
+    defer lp.Shutdown(ctx)
+    
+    // 设置为 Kitex 的全局 logger
+    klog.SetLogger(kitexLogger)
+    klog.SetLevel(klog.LevelInfo)
+    
+    // 现在所有日志都会以 JSON 格式输出
+    klog.Info("Service started")
+    
+    // 支持键值对参数，会自动解析为 JSON 字段
+    klog.CtxInfof(ctx, "sendMessages completed",
+        "total_messages", 5,
+        "success_count", 3,
+        "error_count", 2)
+    
+    // 输出示例：
+    // {"level":"INFO","message":"Service started","timestamp":"1757155653026"}
+    // {"level":"INFO","message":"sendMessages completed","timestamp":"1757155653026","fields":{"total_messages":5,"success_count":3,"error_count":2}}
+}
+```
+
 ## API 参考
 
 ### 构造函数
@@ -195,6 +236,47 @@ const (
 #### 控制方法
 - `SetLevel(level Level)` - 设置日志级别
 - `SetOutput(w io.Writer)` - 设置输出（在 OTEL 实现中此方法被忽略）
+- `SetJSONFormat(useJSON bool)` - 设置是否使用 JSON 格式输出
+- `IsJSONFormat() bool` - 返回是否使用 JSON 格式
+
+## JSON 格式输出
+
+### 自动键值对解析
+
+klog_otel 会自动识别 Kitex 风格的日志参数，将键值对转换为 JSON 字段：
+
+```go
+// 输入
+klog.CtxInfof(ctx, "sendMessages completed",
+    "total_messages", 5,
+    "success_count", 3,
+    "error_count", 2)
+
+// 输出
+{
+    "level": "INFO",
+    "message": "sendMessages completed",
+    "timestamp": "1757155653026",
+    "fields": {
+        "total_messages": 5,
+        "success_count": 3,
+        "error_count": 2
+    }
+}
+```
+
+### 格式控制
+
+```go
+// 启用 JSON 格式（默认）
+logger.SetJSONFormat(true)
+
+// 禁用 JSON 格式，使用原始格式
+logger.SetJSONFormat(false)
+
+// 检查当前格式
+isJSON := logger.IsJSONFormat()
+```
 
 ## 级别映射
 

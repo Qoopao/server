@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"log/slog"
+	// "log/slog"
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
@@ -25,13 +25,13 @@ import (
 
 	"github.com/kitex-contrib/obs-opentelemetry/provider"
 	"github.com/kitex-contrib/obs-opentelemetry/tracing"
-	"go.opentelemetry.io/contrib/bridges/otelslog"
-	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
-	"go.opentelemetry.io/otel/log/global"
-	sdklog "go.opentelemetry.io/otel/sdk/log"
+	// "go.opentelemetry.io/contrib/bridges/otelslog"
+	// "go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
+	// "go.opentelemetry.io/otel/log/global"
+	// sdklog "go.opentelemetry.io/otel/sdk/log"
 )
 
-var otelLogger *slog.Logger
+// var otelLogger *slog.Logger
 
 func Start() {
 	// 初始化日志
@@ -131,7 +131,7 @@ func Start() {
 	defer lp.Shutdown(context.Background())
 
 	klog.SetLogger(kitexLogger)
-	klog.SetLevel(klog.LevelInfo)
+	klog.SetLevel(klog.LevelDebug)
 
 	// 优雅关闭处理
 	defer func() {
@@ -153,25 +153,25 @@ func Start() {
 	}
 }
 
-func initLog(ctx context.Context) *sdklog.LoggerProvider {
-	logExporter, err := otlploggrpc.New(ctx, otlploggrpc.WithInsecure())
-	if err != nil {
-		panic("failed to initialize exporter")
-	}
+// func initLog(ctx context.Context) *sdklog.LoggerProvider {
+// 	logExporter, err := otlploggrpc.New(ctx, otlploggrpc.WithInsecure())
+// 	if err != nil {
+// 		panic("failed to initialize exporter")
+// 	}
 
-	lp := sdklog.NewLoggerProvider(
-		sdklog.WithProcessor(
-			sdklog.NewSimpleProcessor(logExporter),
-		),
-	)
+// 	lp := sdklog.NewLoggerProvider(
+// 		sdklog.WithProcessor(
+// 			sdklog.NewSimpleProcessor(logExporter),
+// 		),
+// 	)
 
-	global.SetLoggerProvider(lp)
+// 	global.SetLoggerProvider(lp)
 
-	// init otelLogger, then use it directly anywhere in your app to record your log, and the
-	// log content will be sent to apmplus backend.
-	otelLogger = otelslog.NewLogger("slog")
-	return lp
-}
+// 	// init otelLogger, then use it directly anywhere in your app to record your log, and the
+// 	// log content will be sent to apmplus backend.
+// 	otelLogger = otelslog.NewLogger("slog")
+// 	return lp
+// }
 
 // getLocalIP 获取本机IP地址
 func getLocalIP() (string, error) {

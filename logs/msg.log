@@ -1,0 +1,18 @@
+{"level":"INFO","timestamp":"2025-09-06T18:46:52.270+0800","caller":"serviceRegistry/etcd_registry.go:107","message":"Service instance registered","service":"msg-service","instance":"msg-service-f70397f9","address":"10.255.255.254:10100"}
+{"level":"INFO","timestamp":"2025-09-06T18:46:52.271+0800","caller":"msg/start.go:144","message":"Message service starting","instance_id":"msg-service-f70397f9","address":"10.255.255.254:10100"}
+{"level":"INFO","timestamp":"2025-09-06T18:47:33.019+0800","caller":"msg/handler.go:69","message":"SendMessages called","convID":"0:1:rhpxxx:test","sendID":"test","clientMsgID":"1757155653462331knjijPxR","msgCount":1}
+{"level":"INFO","timestamp":"2025-09-06T18:47:33.027+0800","caller":"msg/handler.go:87","message":"SendMessages success","convID":"0:1:rhpxxx:test","clientMsgID":"1757155653462331knjijPxR"}
+{"level":"INFO","timestamp":"2025-09-06T18:51:46.797+0800","caller":"serviceRegistry/etcd_registry.go:107","message":"Service instance registered","service":"msg-service","instance":"msg-service-8256ce5f","address":"10.255.255.254:10100"}
+{"level":"INFO","timestamp":"2025-09-06T18:51:46.798+0800","caller":"msg/start.go:144","message":"Message service starting","instance_id":"msg-service-8256ce5f","address":"10.255.255.254:10100"}
+{"level":"INFO","timestamp":"2025-09-06T18:51:59.761+0800","caller":"msg/handler.go:69","message":"SendMessages called","convID":"0:1:rere:yuysuf","sendID":"rere","clientMsgID":"1757155919853180cjwJRMCr","msgCount":1}
+{"level":"INFO","timestamp":"2025-09-06T18:51:59.768+0800","caller":"msg/handler.go:87","message":"SendMessages success","convID":"0:1:rere:yuysuf","clientMsgID":"1757155919853180cjwJRMCr"}
+{"level":"INFO","timestamp":"2025-09-06T18:55:21.550+0800","caller":"serviceRegistry/etcd_registry.go:107","message":"Service instance registered","service":"msg-service","instance":"msg-service-cf38fa14","address":"10.255.255.254:10100"}
+{"level":"INFO","timestamp":"2025-09-06T18:55:21.551+0800","caller":"msg/start.go:144","message":"Message service starting","instance_id":"msg-service-cf38fa14","address":"10.255.255.254:10100"}
+{"level":"INFO","timestamp":"2025-09-06T18:55:33.333+0800","caller":"msg/handler.go:69","message":"SendMessages called","convID":"0:1:fafa:fafa","sendID":"fafa","clientMsgID":"1757156133063790pRWfulwz","msgCount":1}
+{"level":"INFO","timestamp":"2025-09-06T18:55:33.340+0800","caller":"msg/handler.go:87","message":"SendMessages success","convID":"0:1:fafa:fafa","clientMsgID":"1757156133063790pRWfulwz"}
+{"level":"INFO","timestamp":"2025-09-06T18:56:36.613+0800","caller":"msg/handler.go:69","message":"SendMessages called","convID":"0:1:fafa:fafa","sendID":"fafa","clientMsgID":"1757156196412289cMKDvICk","msgCount":1}
+{"level":"INFO","timestamp":"2025-09-06T18:58:48.552+0800","caller":"msg/handler.go:87","message":"SendMessages success","convID":"0:1:fafa:fafa","clientMsgID":"1757156196412289cMKDvICk"}
+{"level":"INFO","timestamp":"2025-09-06T19:03:19.961+0800","caller":"serviceRegistry/etcd_registry.go:107","message":"Service instance registered","service":"msg-service","instance":"msg-service-e034ba84","address":"10.255.255.254:10100"}
+{"level":"INFO","timestamp":"2025-09-06T19:03:19.961+0800","caller":"msg/start.go:144","message":"Message service starting","instance_id":"msg-service-e034ba84","address":"10.255.255.254:10100"}
+{"level":"INFO","timestamp":"2025-09-06T19:03:31.757+0800","caller":"msg/handler.go:69","message":"SendMessages called","convID":"0:1:fafa:sfa","sendID":"sfa","clientMsgID":"1757156611323116AKIBugwt","msgCount":1}
+{"level":"INFO","timestamp":"2025-09-06T19:03:35.548+0800","caller":"msg/handler.go:87","message":"SendMessages success","convID":"0:1:fafa:sfa","clientMsgID":"1757156611323116AKIBugwt"}

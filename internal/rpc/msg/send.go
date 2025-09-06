@@ -50,27 +50,11 @@ func extractOtelInfo(ctx context.Context) map[string]string {
 
 // SendMsg implements the MessageServiceImpl interface.
 func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMessageReq) (resp *sdkws.SendMessageResp, err error) {
-	// 提取OTEL信息
-	otelInfo := extractOtelInfo(ctx)
-
-	klog.CtxDebugf(ctx, "rhpmark")
-
-	// 使用otelLogger上报OTEL信息
-	if len(otelInfo) > 0 {
-		otelLogger.Info("sendMessages started with OTEL context",
-			"trace_id", otelInfo["trace_id"],
-			"span_id", otelInfo["span_id"],
-			"trace_flags", otelInfo["trace_flags"],
-			"trace_state", otelInfo["trace_state"],
-			"message_count", len(req.Msgs))
-	} else {
-		otelLogger.Info("sendMessages started without OTEL context",
-			"message_count", len(req.Msgs))
-	}
+	klog.CtxDebugf(ctx, "rhpmark-sendMessages-start")
 
 	// 1、check
 	if len(req.Msgs) == 0 {
-		Logger.Warn("sendMessages: msgs is empty")
+		klog.CtxErrorf(ctx, "sendMessages: msgs is empty")
 		return nil, errs.ErrArgs.WrapMsg("msgs is empty")
 	}
 
@@ -87,9 +71,9 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 	for index, msg := range req.Msgs {
 		// 如果conv_id为空，则失败
 		if msg.ConvID == "" {
-			Logger.Error("sendMessages: conv_id is empty",
-				zap.String("clientMsgID", msg.ClientMsgID),
-				zap.String("sendID", msg.SendID))
+			klog.CtxErrorf(ctx, "sendMessages: conv_id is empty",
+				"clientMsgID", msg.ClientMsgID,
+				"sendID", msg.SendID)
 			respInfos[index].ErrorCode = "1"
 			respInfos[index].ErrorMsg = "conv_id is empty"
 			continue
@@ -101,7 +85,7 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 		// 生成orderIndex
 		orderIndex, err := s.MsgDatabase.AppendMsgToConvMsgList(ctx, msg.ConvID, msg.ServerMsgID)
 		if err != nil {
-			Logger.Error("sendMessages: failed to append msg to conv msg list",
+			klog.CtxErrorf(ctx, "sendMessages: failed to append msg to conv msg list",
 				zap.String("convID", msg.ConvID),
 				zap.String("serverMsgID", msg.ServerMsgID),
 				zap.Error(err))
@@ -113,10 +97,10 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 
 		// 存储消息
 		if err := s.MsgDatabase.SaveMsgInfo(ctx, msg); err != nil {
-			Logger.Error("sendMessages: failed to save msg info",
-				zap.String("convID", msg.ConvID),
-				zap.String("serverMsgID", msg.ServerMsgID),
-				zap.Error(err))
+			klog.CtxErrorf(ctx, "sendMessages: failed to save msg info",
+				"convID", msg.ConvID,
+				"serverMsgID", msg.ServerMsgID,
+				"error", err.Error())
 			respInfos[index].ErrorCode = "1"
 			respInfos[index].ErrorMsg = err.Error()
 			continue
@@ -124,10 +108,10 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 
 		// 如果没有会话则创建会话
 		if err := s.createConversationIfNeed(ctx, msg); err != nil {
-			Logger.Error("sendMessages: failed to create conversation",
-				zap.String("convID", msg.ConvID),
-				zap.String("sendID", msg.SendID),
-				zap.Error(err))
+			klog.CtxErrorf(ctx, "sendMessages: failed to create conversation",
+				"convID", msg.ConvID,
+				"sendID", msg.SendID,
+				"error", err.Error())
 			respInfos[index].ErrorCode = "1"
 			respInfos[index].ErrorMsg = err.Error()
 			continue
@@ -135,11 +119,11 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 
 		// 转发消息到MQ
 		if err := s.MsgDatabase.MsgToMQ(ctx, msg.SendID, msg.ServerMsgID); err != nil {
-			Logger.Error("sendMessages: failed to send msg to MQ",
-				zap.String("convID", msg.ConvID),
-				zap.String("serverMsgID", msg.ServerMsgID),
-				zap.String("sendID", msg.SendID),
-				zap.Error(err))
+			klog.CtxErrorf(ctx, "sendMessages: failed to send msg to MQ",
+				"convID", msg.ConvID,
+				"serverMsgID", msg.ServerMsgID,
+				"sendID", msg.SendID,
+				"error", err.Error())
 			respInfos[index].ErrorCode = "1"
 			respInfos[index].ErrorMsg = err.Error()
 			continue
@@ -148,35 +132,16 @@ func (s *MessageServiceImpl) sendMessages(ctx context.Context, req *sdkws.SendMe
 		// 设置返回信息
 		respInfos[index].Msg = msg
 
-		Logger.Debug("sendMessages: message processed successfully",
-			zap.String("convID", msg.ConvID),
-			zap.String("serverMsgID", msg.ServerMsgID),
-			zap.Int64("seq", msg.Seq))
+		klog.CtxDebugf(ctx, "sendMessages: message processed successfully", map[string]interface{}{
+			"convID":      msg.ConvID,
+			"serverMsgID": msg.ServerMsgID,
+			"seq":         msg.Seq,
+		})
 
-		// 使用otelLogger上报消息处理成功
-		if len(otelInfo) > 0 {
-			otelLogger.Info("message processed successfully",
-				"trace_id", otelInfo["trace_id"],
-				"span_id", otelInfo["span_id"],
-				"conv_id", msg.ConvID,
-				"server_msg_id", msg.ServerMsgID,
-				"client_msg_id", msg.ClientMsgID,
-				"send_id", msg.SendID,
-				"seq", msg.Seq)
-		}
 	}
 
 	resp = &sdkws.SendMessageResp{
 		Infos: respInfos,
-	}
-
-	// 使用otelLogger上报函数执行完成
-	if len(otelInfo) > 0 {
-		otelLogger.Info("sendMessages completed",
-			"trace_id", otelInfo["trace_id"],
-			"span_id", otelInfo["span_id"],
-			"total_messages", len(req.Msgs),
-			"success_count", len(resp.Infos))
 	}
 
 	return resp, nil
@@ -186,9 +151,9 @@ func (s *MessageServiceImpl) createConversationIfNeed(ctx context.Context, msg *
 	conv, _ := s.MsgDatabase.GetConversationInfo(ctx, msg.ConvID)
 
 	if conv == nil {
-		Logger.Info("createConversationIfNeed: creating new conversation",
-			zap.String("convID", msg.ConvID),
-			zap.String("ownerUserID", msg.SendID))
+		klog.CtxInfof(ctx, "createConversationIfNeed: creating new conversation",
+			"convID", msg.ConvID,
+			"ownerUserID", msg.SendID)
 
 		conv = &conversation.ConversationInfo{
 			ConversationID:     msg.ConvID,

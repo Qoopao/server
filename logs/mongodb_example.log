@@ -1,0 +1,56 @@
+{"level":"info","ts":"2025-09-06T18:46:52.242+0800","msg":"=== MongoDB 示例开始 ==="}
+{"level":"info","ts":"2025-09-06T18:46:52.249+0800","msg":"✓ MongoDB连接成功"}
+{"level":"info","ts":"2025-09-06T18:46:52.249+0800","msg":"--- 测试用户操作 ---"}
+{"level":"error","ts":"2025-09-06T18:46:52.250+0800","msg":"插入用户失败","error":"write exception: write errors: [E11000 duplicate key error collection: roc_im_example.users index: email_1 dup key: { email: \"zhangsan@example.com\" }]"}
+{"level":"info","ts":"2025-09-06T18:46:52.250+0800","msg":"--- 测试消息操作 ---"}
+{"level":"info","ts":"2025-09-06T18:46:52.252+0800","msg":"--- 测试聚合查询 ---"}
+{"level":"info","ts":"2025-09-06T18:46:52.253+0800","msg":"--- 测试事务 ---"}
+{"level":"info","ts":"2025-09-06T18:46:52.253+0800","msg":"注意：单机MongoDB不支持事务，需要副本集或分片集群"}
+{"level":"error","ts":"2025-09-06T18:46:52.253+0800","msg":"创建用户失败","error":"write exception: write errors: [E11000 duplicate key error collection: roc_im_example.users index: email_1 dup key: { email: \"transaction@example.com\" }]"}
+{"level":"info","ts":"2025-09-06T18:46:52.253+0800","msg":"--- 测试索引 ---"}
+{"level":"info","ts":"2025-09-06T18:46:52.254+0800","msg":"✓ 创建邮箱唯一索引成功"}
+{"level":"info","ts":"2025-09-06T18:46:52.254+0800","msg":"✓ 创建消息复合索引成功"}
+{"level":"info","ts":"2025-09-06T18:46:52.254+0800","msg":"✓ 用户集合索引数量","count":2}
+{"level":"info","ts":"2025-09-06T18:46:52.254+0800","msg":"=== MongoDB 示例完成 ==="}
+{"level":"info","ts":"2025-09-06T18:51:46.770+0800","msg":"=== MongoDB 示例开始 ==="}
+{"level":"info","ts":"2025-09-06T18:51:46.777+0800","msg":"✓ MongoDB连接成功"}
+{"level":"info","ts":"2025-09-06T18:51:46.777+0800","msg":"--- 测试用户操作 ---"}
+{"level":"error","ts":"2025-09-06T18:51:46.777+0800","msg":"插入用户失败","error":"write exception: write errors: [E11000 duplicate key error collection: roc_im_example.users index: email_1 dup key: { email: \"zhangsan@example.com\" }]"}
+{"level":"info","ts":"2025-09-06T18:51:46.778+0800","msg":"--- 测试消息操作 ---"}
+{"level":"info","ts":"2025-09-06T18:51:46.779+0800","msg":"--- 测试聚合查询 ---"}
+{"level":"info","ts":"2025-09-06T18:51:46.780+0800","msg":"--- 测试事务 ---"}
+{"level":"info","ts":"2025-09-06T18:51:46.780+0800","msg":"注意：单机MongoDB不支持事务，需要副本集或分片集群"}
+{"level":"error","ts":"2025-09-06T18:51:46.781+0800","msg":"创建用户失败","error":"write exception: write errors: [E11000 duplicate key error collection: roc_im_example.users index: email_1 dup key: { email: \"transaction@example.com\" }]"}
+{"level":"info","ts":"2025-09-06T18:51:46.781+0800","msg":"--- 测试索引 ---"}
+{"level":"info","ts":"2025-09-06T18:51:46.781+0800","msg":"✓ 创建邮箱唯一索引成功"}
+{"level":"info","ts":"2025-09-06T18:51:46.782+0800","msg":"✓ 创建消息复合索引成功"}
+{"level":"info","ts":"2025-09-06T18:51:46.782+0800","msg":"✓ 用户集合索引数量","count":2}
+{"level":"info","ts":"2025-09-06T18:51:46.782+0800","msg":"=== MongoDB 示例完成 ==="}
+{"level":"info","ts":"2025-09-06T18:55:21.518+0800","msg":"=== MongoDB 示例开始 ==="}
+{"level":"info","ts":"2025-09-06T18:55:21.525+0800","msg":"✓ MongoDB连接成功"}
+{"level":"info","ts":"2025-09-06T18:55:21.525+0800","msg":"--- 测试用户操作 ---"}
+{"level":"error","ts":"2025-09-06T18:55:21.525+0800","msg":"插入用户失败","error":"write exception: write errors: [E11000 duplicate key error collection: roc_im_example.users index: email_1 dup key: { email: \"zhangsan@example.com\" }]"}
+{"level":"info","ts":"2025-09-06T18:55:21.525+0800","msg":"--- 测试消息操作 ---"}
+{"level":"info","ts":"2025-09-06T18:55:21.527+0800","msg":"--- 测试聚合查询 ---"}
+{"level":"info","ts":"2025-09-06T18:55:21.528+0800","msg":"--- 测试事务 ---"}
+{"level":"info","ts":"2025-09-06T18:55:21.528+0800","msg":"注意：单机MongoDB不支持事务，需要副本集或分片集群"}
+{"level":"error","ts":"2025-09-06T18:55:21.528+0800","msg":"创建用户失败","error":"write exception: write errors: [E11000 duplicate key error collection: roc_im_example.users index: email_1 dup key: { email: \"transaction@example.com\" }]"}
+{"level":"info","ts":"2025-09-06T18:55:21.528+0800","msg":"--- 测试索引 ---"}
+{"level":"info","ts":"2025-09-06T18:55:21.529+0800","msg":"✓ 创建邮箱唯一索引成功"}
+{"level":"info","ts":"2025-09-06T18:55:21.529+0800","msg":"✓ 创建消息复合索引成功"}
+{"level":"info","ts":"2025-09-06T18:55:21.529+0800","msg":"✓ 用户集合索引数量","count":2}
+{"level":"info","ts":"2025-09-06T18:55:21.529+0800","msg":"=== MongoDB 示例完成 ==="}
+{"level":"info","ts":"2025-09-06T19:03:19.928+0800","msg":"=== MongoDB 示例开始 ==="}
+{"level":"info","ts":"2025-09-06T19:03:19.935+0800","msg":"✓ MongoDB连接成功"}
+{"level":"info","ts":"2025-09-06T19:03:19.935+0800","msg":"--- 测试用户操作 ---"}
+{"level":"error","ts":"2025-09-06T19:03:19.935+0800","msg":"插入用户失败","error":"write exception: write errors: [E11000 duplicate key error collection: roc_im_example.users index: email_1 dup key: { email: \"zhangsan@example.com\" }]"}
+{"level":"info","ts":"2025-09-06T19:03:19.935+0800","msg":"--- 测试消息操作 ---"}
+{"level":"info","ts":"2025-09-06T19:03:19.937+0800","msg":"--- 测试聚合查询 ---"}
+{"level":"info","ts":"2025-09-06T19:03:19.938+0800","msg":"--- 测试事务 ---"}
+{"level":"info","ts":"2025-09-06T19:03:19.938+0800","msg":"注意：单机MongoDB不支持事务，需要副本集或分片集群"}
+{"level":"error","ts":"2025-09-06T19:03:19.938+0800","msg":"创建用户失败","error":"write exception: write errors: [E11000 duplicate key error collection: roc_im_example.users index: email_1 dup key: { email: \"transaction@example.com\" }]"}
+{"level":"info","ts":"2025-09-06T19:03:19.938+0800","msg":"--- 测试索引 ---"}
+{"level":"info","ts":"2025-09-06T19:03:19.938+0800","msg":"✓ 创建邮箱唯一索引成功"}
+{"level":"info","ts":"2025-09-06T19:03:19.939+0800","msg":"✓ 创建消息复合索引成功"}
+{"level":"info","ts":"2025-09-06T19:03:19.939+0800","msg":"✓ 用户集合索引数量","count":2}
+{"level":"info","ts":"2025-09-06T19:03:19.939+0800","msg":"=== MongoDB 示例完成 ==="}
