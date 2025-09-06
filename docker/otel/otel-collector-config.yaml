@@ -16,6 +16,20 @@ exporters:
     tls:
       insecure: true
 
+  elasticsearch:
+    endpoints:
+      - "http://elasticsearch:9200"
+    mapping:
+      mode: ecs
+    logs_dynamic_index:
+      enabled: true
+    retry:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+    flush:
+      bytes: 5242880  # 5MB
+
 processors:
   batch:
 
@@ -40,4 +54,4 @@ service:
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug, otlp/jaeger]
+      exporters: [elasticsearch, debug]

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/cloudwego/kitex/client"
+	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/transport"
 	"github.com/openimsdk/tools/errs"
 	"github.com/openimsdk/tools/log"
@@ -20,6 +21,7 @@ import (
 	"github.com/roc/roc-im-server/internal/kitex_gen/conversation/conversationservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
+	"go.opentelemetry.io/otel"
 )
 
 var (
@@ -190,11 +192,16 @@ func (c *Client) handleMessage(message []byte) error {
 		return err
 	}
 
+	// 在这里就开始追踪
+	ctx, span := otel.Tracer("msggateway").Start(ctx, "handleMessage")
+	defer span.End()
+
+	klog.CtxDebugf(ctx, "call handleMessage", "type", sdkwsReq.Type)
+
 	switch sdkwsReq.Type {
 
 	case WSSendMessage:
 		resp, err = c.messsageHandler.SendMessage(ctx, sdkwsReq)
-		println("send message reply")
 
 	case WSPullConvMsgList:
 		resp, err = c.messsageHandler.GetConvMsgList(ctx, sdkwsReq)

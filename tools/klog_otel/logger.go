@@ -30,14 +30,17 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/log/global"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
-// LogEntry 表示结构化的日志条目
+// LogEntry 表示结构化的日志条目，对齐 zap 格式
 type LogEntry struct {
-	Level   string                 `json:"level"`
-	Message string                 `json:"message"`
-	Time    string                 `json:"timestamp"`
-	Fields  map[string]interface{} `json:"fields,omitempty"`
+	Level     string                 `json:"level"`
+	Timestamp string                 `json:"timestamp"`
+	Message   string                 `json:"message"`
+	Caller    string                 `json:"caller,omitempty"`
+	Fields    map[string]interface{} `json:"fields,omitempty"`
 }
 
 // OtelLogger 实现 klog 的所有接口，使用 OpenTelemetry 作为后端
@@ -58,7 +61,7 @@ func NewOtelLogger(loggerName string) *OtelLogger {
 		logger:     otelLogger,
 		level:      LevelInfo, // 默认级别
 		output:     nil,       // 不使用本地输出，直接发送到 OTEL
-		jsonFormat: true,      // 默认使用 JSON 格式
+		jsonFormat: true,      // 默认使用 JSON 格式，对齐 zap
 	}
 }
 
@@ -86,7 +89,7 @@ func NewOtelLoggerWithProvider(loggerName string, provider *sdklog.LoggerProvide
 		logger:     otelLogger,
 		level:      LevelInfo,
 		output:     nil,
-		jsonFormat: true, // 默认使用 JSON 格式
+		jsonFormat: true, // 默认使用 JSON 格式，对齐 zap
 	}
 }
 
@@ -111,8 +114,21 @@ func NewOtelLoggerWithConfig(ctx context.Context, loggerName string, endpoint st
 		return nil, nil, fmt.Errorf("failed to initialize log exporter: %w", err)
 	}
 
-	// 构建 LoggerProvider
+	// 创建资源信息，包含服务名称等元数据
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String(loggerName),
+			semconv.ServiceVersionKey.String("1.0.0"),
+			semconv.DeploymentEnvironmentKey.String("development"),
+		),
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create resource: %w", err)
+	}
+
+	// 构建 LoggerProvider，包含资源信息
 	lp := sdklog.NewLoggerProvider(
+		sdklog.WithResource(res),
 		sdklog.WithProcessor(
 			sdklog.NewSimpleProcessor(logExporter),
 		),
@@ -128,7 +144,7 @@ func NewOtelLoggerWithConfig(ctx context.Context, loggerName string, endpoint st
 		logger:     otelLogger,
 		level:      LevelInfo,
 		output:     nil,
-		jsonFormat: true, // 默认使用 JSON 格式
+		jsonFormat: true, // 默认使用 JSON 格式，对齐 zap
 	}
 
 	return otelLoggerImpl, lp, nil
@@ -156,37 +172,20 @@ func (l Level) String() string {
 	}
 }
 
-// toSlogLevel 将 klog 级别转换为 slog 级别
-func (l Level) toSlogLevel() slog.Level {
-	switch l {
-	case LevelTrace, LevelDebug:
-		return slog.LevelDebug
-	case LevelInfo, LevelNotice:
-		return slog.LevelInfo
-	case LevelWarn:
-		return slog.LevelWarn
-	case LevelError:
-		return slog.LevelError
-	case LevelFatal:
-		return slog.LevelError // Fatal 在 slog 中也是 Error 级别
-	default:
-		return slog.LevelInfo
-	}
-}
-
-// createJSONLog 创建 JSON 格式的日志条目
+// createJSONLog 创建 JSON 格式的日志条目，对齐 zap 格式
 func (ol *OtelLogger) createJSONLog(level string, message string, fields map[string]interface{}) string {
 	entry := LogEntry{
-		Level:   level,
-		Message: message,
-		Time:    fmt.Sprintf("%d", time.Now().UnixNano()/1e6), // 毫秒时间戳
-		Fields:  fields,
+		Level:     level,
+		Timestamp: time.Now().Format(time.RFC3339), // 使用 RFC3339 格式，对齐 zap
+		Message:   message,
+		Fields:    fields,
 	}
 
 	jsonBytes, err := json.Marshal(entry)
 	if err != nil {
 		// 如果 JSON 序列化失败，返回简单的字符串格式
-		return fmt.Sprintf(`{"level":"%s","message":"%s","timestamp":"%s","error":"json_marshal_failed"}`, level, message, entry.Time)
+		return fmt.Sprintf(`{"level":"%s","timestamp":"%s","message":"%s","error":"json_marshal_failed"}`,
+			level, entry.Timestamp, message)
 	}
 
 	return string(jsonBytes)
@@ -443,12 +442,11 @@ func (ol *OtelLogger) CtxTracef(ctx context.Context, format string, v ...interfa
 func (ol *OtelLogger) CtxDebugf(ctx context.Context, format string, v ...interface{}) {
 	ol.mu.RLock()
 	if ol.level <= LevelDebug {
-		ol.logger.DebugContext(ctx, format, v...)
-		// message, fields := parseKeyValuePairs(v)
-		// if message == "" {
-		// 	message = format
-		// }
-		// ol.logWithFormatContext(ctx, LevelDebug, message, fields)
+		message, fields := parseKeyValuePairs(v)
+		if message == "" {
+			message = format
+		}
+		ol.logWithFormatContext(ctx, LevelDebug, message, fields)
 	}
 	ol.mu.RUnlock()
 }
@@ -527,6 +525,12 @@ func (ol *OtelLogger) SetKlogLevel(level klog.Level) {
 	ol.mu.Unlock()
 }
 
+func (ol *OtelLogger) SetOutput(w io.Writer) {
+	ol.mu.Lock()
+	ol.output = w
+	ol.mu.Unlock()
+}
+
 // SetJSONFormat 设置是否使用 JSON 格式输出
 func (ol *OtelLogger) SetJSONFormat(useJSON bool) {
 	ol.mu.Lock()
@@ -539,12 +543,6 @@ func (ol *OtelLogger) IsJSONFormat() bool {
 	ol.mu.RLock()
 	defer ol.mu.RUnlock()
 	return ol.jsonFormat
-}
-
-func (ol *OtelLogger) SetOutput(w io.Writer) {
-	ol.mu.Lock()
-	ol.output = w
-	ol.mu.Unlock()
 }
 
 // GetLevel 获取当前日志级别

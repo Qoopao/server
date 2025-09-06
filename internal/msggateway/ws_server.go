@@ -15,11 +15,14 @@ import (
 	// pbAuth "github.com/openimsdk/protocol/auth"
 	// "github.com/openimsdk/tools/mcontext"
 
+	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/go-playground/validator/v10"
 	"github.com/kitex-contrib/obs-opentelemetry/provider"
+
 	// "github.com/openimsdk/open-im-server/v3/pkg/common/prommetrics"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/roc/roc-im-server/pkg/common/servererrs"
+	"github.com/roc/roc-im-server/tools/klog_otel"
 
 	// "github.com/openimsdk/protocol/constant"
 	// "github.com/openimsdk/protocol/msggateway"
@@ -135,6 +138,7 @@ func NewWsServer( /*msgGatewayConfig *Config,*/ opts ...Option) *WsServer {
 	}
 	//userRpcClient := rpcclient.NewUserRpcClient(client, config.Discovery.RpcService.User, config.Share.IMAdminUserID)
 
+	/// 开启otel日志上报
 	// 创建 OpenTelemetry Provider，这是连接应用程序与OpenTelemetry的核心组件
 	p := provider.NewOpenTelemetryProvider(
 		// 设置当前服务的名称，在追踪系统中会显示为此名称
@@ -147,6 +151,11 @@ func NewWsServer( /*msgGatewayConfig *Config,*/ opts ...Option) *WsServer {
 		provider.WithInsecure(),
 	)
 	defer p.Shutdown(context.Background())
+
+	// 设置全局logger
+	otelLogger, lp, _ := klog_otel.NewKitexLoggerWithConfig(context.Background(), "msggateway", "localhost:4317", true)
+	defer lp.Shutdown(context.Background())
+	klog.SetLogger(otelLogger)
 
 	v := validator.New()
 	return &WsServer{

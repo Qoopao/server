@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/openimsdk/tools/errs"
 	"github.com/roc/roc-im-server/internal/kitex_gen/conversation/conversationservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
@@ -52,6 +53,11 @@ func (g *messageHandler) SendMessage(ctx context.Context, data *sdkws.SdkWSReq) 
 		respBody   []byte
 	)
 
+	klog.CtxDebugf(ctx, "call SendMessage",
+		"user_id", data.UserID,
+		"device_id", data.DeviceID,
+		"request_id", data.RequestId)
+
 	if err = sendMsgReq.Unmarshal(data.Data); err != nil {
 		return nil, errs.WrapMsg(err, "SendMessage: error unmarshaling message data", "action", "unmarshal", "dataType", "SendMessageReq")
 	}
@@ -75,6 +81,11 @@ func (g *messageHandler) GetConvMsgList(ctx context.Context, data *sdkws.SdkWSRe
 		responseBinary []byte
 	)
 
+	klog.CtxDebugf(ctx, "call GetConvMsgList",
+		"user_id", data.UserID,
+		"device_id", data.DeviceID,
+		"request_id", data.RequestId)
+
 	if err = request.Unmarshal(data.Data); err != nil {
 		return nil, errs.WrapMsg(err, "GetConvMsgList: error unmarshaling message data", "action", "unmarshal", "dataType", "FetchConvMessageListReq")
 	}
@@ -97,6 +108,11 @@ func (g *messageHandler) GetUserMsgList(ctx context.Context, data *sdkws.SdkWSRe
 		response       *sdkws.FetchUserMessageListResp
 		responseBinary []byte
 	)
+
+	klog.CtxDebugf(ctx, "call GetUserMsgList",
+		"user_id", data.UserID,
+		"device_id", data.DeviceID,
+		"request_id", data.RequestId)
 
 	if err = request.Unmarshal(data.Data); err != nil {
 		return nil, errs.WrapMsg(err, "GetUserMsgList: error unmarshaling message data", "action", "unmarshal", "dataType", "FetchUserMessageListReq")

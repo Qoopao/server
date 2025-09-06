@@ -19,6 +19,7 @@ import (
 	"errors"
 	"sort"
 
+	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/roc/roc-im-server/internal/kitex_gen/conversation"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/roc/roc-im-server/tools/kvstore"
@@ -62,6 +63,11 @@ type commonMsgDatabase struct {
 }
 
 func (db *commonMsgDatabase) MsgToMQ(ctx context.Context, key string, msgID string) error {
+	klog.CtxDebugf(ctx, "[MsgToMQ] 转发消息到MQ",
+		"msg_id", msgID,
+		"key", key,
+		"topic", "message_topic")
+
 	err := db.mqi.Publish(ctx, &mq.Message{
 		Topic: "message_topic",
 		Body:  []byte(msgID),
@@ -80,6 +86,13 @@ func (db *commonMsgDatabase) SaveMsgInfo(ctx context.Context, msg *sdkws.MsgData
 		return err
 	}
 
+	klog.CtxDebugf(ctx, "[SaveMsgInfo] 保存消息到kv",
+		"server_msg_id", msg.ServerMsgID,
+		"client_msg_id", msg.ClientMsgID,
+		"conv_id", msg.ConvID,
+		"send_id", msg.SendID,
+		"seq", msg.Seq)
+
 	db.kvstore.Set(ctx, keyForMsgInfo(msg.ServerMsgID), data, 0)
 	return nil
 }
@@ -88,6 +101,11 @@ func (db *commonMsgDatabase) AppendMsgToConvMsgList(ctx context.Context, convers
 	if conversationID == "" {
 		return 0, errors.New("conversationID is empty")
 	}
+
+	klog.CtxDebugf(ctx, "[AppendMsgToConvMsgList] 添加到单链",
+		"conv_id", conversationID,
+		"msg_id", msgID)
+
 	return db.kvstore.RPush(ctx, keyForConvMessageList(conversationID), []byte(msgID))
 }
 
