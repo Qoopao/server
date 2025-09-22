@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -109,14 +108,19 @@ func (m *MongoDB) WithTransaction(ctx context.Context, fn func(context.Context) 
 }
 
 // CreateIndex 创建索引
-func (m *MongoDB) CreateIndex(ctx context.Context, collection string, model mongo.IndexModel) error {
-	_, err := m.database.Collection(collection).Indexes().CreateOne(ctx, model)
+func (m *MongoDB) CreateIndex(ctx context.Context, collection string, model IndexModel) error {
+	mongoModel := convertToMongoIndexModel(model)
+	_, err := m.database.Collection(collection).Indexes().CreateOne(ctx, mongoModel)
 	return err
 }
 
 // CreateIndexes 创建多个索引
-func (m *MongoDB) CreateIndexes(ctx context.Context, collection string, models []mongo.IndexModel) error {
-	_, err := m.database.Collection(collection).Indexes().CreateMany(ctx, models)
+func (m *MongoDB) CreateIndexes(ctx context.Context, collection string, models []IndexModel) error {
+	mongoModels := make([]mongo.IndexModel, 0, len(models))
+	for _, mdl := range models {
+		mongoModels = append(mongoModels, convertToMongoIndexModel(mdl))
+	}
+	_, err := m.database.Collection(collection).Indexes().CreateMany(ctx, mongoModels)
 	return err
 }
 
@@ -127,14 +131,14 @@ func (m *MongoDB) DropIndex(ctx context.Context, collection string, name string)
 }
 
 // ListIndexes 列出索引
-func (m *MongoDB) ListIndexes(ctx context.Context, collection string) ([]bson.M, error) {
+func (m *MongoDB) ListIndexes(ctx context.Context, collection string) ([]map[string]any, error) {
 	cursor, err := m.database.Collection(collection).Indexes().List(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
-	var indexes []bson.M
+	var indexes []map[string]any
 	if err = cursor.All(ctx, &indexes); err != nil {
 		return nil, err
 	}
@@ -148,88 +152,180 @@ type MongoCollection struct {
 }
 
 // InsertOne 插入单个文档
-func (c *MongoCollection) InsertOne(ctx context.Context, document interface{}) (*mongo.InsertOneResult, error) {
-	return c.collection.InsertOne(ctx, document)
+func (c *MongoCollection) InsertOne(ctx context.Context, document any) (*InsertOneResult, error) {
+	res, err := c.collection.InsertOne(ctx, document)
+	if err != nil {
+		return nil, err
+	}
+	return &InsertOneResult{InsertedID: res.InsertedID}, nil
 }
 
 // InsertMany 插入多个文档
-func (c *MongoCollection) InsertMany(ctx context.Context, documents []interface{}) (*mongo.InsertManyResult, error) {
-	return c.collection.InsertMany(ctx, documents)
+func (c *MongoCollection) InsertMany(ctx context.Context, documents []any) (*InsertManyResult, error) {
+	res, err := c.collection.InsertMany(ctx, documents)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]any, 0, len(res.InsertedIDs))
+	for _, id := range res.InsertedIDs {
+		ids = append(ids, id)
+	}
+	return &InsertManyResult{InsertedIDs: ids}, nil
 }
 
 // FindOne 查找单个文档
-func (c *MongoCollection) FindOne(ctx context.Context, filter interface{}) *mongo.SingleResult {
-	return c.collection.FindOne(ctx, filter)
+func (c *MongoCollection) FindOne(ctx context.Context, filter any) SingleResult {
+	return &mongoSingleResult{sr: c.collection.FindOne(ctx, filter)}
 }
 
 // Find 查找多个文档
-func (c *MongoCollection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error) {
-	return c.collection.Find(ctx, filter, opts...)
+func (c *MongoCollection) Find(ctx context.Context, filter any, opts ...*FindOptions) (Cursor, error) {
+	mopts := convertFindOptions(opts...)
+	cur, err := c.collection.Find(ctx, filter, mopts...)
+	if err != nil {
+		return nil, err
+	}
+	return &mongoCursor{cur: cur}, nil
 }
 
 // FindOneAndUpdate 查找并更新单个文档
-func (c *MongoCollection) FindOneAndUpdate(ctx context.Context, filter interface{}, update interface{}, opts ...*options.FindOneAndUpdateOptions) *mongo.SingleResult {
-	return c.collection.FindOneAndUpdate(ctx, filter, update, opts...)
+func (c *MongoCollection) FindOneAndUpdate(ctx context.Context, filter any, update any, opts ...*FindOneAndUpdateOptions) SingleResult {
+	mopts := convertFindOneAndUpdateOptions(opts...)
+	return &mongoSingleResult{sr: c.collection.FindOneAndUpdate(ctx, filter, update, mopts...)}
 }
 
 // FindOneAndReplace 查找并替换单个文档
-func (c *MongoCollection) FindOneAndReplace(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) *mongo.SingleResult {
-	return c.collection.FindOneAndReplace(ctx, filter, replacement, opts...)
+func (c *MongoCollection) FindOneAndReplace(ctx context.Context, filter any, replacement any, opts ...*FindOneAndReplaceOptions) SingleResult {
+	mopts := convertFindOneAndReplaceOptions(opts...)
+	return &mongoSingleResult{sr: c.collection.FindOneAndReplace(ctx, filter, replacement, mopts...)}
 }
 
 // FindOneAndDelete 查找并删除单个文档
-func (c *MongoCollection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) *mongo.SingleResult {
-	return c.collection.FindOneAndDelete(ctx, filter, opts...)
+func (c *MongoCollection) FindOneAndDelete(ctx context.Context, filter any, opts ...*FindOneAndDeleteOptions) SingleResult {
+	mopts := convertFindOneAndDeleteOptions(opts...)
+	return &mongoSingleResult{sr: c.collection.FindOneAndDelete(ctx, filter, mopts...)}
 }
 
 // UpdateOne 更新单个文档
-func (c *MongoCollection) UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
-	return c.collection.UpdateOne(ctx, filter, update, opts...)
+func (c *MongoCollection) UpdateOne(ctx context.Context, filter any, update any, opts ...*UpdateOptions) (*UpdateResult, error) {
+	mopts := convertUpdateOptions(opts...)
+	res, err := c.collection.UpdateOne(ctx, filter, update, mopts...)
+	if err != nil {
+		return nil, err
+	}
+	return &UpdateResult{
+		MatchedCount:  res.MatchedCount,
+		ModifiedCount: res.ModifiedCount,
+		UpsertedCount: res.UpsertedCount,
+		UpsertedID:    res.UpsertedID,
+	}, nil
 }
 
 // UpdateMany 更新多个文档
-func (c *MongoCollection) UpdateMany(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
-	return c.collection.UpdateMany(ctx, filter, update, opts...)
+func (c *MongoCollection) UpdateMany(ctx context.Context, filter any, update any, opts ...*UpdateOptions) (*UpdateResult, error) {
+	mopts := convertUpdateOptions(opts...)
+	res, err := c.collection.UpdateMany(ctx, filter, update, mopts...)
+	if err != nil {
+		return nil, err
+	}
+	return &UpdateResult{
+		MatchedCount:  res.MatchedCount,
+		ModifiedCount: res.ModifiedCount,
+		UpsertedCount: res.UpsertedCount,
+		UpsertedID:    res.UpsertedID,
+	}, nil
 }
 
 // ReplaceOne 替换单个文档
-func (c *MongoCollection) ReplaceOne(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
-	return c.collection.ReplaceOne(ctx, filter, replacement, opts...)
+func (c *MongoCollection) ReplaceOne(ctx context.Context, filter any, replacement any, opts ...*ReplaceOptions) (*UpdateResult, error) {
+	mopts := convertReplaceOptions(opts...)
+	res, err := c.collection.ReplaceOne(ctx, filter, replacement, mopts...)
+	if err != nil {
+		return nil, err
+	}
+	return &UpdateResult{
+		MatchedCount:  res.MatchedCount,
+		ModifiedCount: res.ModifiedCount,
+		UpsertedCount: res.UpsertedCount,
+		UpsertedID:    res.UpsertedID,
+	}, nil
 }
 
 // DeleteOne 删除单个文档
-func (c *MongoCollection) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	return c.collection.DeleteOne(ctx, filter, opts...)
+func (c *MongoCollection) DeleteOne(ctx context.Context, filter any, opts ...*DeleteOptions) (*DeleteResult, error) {
+	mopts := convertDeleteOptions(opts...)
+	res, err := c.collection.DeleteOne(ctx, filter, mopts...)
+	if err != nil {
+		return nil, err
+	}
+	return &DeleteResult{DeletedCount: res.DeletedCount}, nil
 }
 
 // DeleteMany 删除多个文档
-func (c *MongoCollection) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	return c.collection.DeleteMany(ctx, filter, opts...)
+func (c *MongoCollection) DeleteMany(ctx context.Context, filter any, opts ...*DeleteOptions) (*DeleteResult, error) {
+	mopts := convertDeleteOptions(opts...)
+	res, err := c.collection.DeleteMany(ctx, filter, mopts...)
+	if err != nil {
+		return nil, err
+	}
+	return &DeleteResult{DeletedCount: res.DeletedCount}, nil
 }
 
 // Aggregate 聚合查询
-func (c *MongoCollection) Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) (*mongo.Cursor, error) {
-	return c.collection.Aggregate(ctx, pipeline, opts...)
+func (c *MongoCollection) Aggregate(ctx context.Context, pipeline any, opts ...*AggregateOptions) (Cursor, error) {
+	cur, err := c.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	return &mongoCursor{cur: cur}, nil
 }
 
 // CountDocuments 统计文档数量
-func (c *MongoCollection) CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error) {
-	return c.collection.CountDocuments(ctx, filter, opts...)
+func (c *MongoCollection) CountDocuments(ctx context.Context, filter any, opts ...*CountOptions) (int64, error) {
+	return c.collection.CountDocuments(ctx, filter)
 }
 
 // EstimatedDocumentCount 估算文档数量
-func (c *MongoCollection) EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error) {
-	return c.collection.EstimatedDocumentCount(ctx, opts...)
+func (c *MongoCollection) EstimatedDocumentCount(ctx context.Context, opts ...*EstimatedDocumentCountOptions) (int64, error) {
+	return c.collection.EstimatedDocumentCount(ctx)
 }
 
 // Distinct 获取唯一值
-func (c *MongoCollection) Distinct(ctx context.Context, fieldName string, filter interface{}, opts ...*options.DistinctOptions) ([]interface{}, error) {
-	return c.collection.Distinct(ctx, fieldName, filter, opts...)
+func (c *MongoCollection) Distinct(ctx context.Context, fieldName string, filter any, opts ...*DistinctOptions) ([]any, error) {
+	vals, err := c.collection.Distinct(ctx, fieldName, filter)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]any, 0, len(vals))
+	for _, v := range vals {
+		out = append(out, v)
+	}
+	return out, nil
 }
 
 // BulkWrite 批量写入
-func (c *MongoCollection) BulkWrite(ctx context.Context, operations []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
-	return c.collection.BulkWrite(ctx, operations, opts...)
+func (c *MongoCollection) BulkWrite(ctx context.Context, operations []WriteOperation, opts ...*BulkWriteOptions) (*BulkWriteResult, error) {
+	// 仅支持传入 mongo.WriteModel 的切片
+	mongoOps := make([]mongo.WriteModel, 0, len(operations))
+	for _, op := range operations {
+		m, ok := op.(mongo.WriteModel)
+		if !ok {
+			return nil, fmt.Errorf("unsupported write operation type: %T", op)
+		}
+		mongoOps = append(mongoOps, m)
+	}
+	mopts := convertBulkWriteOptions(opts...)
+	res, err := c.collection.BulkWrite(ctx, mongoOps, mopts...)
+	if err != nil {
+		return nil, err
+	}
+	return &BulkWriteResult{
+		InsertedCount: res.InsertedCount,
+		MatchedCount:  res.MatchedCount,
+		ModifiedCount: res.ModifiedCount,
+		DeletedCount:  res.DeletedCount,
+		UpsertedCount: res.UpsertedCount,
+	}, nil
 }
 
 // Drop 删除集合
@@ -238,13 +334,18 @@ func (c *MongoCollection) Drop(ctx context.Context) error {
 }
 
 // CreateIndex 创建索引
-func (c *MongoCollection) CreateIndex(ctx context.Context, model mongo.IndexModel) (string, error) {
-	return c.collection.Indexes().CreateOne(ctx, model)
+func (c *MongoCollection) CreateIndex(ctx context.Context, model IndexModel) (string, error) {
+	mongoModel := convertToMongoIndexModel(model)
+	return c.collection.Indexes().CreateOne(ctx, mongoModel)
 }
 
 // CreateIndexes 创建多个索引
-func (c *MongoCollection) CreateIndexes(ctx context.Context, models []mongo.IndexModel) ([]string, error) {
-	return c.collection.Indexes().CreateMany(ctx, models)
+func (c *MongoCollection) CreateIndexes(ctx context.Context, models []IndexModel) ([]string, error) {
+	mongoModels := make([]mongo.IndexModel, 0, len(models))
+	for _, mdl := range models {
+		mongoModels = append(mongoModels, convertToMongoIndexModel(mdl))
+	}
+	return c.collection.Indexes().CreateMany(ctx, mongoModels)
 }
 
 // DropIndex 删除索引
@@ -254,6 +355,132 @@ func (c *MongoCollection) DropIndex(ctx context.Context, name string) error {
 }
 
 // ListIndexes 列出索引
-func (c *MongoCollection) ListIndexes(ctx context.Context) (*mongo.Cursor, error) {
-	return c.collection.Indexes().List(ctx)
+func (c *MongoCollection) ListIndexes(ctx context.Context) (Cursor, error) {
+	cur, err := c.collection.Indexes().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &mongoCursor{cur: cur}, nil
+}
+
+// 适配器类型与选项转换
+
+type mongoCursor struct {
+	cur *mongo.Cursor
+}
+
+func (c *mongoCursor) All(ctx context.Context, results any) error { return c.cur.All(ctx, results) }
+func (c *mongoCursor) Next(ctx context.Context) bool              { return c.cur.Next(ctx) }
+func (c *mongoCursor) Decode(val any) error                       { return c.cur.Decode(val) }
+func (c *mongoCursor) Close(ctx context.Context) error            { return c.cur.Close(ctx) }
+func (c *mongoCursor) Err() error                                 { return c.cur.Err() }
+
+type mongoSingleResult struct {
+	sr *mongo.SingleResult
+}
+
+func (s *mongoSingleResult) Decode(val any) error { return s.sr.Decode(val) }
+func (s *mongoSingleResult) Err() error           { return s.sr.Err() }
+
+func convertFindOptions(opts ...*FindOptions) []*options.FindOptions {
+	if len(opts) == 0 || opts[0] == nil {
+		return nil
+	}
+	o := options.Find()
+	if opts[0].Skip != nil {
+		o.SetSkip(*opts[0].Skip)
+	}
+	if opts[0].Limit != nil {
+		o.SetLimit(*opts[0].Limit)
+	}
+	if opts[0].Sort != nil {
+		o.SetSort(opts[0].Sort)
+	}
+	if opts[0].Projection != nil {
+		o.SetProjection(opts[0].Projection)
+	}
+	return []*options.FindOptions{o}
+}
+
+func convertFindOneAndUpdateOptions(opts ...*FindOneAndUpdateOptions) []*options.FindOneAndUpdateOptions {
+	if len(opts) == 0 || opts[0] == nil {
+		return nil
+	}
+	o := options.FindOneAndUpdate()
+	if opts[0].ReturnDocument == "after" {
+		o.SetReturnDocument(options.After)
+	} else if opts[0].ReturnDocument == "before" {
+		o.SetReturnDocument(options.Before)
+	}
+	o.SetUpsert(opts[0].Upsert)
+	return []*options.FindOneAndUpdateOptions{o}
+}
+
+func convertFindOneAndReplaceOptions(opts ...*FindOneAndReplaceOptions) []*options.FindOneAndReplaceOptions {
+	if len(opts) == 0 || opts[0] == nil {
+		return nil
+	}
+	o := options.FindOneAndReplace()
+	o.SetUpsert(opts[0].Upsert)
+	return []*options.FindOneAndReplaceOptions{o}
+}
+
+func convertFindOneAndDeleteOptions(opts ...*FindOneAndDeleteOptions) []*options.FindOneAndDeleteOptions {
+	if len(opts) == 0 || opts[0] == nil {
+		return nil
+	}
+	o := options.FindOneAndDelete()
+	return []*options.FindOneAndDeleteOptions{o}
+}
+
+func convertUpdateOptions(opts ...*UpdateOptions) []*options.UpdateOptions {
+	if len(opts) == 0 || opts[0] == nil {
+		return nil
+	}
+	o := options.Update().SetUpsert(opts[0].Upsert)
+	return []*options.UpdateOptions{o}
+}
+
+func convertReplaceOptions(opts ...*ReplaceOptions) []*options.ReplaceOptions {
+	if len(opts) == 0 || opts[0] == nil {
+		return nil
+	}
+	o := options.Replace().SetUpsert(opts[0].Upsert)
+	return []*options.ReplaceOptions{o}
+}
+
+func convertDeleteOptions(opts ...*DeleteOptions) []*options.DeleteOptions {
+	if len(opts) == 0 || opts[0] == nil {
+		return nil
+	}
+	o := options.Delete()
+	return []*options.DeleteOptions{o}
+}
+
+func convertBulkWriteOptions(opts ...*BulkWriteOptions) []*options.BulkWriteOptions {
+	if len(opts) == 0 || opts[0] == nil {
+		return nil
+	}
+	o := options.BulkWrite().SetOrdered(opts[0].Ordered)
+	return []*options.BulkWriteOptions{o}
+}
+
+func convertToMongoIndexModel(im IndexModel) mongo.IndexModel {
+	var idxOpts *options.IndexOptions
+	if im.Options != nil {
+		idxOpts = options.Index()
+		if im.Options.Name != nil {
+			idxOpts.SetName(*im.Options.Name)
+		}
+		if im.Options.Unique != nil {
+			idxOpts.SetUnique(*im.Options.Unique)
+		}
+		if im.Options.Background != nil {
+			idxOpts.SetBackground(*im.Options.Background)
+		}
+		if im.Options.Sparse != nil {
+			idxOpts.SetSparse(*im.Options.Sparse)
+		}
+	}
+	return mongo.IndexModel{Keys: im.Keys, Options: idxOpts}
 }

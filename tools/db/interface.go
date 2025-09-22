@@ -3,14 +3,9 @@ package db
 import (
 	"context"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// Database 定义数据库连接接口
+// Database 定义数据库连接接口（与具体实现解耦）
 type Database interface {
 	// 连接管理
 	Connect(ctx context.Context) error
@@ -24,49 +19,49 @@ type Database interface {
 	// 事务支持
 	WithTransaction(ctx context.Context, fn func(context.Context) error) error
 
-	// 索引管理
-	CreateIndex(ctx context.Context, collection string, model mongo.IndexModel) error
-	CreateIndexes(ctx context.Context, collection string, models []mongo.IndexModel) error
+	// 索引管理（使用与实现无关的模型与选项）
+	CreateIndex(ctx context.Context, collection string, model IndexModel) error
+	CreateIndexes(ctx context.Context, collection string, models []IndexModel) error
 	DropIndex(ctx context.Context, collection string, name string) error
-	ListIndexes(ctx context.Context, collection string) ([]bson.M, error)
+	ListIndexes(ctx context.Context, collection string) ([]map[string]any, error)
 }
 
-// Collection 定义集合操作接口
+// Collection 定义集合操作接口（与具体实现解耦）
 type Collection interface {
 	// 基础CRUD操作
-	InsertOne(ctx context.Context, document interface{}) (*mongo.InsertOneResult, error)
-	InsertMany(ctx context.Context, documents []interface{}) (*mongo.InsertManyResult, error)
+	InsertOne(ctx context.Context, document any) (*InsertOneResult, error)
+	InsertMany(ctx context.Context, documents []any) (*InsertManyResult, error)
 
-	FindOne(ctx context.Context, filter interface{}) *mongo.SingleResult
-	Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error)
-	FindOneAndUpdate(ctx context.Context, filter interface{}, update interface{}, opts ...*options.FindOneAndUpdateOptions) *mongo.SingleResult
-	FindOneAndReplace(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) *mongo.SingleResult
-	FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) *mongo.SingleResult
+	FindOne(ctx context.Context, filter any) SingleResult
+	Find(ctx context.Context, filter any, opts ...*FindOptions) (Cursor, error)
+	FindOneAndUpdate(ctx context.Context, filter any, update any, opts ...*FindOneAndUpdateOptions) SingleResult
+	FindOneAndReplace(ctx context.Context, filter any, replacement any, opts ...*FindOneAndReplaceOptions) SingleResult
+	FindOneAndDelete(ctx context.Context, filter any, opts ...*FindOneAndDeleteOptions) SingleResult
 
-	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
-	UpdateMany(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
-	ReplaceOne(ctx context.Context, filter interface{}, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error)
+	UpdateOne(ctx context.Context, filter any, update any, opts ...*UpdateOptions) (*UpdateResult, error)
+	UpdateMany(ctx context.Context, filter any, update any, opts ...*UpdateOptions) (*UpdateResult, error)
+	ReplaceOne(ctx context.Context, filter any, replacement any, opts ...*ReplaceOptions) (*UpdateResult, error)
 
-	DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
-	DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
+	DeleteOne(ctx context.Context, filter any, opts ...*DeleteOptions) (*DeleteResult, error)
+	DeleteMany(ctx context.Context, filter any, opts ...*DeleteOptions) (*DeleteResult, error)
 
 	// 聚合操作
-	Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) (*mongo.Cursor, error)
+	Aggregate(ctx context.Context, pipeline any, opts ...*AggregateOptions) (Cursor, error)
 
 	// 计数和统计
-	CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error)
-	EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error)
-	Distinct(ctx context.Context, fieldName string, filter interface{}, opts ...*options.DistinctOptions) ([]interface{}, error)
+	CountDocuments(ctx context.Context, filter any, opts ...*CountOptions) (int64, error)
+	EstimatedDocumentCount(ctx context.Context, opts ...*EstimatedDocumentCountOptions) (int64, error)
+	Distinct(ctx context.Context, fieldName string, filter any, opts ...*DistinctOptions) ([]any, error)
 
 	// 批量操作
-	BulkWrite(ctx context.Context, operations []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error)
+	BulkWrite(ctx context.Context, operations []WriteOperation, opts ...*BulkWriteOptions) (*BulkWriteResult, error)
 
 	// 集合管理
 	Drop(ctx context.Context) error
-	CreateIndex(ctx context.Context, model mongo.IndexModel) (string, error)
-	CreateIndexes(ctx context.Context, models []mongo.IndexModel) ([]string, error)
+	CreateIndex(ctx context.Context, model IndexModel) (string, error)
+	CreateIndexes(ctx context.Context, models []IndexModel) ([]string, error)
 	DropIndex(ctx context.Context, name string) error
-	ListIndexes(ctx context.Context) (*mongo.Cursor, error)
+	ListIndexes(ctx context.Context) (Cursor, error)
 }
 
 // Repository 定义通用仓储接口
@@ -74,41 +69,159 @@ type Repository[T any] interface {
 	// 基础CRUD
 	Create(ctx context.Context, entity *T) error
 	CreateMany(ctx context.Context, entities []*T) error
-	GetByID(ctx context.Context, id primitive.ObjectID) (*T, error)
-	GetByFilter(ctx context.Context, filter bson.M) (*T, error)
-	GetMany(ctx context.Context, filter bson.M, opts ...*options.FindOptions) ([]*T, error)
-	UpdateByID(ctx context.Context, id primitive.ObjectID, update bson.M) error
-	UpdateByFilter(ctx context.Context, filter bson.M, update bson.M) error
-	DeleteByID(ctx context.Context, id primitive.ObjectID) error
-	DeleteByFilter(ctx context.Context, filter bson.M) error
+	GetByID(ctx context.Context, id any) (*T, error)
+	GetByFilter(ctx context.Context, filter map[string]any) (*T, error)
+	GetMany(ctx context.Context, filter map[string]any, opts ...*FindOptions) ([]*T, error)
+	UpdateByID(ctx context.Context, id any, update map[string]any) error
+	UpdateByFilter(ctx context.Context, filter map[string]any, update map[string]any) error
+	DeleteByID(ctx context.Context, id any) error
+	DeleteByFilter(ctx context.Context, filter map[string]any) error
 
 	// 分页查询
-	GetPage(ctx context.Context, filter bson.M, page, size int64, sort bson.M) ([]*T, int64, error)
+	GetPage(ctx context.Context, filter map[string]any, page, size int64, sort map[string]any) ([]*T, int64, error)
 
 	// 计数
-	Count(ctx context.Context, filter bson.M) (int64, error)
+	Count(ctx context.Context, filter map[string]any) (int64, error)
 
 	// 聚合查询
-	Aggregate(ctx context.Context, pipeline []bson.M) ([]bson.M, error)
+	Aggregate(ctx context.Context, pipeline []map[string]any) ([]map[string]any, error)
 
 	// 批量操作
 	BulkUpdate(ctx context.Context, updates []BulkUpdate) error
-	BulkDelete(ctx context.Context, filters []bson.M) error
+	BulkDelete(ctx context.Context, filters []map[string]any) error
 }
 
 // BulkUpdate 批量更新结构
 type BulkUpdate struct {
-	Filter bson.M
-	Update bson.M
+	Filter map[string]any
+	Update map[string]any
 }
 
 // QueryOptions 查询选项
 type QueryOptions struct {
 	Skip       *int64
 	Limit      *int64
-	Sort       bson.M
-	Projection bson.M
-	Collation  *options.Collation
+	Sort       map[string]any
+	Projection map[string]any
+	Collation  *Collation
+}
+
+// 通用结果与选项类型（与具体实现无关）
+
+// InsertOneResult 表示插入单条记录的结果
+type InsertOneResult struct {
+	InsertedID any
+}
+
+// InsertManyResult 表示插入多条记录的结果
+type InsertManyResult struct {
+	InsertedIDs []any
+}
+
+// UpdateResult 表示更新操作的结果
+type UpdateResult struct {
+	MatchedCount  int64
+	ModifiedCount int64
+	UpsertedCount int64
+	UpsertedID    any
+}
+
+// DeleteResult 表示删除操作的结果
+type DeleteResult struct {
+	DeletedCount int64
+}
+
+// BulkWriteResult 表示批量写入的结果
+type BulkWriteResult struct {
+	InsertedCount int64
+	MatchedCount  int64
+	ModifiedCount int64
+	DeletedCount  int64
+	UpsertedCount int64
+}
+
+// Cursor 抽象游标
+type Cursor interface {
+	All(ctx context.Context, results any) error
+	Next(ctx context.Context) bool
+	Decode(val any) error
+	Close(ctx context.Context) error
+	Err() error
+}
+
+// SingleResult 抽象单条结果
+type SingleResult interface {
+	Decode(val any) error
+	Err() error
+}
+
+// 通用选项类型（子集，用于跨存储抽象）。具体实现可忽略不支持字段。
+type FindOptions struct {
+	Skip       *int64
+	Limit      *int64
+	Sort       map[string]any
+	Projection map[string]any
+}
+
+type FindOneAndUpdateOptions struct {
+	ReturnDocument string // "before" | "after"
+	Upsert         bool
+}
+
+type FindOneAndReplaceOptions struct {
+	Upsert bool
+}
+
+type FindOneAndDeleteOptions struct{}
+
+type UpdateOptions struct {
+	Upsert bool
+}
+
+type ReplaceOptions struct {
+	Upsert bool
+}
+
+type DeleteOptions struct{}
+
+type AggregateOptions struct{}
+
+type CountOptions struct{}
+
+type EstimatedDocumentCountOptions struct{}
+
+type DistinctOptions struct{}
+
+type BulkWriteOptions struct {
+	Ordered bool
+}
+
+// 批量写操作抽象（具体实现可通过类型断言区分）
+type WriteOperation interface{}
+
+// 索引相关抽象
+type IndexModel struct {
+	Keys    any           // 通常为 map 或数组文档
+	Options *IndexOptions // 选项
+}
+
+type IndexOptions struct {
+	Name       *string
+	Unique     *bool
+	Background *bool
+	Sparse     *bool
+}
+
+// Collation 抽象
+type Collation struct {
+	Locale          string
+	CaseLevel       *bool
+	CaseFirst       *string
+	Strength        *int
+	NumericOrdering *bool
+	Alternate       *string
+	MaxVariable     *string
+	Backwards       *bool
 }
 
 // ConnectionConfig 连接配置
@@ -145,18 +258,16 @@ func DefaultConnectionConfig() *ConnectionConfig {
 
 // BaseEntity 基础实体结构，包含通用字段
 type BaseEntity struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
-	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
-	DeletedAt *time.Time         `bson:"deleted_at,omitempty" json:"deleted_at,omitempty"`
+	ID        any        `bson:"_id,omitempty" json:"id"`
+	CreatedAt time.Time  `bson:"created_at" json:"created_at"`
+	UpdatedAt time.Time  `bson:"updated_at" json:"updated_at"`
+	DeletedAt *time.Time `bson:"deleted_at,omitempty" json:"deleted_at,omitempty"`
 }
 
 // BeforeCreate 创建前钩子
 func (e *BaseEntity) BeforeCreate() {
 	now := time.Now()
-	if e.ID.IsZero() {
-		e.ID = primitive.NewObjectID()
-	}
+	// ID 的生成由具体实现或上层业务负责
 	e.CreatedAt = now
 	e.UpdatedAt = now
 }

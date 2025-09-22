@@ -8,10 +8,6 @@ import (
 
 	"github.com/roc/roc-im-server/tools/db"
 	"github.com/roc/roc-im-server/tools/log"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // User 用户实体示例
@@ -26,11 +22,11 @@ type User struct {
 // Message 消息实体示例
 type Message struct {
 	db.BaseEntity
-	FromUserID primitive.ObjectID `bson:"from_user_id" json:"from_user_id"`
-	ToUserID   primitive.ObjectID `bson:"to_user_id" json:"to_user_id"`
-	Content    string             `bson:"content" json:"content"`
-	Type       string             `bson:"type" json:"type"`     // text, image, file
-	Status     string             `bson:"status" json:"status"` // sent, delivered, read
+	FromUserID string `bson:"from_user_id" json:"from_user_id"`
+	ToUserID   string `bson:"to_user_id" json:"to_user_id"`
+	Content    string `bson:"content" json:"content"`
+	Type       string `bson:"type" json:"type"`     // text, image, file
+	Status     string `bson:"status" json:"status"` // sent, delivered, read
 }
 
 // MongoDBExample_main MongoDB示例主函数
@@ -152,7 +148,7 @@ func testUserOperations(ctx context.Context, collection db.Collection, logger lo
 	logger.Info("✓ 批量创建用户成功")
 
 	// 查询用户
-	filter := bson.M{"is_active": true}
+	filter := map[string]any{"is_active": true}
 	cursor, err := collection.Find(ctx, filter)
 	if err != nil {
 		logger.Error("查询用户失败", log.Error(err))
@@ -168,8 +164,8 @@ func testUserOperations(ctx context.Context, collection db.Collection, logger lo
 	logger.Info("✓ 查询到活跃用户", log.Int("count", len(activeUsers)))
 
 	// 更新用户
-	update := bson.M{
-		"$set": bson.M{
+	update := map[string]any{
+		"$set": map[string]any{
 			"age":        26,
 			"updated_at": time.Now(),
 		},
@@ -182,7 +178,7 @@ func testUserOperations(ctx context.Context, collection db.Collection, logger lo
 	logger.Info("✓ 更新了用户", log.Int64("count", updateResult.ModifiedCount))
 
 	// 统计用户数量
-	count, err := collection.CountDocuments(ctx, bson.M{})
+	count, err := collection.CountDocuments(ctx, map[string]any{})
 	if err != nil {
 		logger.Error("统计用户数量失败", log.Error(err))
 		return
@@ -197,8 +193,8 @@ func testMessageOperations(ctx context.Context, collection db.Collection, logger
 	// 创建消息
 	message := &Message{
 		BaseEntity: db.BaseEntity{},
-		FromUserID: primitive.NewObjectID(),
-		ToUserID:   primitive.NewObjectID(),
+		FromUserID: fmt.Sprintf("%d", time.Now().UnixNano()),
+		ToUserID:   fmt.Sprintf("%d", time.Now().UnixNano()+1),
 		Content:    "Hello, World!",
 		Type:       "text",
 		Status:     "sent",
@@ -213,8 +209,8 @@ func testMessageOperations(ctx context.Context, collection db.Collection, logger
 	fmt.Printf("✓ 创建消息成功，ID: %v\n", result.InsertedID)
 
 	// 查询消息
-	filter := bson.M{"type": "text"}
-	opts := options.Find().SetSort(bson.M{"created_at": -1}).SetLimit(10)
+	filter := map[string]any{"type": "text"}
+	opts := &db.FindOptions{Sort: map[string]any{"created_at": -1}, Limit: func(v int64) *int64 { return &v }(10)}
 	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
 		logger.Error("查询消息失败", log.Error(err))
@@ -230,9 +226,9 @@ func testMessageOperations(ctx context.Context, collection db.Collection, logger
 	fmt.Printf("✓ 查询到 %d 条文本消息\n", len(messages))
 
 	// 更新消息状态
-	updateFilter := bson.M{"status": "sent"}
-	update := bson.M{
-		"$set": bson.M{
+	updateFilter := map[string]any{"status": "sent"}
+	update := map[string]any{
+		"$set": map[string]any{
 			"status":     "delivered",
 			"updated_at": time.Now(),
 		},
@@ -250,15 +246,15 @@ func testAggregation(ctx context.Context, collection db.Collection, logger log.L
 	logger.Info("--- 测试聚合查询 ---")
 
 	// 按类型统计消息数量
-	pipeline := []bson.M{
+	pipeline := []map[string]any{
 		{
-			"$group": bson.M{
+			"$group": map[string]any{
 				"_id":   "$type",
-				"count": bson.M{"$sum": 1},
+				"count": map[string]any{"$sum": 1},
 			},
 		},
 		{
-			"$sort": bson.M{"count": -1},
+			"$sort": map[string]any{"count": -1},
 		},
 	}
 
@@ -269,7 +265,7 @@ func testAggregation(ctx context.Context, collection db.Collection, logger log.L
 	}
 	defer cursor.Close(ctx)
 
-	var results []bson.M
+	var results []map[string]any
 	if err = cursor.All(ctx, &results); err != nil {
 		logger.Error("解析聚合结果失败", log.Error(err))
 		return
@@ -309,8 +305,8 @@ func testTransaction(ctx context.Context, mongoDB db.Database, logger log.Logger
 	// 创建消息
 	message := &Message{
 		BaseEntity: db.BaseEntity{},
-		FromUserID: userResult.InsertedID.(primitive.ObjectID),
-		ToUserID:   primitive.NewObjectID(),
+		FromUserID: fmt.Sprint(userResult.InsertedID),
+		ToUserID:   fmt.Sprintf("%d", time.Now().UnixNano()+2),
 		Content:    "模拟事务消息",
 		Type:       "text",
 		Status:     "sent",
@@ -331,10 +327,10 @@ func testIndexes(ctx context.Context, mongoDB db.Database, logger log.Logger) {
 	logger.Info("--- 测试索引 ---")
 
 	// 创建用户邮箱唯一索引（检查是否已存在）
-	emailIndex := options.Index().SetUnique(true)
-	indexModel := mongo.IndexModel{
-		Keys:    bson.M{"email": 1},
-		Options: emailIndex,
+	emailUnique := true
+	indexModel := db.IndexModel{
+		Keys:    map[string]any{"email": 1},
+		Options: &db.IndexOptions{Unique: &emailUnique},
 	}
 
 	err := mongoDB.CreateIndex(ctx, "users", indexModel)
@@ -350,14 +346,14 @@ func testIndexes(ctx context.Context, mongoDB db.Database, logger log.Logger) {
 	}
 
 	// 创建消息复合索引
-	messageIndex := options.Index().SetBackground(true)
-	messageIndexModel := mongo.IndexModel{
-		Keys: bson.D{
-			{Key: "from_user_id", Value: 1},
-			{Key: "to_user_id", Value: 1},
-			{Key: "created_at", Value: -1},
+	bg := true
+	messageIndexModel := db.IndexModel{
+		Keys: map[string]any{
+			"from_user_id": 1,
+			"to_user_id":   1,
+			"created_at":   -1,
 		},
-		Options: messageIndex,
+		Options: &db.IndexOptions{Background: &bg},
 	}
 
 	err = mongoDB.CreateIndex(ctx, "messages", messageIndexModel)
