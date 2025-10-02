@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -167,9 +168,7 @@ func (c *MongoCollection) InsertMany(ctx context.Context, documents []any) (*Ins
 		return nil, err
 	}
 	ids := make([]any, 0, len(res.InsertedIDs))
-	for _, id := range res.InsertedIDs {
-		ids = append(ids, id)
-	}
+	ids = append(ids, res.InsertedIDs...)
 	return &InsertManyResult{InsertedIDs: ids}, nil
 }
 
@@ -273,11 +272,57 @@ func (c *MongoCollection) DeleteMany(ctx context.Context, filter any, opts ...*D
 
 // Aggregate 聚合查询
 func (c *MongoCollection) Aggregate(ctx context.Context, pipeline any, opts ...*AggregateOptions) (Cursor, error) {
-	cur, err := c.collection.Aggregate(ctx, pipeline)
+	conv := convertPipelineOrderedDocs(pipeline)
+	cur, err := c.collection.Aggregate(ctx, conv)
 	if err != nil {
 		return nil, err
 	}
 	return &mongoCursor{cur: cur}, nil
+}
+
+// convertPipelineOrderedDocs 将管道中出现的 []KeyValue 转换为 bson.D 以保证顺序
+func convertPipelineOrderedDocs(pipeline any) any {
+	switch p := pipeline.(type) {
+	case []map[string]any:
+		out := make([]any, 0, len(p))
+		for _, stage := range p {
+			out = append(out, convertStageOrderedDocs(stage))
+		}
+		return out
+	case []any:
+		out := make([]any, 0, len(p))
+		for _, s := range p {
+			if m, ok := s.(map[string]any); ok {
+				out = append(out, convertStageOrderedDocs(m))
+			} else {
+				out = append(out, s)
+			}
+		}
+		return out
+	default:
+		return pipeline
+	}
+}
+
+func convertStageOrderedDocs(stage map[string]any) map[string]any {
+	out := make(map[string]any, len(stage))
+	for k, v := range stage {
+		switch vv := v.(type) {
+		case []KeyValue:
+			out[k] = keyValuesToBsonD(vv)
+		default:
+			out[k] = vv
+		}
+	}
+	return out
+}
+
+func keyValuesToBsonD(kvs []KeyValue) bson.D {
+	d := make(bson.D, 0, len(kvs))
+	for _, kv := range kvs {
+		d = append(d, bson.E{Key: kv.Key, Value: kv.Value})
+	}
+	return d
 }
 
 // CountDocuments 统计文档数量
@@ -297,9 +342,7 @@ func (c *MongoCollection) Distinct(ctx context.Context, fieldName string, filter
 		return nil, err
 	}
 	out := make([]any, 0, len(vals))
-	for _, v := range vals {
-		out = append(out, v)
-	}
+	out = append(out, vals...)
 	return out, nil
 }
 
@@ -482,5 +525,10 @@ func convertToMongoIndexModel(im IndexModel) mongo.IndexModel {
 			idxOpts.SetSparse(*im.Options.Sparse)
 		}
 	}
-	return mongo.IndexModel{Keys: im.Keys, Options: idxOpts}
+	// Keys 现在强制为有序的 []KeyValue，转成 bson.D 以保持顺序
+	d := make(bson.D, 0, len(im.Keys))
+	for _, kv := range im.Keys {
+		d = append(d, bson.E{Key: kv.Key, Value: kv.Value})
+	}
+	return mongo.IndexModel{Keys: d, Options: idxOpts}
 }

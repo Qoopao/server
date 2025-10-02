@@ -201,8 +201,15 @@ type WriteOperation interface{}
 
 // 索引相关抽象
 type IndexModel struct {
-	Keys    any           // 通常为 map 或数组文档
+	// Keys 必须是有序的键列表，以保证在索引等顺序敏感场景中行为正确
+	Keys    []KeyValue
 	Options *IndexOptions // 选项
+}
+
+// KeyValue 用于需要保持顺序的键值对（如复合索引的键顺序）
+type KeyValue struct {
+	Key   string
+	Value any
 }
 
 type IndexOptions struct {

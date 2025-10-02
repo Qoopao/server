@@ -91,7 +91,188 @@ func MongoDBExample_main() {
 	// 测试索引
 	testIndexes(ctx, mongoDB, logger)
 
+	// 测试核心接口覆盖
+	testAdvancedOps(ctx, mongoDB, userCollection, messageCollection, logger)
+
+	// 测试数据库级索引与负例
+	testDBLevelIndexesAndNegatives(ctx, mongoDB, userCollection, logger)
+
 	logger.Info("=== MongoDB 示例完成 ===")
+}
+
+// testAdvancedOps 覆盖更多核心接口与错误日志
+func testAdvancedOps(ctx context.Context, mongoDB db.Database, users db.Collection, messages db.Collection, logger log.Logger) {
+	logger.Info("--- 测试核心接口（高级操作） ---")
+
+	// 1) FindOne
+	one := users.FindOne(ctx, map[string]any{"is_active": true})
+	var oneUser User
+	if err := one.Decode(&oneUser); err != nil {
+		logger.Error("FindOne 解码失败", log.Error(err))
+	} else {
+		logger.Info("✓ FindOne 成功", log.Any("user", oneUser.Email))
+	}
+
+	// 2) FindOneAndUpdate（after）
+	fou := users.FindOneAndUpdate(ctx,
+		map[string]any{"email": oneUser.Email},
+		map[string]any{"$set": map[string]any{"age": oneUser.Age + 1}},
+		&db.FindOneAndUpdateOptions{ReturnDocument: "after", Upsert: false},
+	)
+	var afterUpdate User
+	if err := fou.Decode(&afterUpdate); err != nil {
+		logger.Error("FindOneAndUpdate 失败", log.Error(err))
+	} else {
+		logger.Info("✓ FindOneAndUpdate 成功", log.Int("age", afterUpdate.Age))
+	}
+
+	// 3) FindOneAndReplace
+	replaceUser := afterUpdate
+	replaceUser.IsActive = afterUpdate.IsActive
+	replaceUser.Name = "替换后的用户"
+	forReplace := users.FindOneAndReplace(ctx,
+		map[string]any{"email": afterUpdate.Email},
+		&replaceUser,
+		&db.FindOneAndReplaceOptions{Upsert: false},
+	)
+	var replaced User
+	if err := forReplace.Decode(&replaced); err != nil {
+		logger.Error("FindOneAndReplace 失败", log.Error(err))
+	} else {
+		logger.Info("✓ FindOneAndReplace 成功")
+	}
+
+	// 4) FindOneAndDelete（演示，不影响主数据：用一个几乎不命中的条件）
+	fod := users.FindOneAndDelete(ctx, map[string]any{"email": "not-exist@example.com"})
+	var deleted User
+	if err := fod.Decode(&deleted); err != nil {
+		logger.Info("FindOneAndDelete 未找到预期记录（正常）")
+	} else {
+		logger.Info("✓ FindOneAndDelete 成功（意外找到记录）")
+	}
+
+	// 5) ReplaceOne
+	replaceUser2 := replaced
+	replaceUser2.Name = "ReplaceOne 用户"
+	if _, err := users.ReplaceOne(ctx, map[string]any{"email": replaceUser2.Email}, &replaceUser2); err != nil {
+		logger.Error("ReplaceOne 失败", log.Error(err))
+	} else {
+		logger.Info("✓ ReplaceOne 成功")
+	}
+
+	// 6) DeleteOne / DeleteMany（仅演示，不删除真实数据）
+	if _, err := users.DeleteOne(ctx, map[string]any{"email": "not-exist@example.com"}); err != nil {
+		logger.Error("DeleteOne 失败", log.Error(err))
+	} else {
+		logger.Info("✓ DeleteOne 执行完成（可能未删除）")
+	}
+	if _, err := users.DeleteMany(ctx, map[string]any{"email": map[string]any{"$regex": "^not-exist-"}}); err != nil {
+		logger.Error("DeleteMany 失败", log.Error(err))
+	} else {
+		logger.Info("✓ DeleteMany 执行完成（可能未删除）")
+	}
+
+	// 7) EstimatedDocumentCount
+	if n, err := messages.EstimatedDocumentCount(ctx); err != nil {
+		logger.Error("EstimatedDocumentCount 失败", log.Error(err))
+	} else {
+		logger.Info("✓ EstimatedDocumentCount 成功", log.Int64("count", n))
+	}
+
+	// 8) Distinct（用户邮箱）
+	if values, err := users.Distinct(ctx, "email", map[string]any{}); err != nil {
+		logger.Error("Distinct 失败", log.Error(err))
+	} else {
+		logger.Info("✓ Distinct 成功", log.Int("emails", len(values)))
+	}
+
+	// 9) 集合级索引：CreateIndexes / DropIndex / ListIndexes
+	collIdxModels := []db.IndexModel{
+		{Keys: []db.KeyValue{{Key: "name", Value: 1}}},
+		{Keys: []db.KeyValue{{Key: "age", Value: -1}}},
+	}
+	names, err := users.CreateIndexes(ctx, collIdxModels)
+	if err != nil {
+		logger.Error("Collection.CreateIndexes 失败", log.Error(err))
+	} else {
+		logger.Info("✓ Collection.CreateIndexes 成功", log.Any("names", names))
+		if len(names) > 0 {
+			if err := users.DropIndex(ctx, names[0]); err != nil {
+				logger.Error("Collection.DropIndex 失败", log.Error(err))
+			} else {
+				logger.Info("✓ Collection.DropIndex 成功", log.Any("name", names[0]))
+			}
+		}
+	}
+	// ListIndexes（集合级）
+	if cur, err := users.ListIndexes(ctx); err != nil {
+		logger.Error("Collection.ListIndexes 失败", log.Error(err))
+	} else {
+		var idxs []map[string]any
+		if err := cur.All(ctx, &idxs); err != nil {
+			logger.Error("Collection.ListIndexes 解析失败", log.Error(err))
+		} else {
+			logger.Info("✓ Collection.ListIndexes 成功", log.Int("count", len(idxs)))
+		}
+	}
+
+	// 10) 集合 Drop：创建临时集合，插入后删除
+	temp := mongoDB.GetCollection("tmp_demo")
+	if _, err := temp.InsertOne(ctx, map[string]any{"k": "v"}); err != nil {
+		logger.Error("临时集合插入失败", log.Error(err))
+	} else {
+		logger.Info("✓ 临时集合插入成功")
+	}
+	if err := temp.Drop(ctx); err != nil {
+		logger.Error("临时集合 Drop 失败", log.Error(err))
+	} else {
+		logger.Info("✓ 临时集合 Drop 成功")
+	}
+}
+
+// testDBLevelIndexesAndNegatives 数据库级索引与负例覆盖
+func testDBLevelIndexesAndNegatives(ctx context.Context, mongoDB db.Database, users db.Collection, logger log.Logger) {
+	logger.Info("--- 测试数据库级索引与负例 ---")
+
+	// 数据库级：CreateIndexes / DropIndex / ListIndexes
+	models := []db.IndexModel{
+		{Keys: []db.KeyValue{{Key: "is_active", Value: 1}}},
+		{Keys: []db.KeyValue{{Key: "age", Value: 1}}},
+	}
+	if err := mongoDB.CreateIndexes(ctx, "users", models); err != nil {
+		logger.Error("DB.CreateIndexes 失败", log.Error(err))
+	} else {
+		logger.Info("✓ DB.CreateIndexes 成功")
+	}
+	// DropIndex（尝试删除一个可能存在的索引）
+	if err := mongoDB.DropIndex(ctx, "users", "is_active_1"); err != nil {
+		logger.Error("DB.DropIndex 失败（可能索引不存在）", log.Error(err))
+	} else {
+		logger.Info("✓ DB.DropIndex 成功", log.String("name", "is_active_1"))
+	}
+	if idxs, err := mongoDB.ListIndexes(ctx, "users"); err != nil {
+		logger.Error("DB.ListIndexes 失败", log.Error(err))
+	} else {
+		logger.Info("✓ DB.ListIndexes 成功", log.Int("count", len(idxs)))
+	}
+
+	// 负例：FindOne 查不到（应返回解码错误）
+	notFound := users.FindOne(ctx, map[string]any{"email": "not-exist-xyz@example.com"})
+	var nf User
+	if err := notFound.Decode(&nf); err != nil {
+		logger.Info("✓ FindOne 未找到返回错误（预期）")
+	} else {
+		logger.Error("FindOne 负例失败：意外找到记录")
+	}
+
+	// 负例：Aggregate 非法管道
+	badPipeline := []map[string]any{{"$unknown": map[string]any{"x": 1}}}
+	if cur, err := users.Aggregate(ctx, badPipeline); err != nil {
+		logger.Info("✓ Aggregate 非法管道返回错误（预期）")
+	} else {
+		_ = cur.Close(ctx)
+		logger.Error("Aggregate 负例失败：非法管道未报错")
+	}
 }
 
 // testUserOperations 测试用户操作
@@ -102,7 +283,7 @@ func testUserOperations(ctx context.Context, collection db.Collection, logger lo
 	user := &User{
 		BaseEntity: db.BaseEntity{},
 		Name:       "张三",
-		Email:      "zhangsan@example.com",
+		Email:      fmt.Sprintf("zhangsan+%d@example.com", time.Now().UnixNano()),
 		Age:        25,
 		IsActive:   true,
 	}
@@ -120,14 +301,14 @@ func testUserOperations(ctx context.Context, collection db.Collection, logger lo
 		&User{
 			BaseEntity: db.BaseEntity{},
 			Name:       "李四",
-			Email:      "lisi@example.com",
+			Email:      fmt.Sprintf("lisi+%d@example.com", time.Now().UnixNano()),
 			Age:        30,
 			IsActive:   true,
 		},
 		&User{
 			BaseEntity: db.BaseEntity{},
 			Name:       "王五",
-			Email:      "wangwu@example.com",
+			Email:      fmt.Sprintf("wangwu+%d@example.com", time.Now().UnixNano()+1),
 			Age:        28,
 			IsActive:   false,
 		},
@@ -254,7 +435,10 @@ func testAggregation(ctx context.Context, collection db.Collection, logger log.L
 			},
 		},
 		{
-			"$sort": map[string]any{"count": -1},
+			"$sort": []db.KeyValue{
+				{Key: "count", Value: -1},
+				{Key: "_id", Value: 1},
+			},
 		},
 	}
 
@@ -290,7 +474,7 @@ func testTransaction(ctx context.Context, mongoDB db.Database, logger log.Logger
 	user := &User{
 		BaseEntity: db.BaseEntity{},
 		Name:       "事务用户",
-		Email:      "transaction@example.com",
+		Email:      fmt.Sprintf("transaction+%d@example.com", time.Now().UnixNano()),
 		Age:        35,
 		IsActive:   true,
 	}
@@ -329,7 +513,7 @@ func testIndexes(ctx context.Context, mongoDB db.Database, logger log.Logger) {
 	// 创建用户邮箱唯一索引（检查是否已存在）
 	emailUnique := true
 	indexModel := db.IndexModel{
-		Keys:    map[string]any{"email": 1},
+		Keys:    []db.KeyValue{{Key: "email", Value: 1}},
 		Options: &db.IndexOptions{Unique: &emailUnique},
 	}
 
@@ -348,10 +532,10 @@ func testIndexes(ctx context.Context, mongoDB db.Database, logger log.Logger) {
 	// 创建消息复合索引
 	bg := true
 	messageIndexModel := db.IndexModel{
-		Keys: map[string]any{
-			"from_user_id": 1,
-			"to_user_id":   1,
-			"created_at":   -1,
+		Keys: []db.KeyValue{
+			{Key: "from_user_id", Value: 1},
+			{Key: "to_user_id", Value: 1},
+			{Key: "created_at", Value: -1},
 		},
 		Options: &db.IndexOptions{Background: &bg},
 	}
