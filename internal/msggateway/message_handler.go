@@ -136,5 +136,7 @@ func generateSdkWSResp(data []byte, req *sdkws.SdkWSReq) *sdkws.SdkWSResp {
 		Token:     req.Token,
 		UserID:    req.UserID,
 		DeviceID:  req.DeviceID,
+		TrackID:   req.TrackID,
+		Type:      req.Type,
 	}
 }

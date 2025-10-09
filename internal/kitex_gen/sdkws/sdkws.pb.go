@@ -1771,6 +1771,7 @@ type SdkWSReq struct {
 	DeviceID  string `protobuf:"bytes,4,opt,name=deviceID" json:"deviceID,omitempty"`   // 设备ID
 	Data      []byte `protobuf:"bytes,5,opt,name=data" json:"data,omitempty"`           // 数据
 	Type      int32  `protobuf:"varint,6,opt,name=type" json:"type,omitempty"`          // 请求类型
+	TrackID   int32  `protobuf:"varint,7,opt,name=trackID" json:"trackID,omitempty"`    // 客户端追踪ID
 }
 
 func (x *SdkWSReq) Reset() { *x = SdkWSReq{} }
@@ -1821,6 +1822,13 @@ func (x *SdkWSReq) GetType() int32 {
 	return 0
 }
 
+func (x *SdkWSReq) GetTrackID() int32 {
+	if x != nil {
+		return x.TrackID
+	}
+	return 0
+}
+
 type SdkWSResp struct {
 	RequestId string `protobuf:"bytes,1,opt,name=requestId" json:"requestId,omitempty"` // 请求ID
 	Token     string `protobuf:"bytes,2,opt,name=token" json:"token,omitempty"`         // 令牌
@@ -1830,6 +1838,8 @@ type SdkWSResp struct {
 	ErrorMsg  string `protobuf:"bytes,6,opt,name=errorMsg" json:"errorMsg,omitempty"`   // 错误信息
 	Data      []byte `protobuf:"bytes,7,opt,name=data" json:"data,omitempty"`           // 数据
 	Type      int32  `protobuf:"varint,8,opt,name=type" json:"type,omitempty"`          // 类型
+	TrackID   int32  `protobuf:"varint,9,opt,name=trackID" json:"trackID,omitempty"`    // 客户端追踪ID
+	LogID     string `protobuf:"bytes,10,opt,name=logID" json:"logID,omitempty"`        // 服务端 logid
 }
 
 func (x *SdkWSResp) Reset() { *x = SdkWSResp{} }
@@ -1892,6 +1902,20 @@ func (x *SdkWSResp) GetType() int32 {
 		return x.Type
 	}
 	return 0
+}
+
+func (x *SdkWSResp) GetTrackID() int32 {
+	if x != nil {
+		return x.TrackID
+	}
+	return 0
+}
+
+func (x *SdkWSResp) GetLogID() string {
+	if x != nil {
+		return x.LogID
+	}
+	return ""
 }
 
 // OfflinePushInfo 离线推送信息

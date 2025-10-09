@@ -345,6 +345,7 @@ message SdkWSReq {
   string deviceID = 4; // 设备ID
   bytes data = 5; // 数据
   int32 type = 6; // 请求类型
+  int32 trackID = 7; // 客户端追踪ID
   // 101: 发送消息  102：拉取单链  103：拉取混链
   // 104: 下推用户消息  105: 下推命令消息
 }
@@ -358,6 +359,8 @@ message SdkWSResp {
   string errorMsg = 6; // 错误信息
   bytes data = 7; // 数据
   int32 type = 8; // 类型
+  int32 trackID = 9; // 客户端追踪ID
+  string logID = 10; // 服务端 logid
 }
 // --------------------------------------------
 

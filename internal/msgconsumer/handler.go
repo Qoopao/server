@@ -72,6 +72,9 @@ func (m *ConsumerMessage) pushHandler(ctx context.Context, msg *mq.Message) erro
 	// 对userIDs进行去重
 	userIDs = utils.RemoveDuplicate(userIDs)
 
+	// 剔除发送者
+	userIDs = utils.RemoveElement(userIDs, message.SendID)
+
 	for _, userID := range userIDs {
 		address, _ := userService.UserAddress(ctx, userID)
 		// 修改用户混链

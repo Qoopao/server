@@ -1,15 +1,25 @@
 package utils
 
-// 对userIDs进行去重
-func RemoveDuplicate(userIDs []string) []string {
-	userIDMap := make(map[string]struct{})
-	for _, userID := range userIDs {
-		userIDMap[userID] = struct{}{}
+// 对切片进行去重 - 泛型版本
+func RemoveDuplicate[T comparable](slice []T) []T {
+	elementMap := make(map[T]struct{})
+	for _, item := range slice {
+		elementMap[item] = struct{}{}
 	}
 
-	userIDs = make([]string, 0, len(userIDMap))
-	for userID := range userIDMap {
-		userIDs = append(userIDs, userID)
+	result := make([]T, 0, len(elementMap))
+	for item := range elementMap {
+		result = append(result, item)
 	}
-	return userIDs
+	return result
+}
+
+func RemoveElement[T comparable](slice []T, value T) []T {
+	result := make([]T, 0)
+	for _, item := range slice {
+		if item != value {
+			result = append(result, item)
+		}
+	}
+	return result
 }
