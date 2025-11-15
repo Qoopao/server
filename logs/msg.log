@@ -1,2 +1,0 @@
-{"level":"INFO","timestamp":"2025-11-15T21:44:19.485+0800","caller":"serviceRegistry/etcd_registry.go:107","message":"Service instance registered","service":"msg-service","instance":"msg-service-966b77c6","address":"10.255.255.254:10100"}
-{"level":"INFO","timestamp":"2025-11-15T21:44:19.485+0800","caller":"msg/start.go:144","message":"Message service starting","instance_id":"msg-service-966b77c6","address":"10.255.255.254:10100"}

@@ -155,7 +155,7 @@ start_cluster() {
         # 初始化集群
         log_info "初始化 Redis 集群..."
         docker exec redis-1 redis-cli -a redis123 --cluster create \
-            redis-1:6379 redis-2:6379 redis-3:6379 \
+            127.0.0.1:6380 127.0.0.1:6381 127.0.0.1:6382 \
             --cluster-replicas 0 --cluster-yes
     else
         log_error "集群版 Redis 启动失败"

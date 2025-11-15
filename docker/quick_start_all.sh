@@ -50,29 +50,26 @@ show_service_info() {
                 echo "  - Redis 集群端点: localhost:6380,6381,6382"
             else
                 echo "  - Redis 单节点端点: localhost:6379"
-                echo "  - Redis UI 未启动 (如需 UI: docker-compose up -d redis-commander)"
+                echo "  - Redis UI: http://localhost:8081 (暂不可用)"
             fi
             ;;
         mongodb)
             if [ "$mode" = "cluster" ]; then
                 echo "  - MongoDB 副本集端点: localhost:27018,27019,27020"
-                echo "  - Mongo Express: http://localhost:8082"
             else
                 echo "  - MongoDB 单节点端点: localhost:27017"
-                echo "  - Mongo Express 未启动 (如需 UI: docker-compose up -d mongo-express)"
             fi
+            echo "  - Mongo Express: http://localhost:8082"
             ;;
         rocketmq)
             if [ "$mode" = "cluster" ]; then
                 echo "  - RocketMQ NameServer: localhost:9876,9877"
                 echo "  - RocketMQ Broker: localhost:10911,10921"
-                echo "  - RocketMQ Console: http://localhost:8083"
             else
                 echo "  - RocketMQ NameServer: localhost:9876"
                 echo "  - RocketMQ Broker: localhost:10911"
-                echo "  - 控制台未启动，如需 Web 管理请在 docker/rocketmq 目录执行:"
-                echo "      docker-compose up -d rmqconsole"
             fi
+            echo "  - RocketMQ Console: http://localhost:8083"
             ;;
         otel)
             echo "  - Grafana: http://localhost:3000 (admin/admin123)"
@@ -97,19 +94,16 @@ show_overall_info() {
         echo "  - mongodb: localhost:27018,27019,27020"
         echo "  - rocketmq namesrv: localhost:9876,9877"
         echo "  - rocketmq broker: localhost:10911,10921"
-        echo "  - rocketmq-console: http://localhost:8083"
-        echo "  - mongo-express: http://localhost:8082"
     else
         echo "  - etcd: http://localhost:2379"
         echo "  - kafka: localhost:9092"
         echo "  - redis: localhost:6379"
         echo "  - mongodb: localhost:27017"
         echo "  - rocketmq: localhost:9876"
-        echo "  - rocketmq-console: 未启动 (可手动 docker-compose up -d rmqconsole)"
-        echo "  - mongo-express: 未启动 (可手动 docker-compose up -d mongo-express)"
-        echo "  - OpenTelemetry: 未启动 (可手动选择菜单 11)"
     fi
-    echo "  - redis-ui: 未启动 (可手动 docker-compose up -d redis-commander)"
+    echo "  - redis-ui: http://localhost:8081 (暂不可用)"
+    echo "  - mongo-express: http://localhost:8082"
+    echo "  - rocketmq-console: http://localhost:8083"
     echo "  - grafana: http://localhost:3000 (admin/admin123)"
     echo "  - jaeger: http://localhost:16686"
     echo "  - prometheus: http://localhost:9090"
@@ -276,28 +270,17 @@ start_rocketmq() {
 
 # 启动 OpenTelemetry 监控栈
 start_otel() {
-    local mode="${1:-single}"
-    local mode_text
-    mode_text=$(mode_display "$mode")
-    echo -e "${GREEN}📦 启动 OpenTelemetry 监控栈 (${mode_text})...${NC}"
+    echo -e "${GREEN}📦 启动 OpenTelemetry 监控栈...${NC}"
     pushd "$SCRIPT_DIR/otel" > /dev/null
     # 检查是否已经运行
     if docker ps | grep -q "otel-collector"; then
         echo -e "${YELLOW}⚠️  OpenTelemetry 监控栈已经在运行中${NC}"
     else
-        if [ "$mode" = "cluster" ]; then
-            if ./deploy.sh start; then
-                echo -e "${GREEN}✅ 完整版 OpenTelemetry 监控栈启动成功${NC}"
-            else
-                echo -e "${YELLOW}❌ OpenTelemetry 监控栈启动失败${NC}"
-            fi
+        # 先尝试简化版本，如果失败则提示网络问题
+        if ./deploy.sh start-simple; then
+            echo -e "${GREEN}✅ 简化版 OpenTelemetry 监控栈启动成功${NC}"
         else
-            # 单节点默认使用简化版
-            if ./deploy.sh start-simple; then
-                echo -e "${GREEN}✅ 简化版 OpenTelemetry 监控栈启动成功${NC}"
-            else
-                echo -e "${YELLOW}❌ OpenTelemetry 监控栈启动失败${NC}"
-            fi
+            echo -e "${YELLOW}❌ OpenTelemetry 监控栈启动失败${NC}"
         fi
     fi
     popd > /dev/null
@@ -314,11 +297,7 @@ start_all() {
     start_redis "$mode"
     start_mongodb "$mode"
     start_rocketmq "$mode"
-    if [ "$mode" = "cluster" ]; then
-        start_otel "cluster"
-    else
-        echo -e "${YELLOW}⚠️  单节点模式默认不启动 OpenTelemetry 监控栈${NC}"
-    fi
+    start_otel
 }
 
 # 停止所有服务
