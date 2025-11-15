@@ -100,8 +100,8 @@ start_standalone() {
         return 0
     fi
     
-    # 使用 Docker Compose 命令
-    docker-compose up -d mongodb-standalone mongo-express
+    # 使用 Docker Compose 命令（单节点默认不启动 Mongo Express）
+    docker-compose up -d mongodb-standalone
     
     log_info "等待 MongoDB 启动..."
     sleep 3
@@ -113,7 +113,8 @@ start_standalone() {
         if docker-compose ps | grep -q "mongodb-standalone.*Up"; then
             log_info "单机版 MongoDB 启动成功"
             log_info "MongoDB 端点: localhost:27017"
-            log_info "MongoDB UI: http://localhost:8082"
+            log_info "Mongo Express 未启动，如需 Web UI 请在 docker/mongodb 目录执行:"
+            log_info "  docker-compose up -d mongo-express"
             log_info "用户名: admin"
             log_info "密码: admin123"
             return 0

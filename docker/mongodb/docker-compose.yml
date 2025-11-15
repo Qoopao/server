@@ -28,7 +28,13 @@ services:
     volumes:
       - mongodb_data_1:/data/db
       - ./replica-init.js:/docker-entrypoint-initdb.d/replica-init.js:ro
-    command: mongod --replSet rs0 --bind_ip_all
+      - ./keyfile/mongo-keyfile:/run/secrets/mongo-keyfile:ro
+    command: >
+      bash -c "mkdir -p /data/configdb &&
+               cp /run/secrets/mongo-keyfile /data/configdb/mongo-keyfile &&
+               chown mongodb:mongodb /data/configdb/mongo-keyfile &&
+               chmod 400 /data/configdb/mongo-keyfile &&
+               exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/configdb/mongo-keyfile"
     restart: unless-stopped
     networks:
       - mongodb-network
@@ -43,7 +49,13 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: mongodb123
     volumes:
       - mongodb_data_2:/data/db
-    command: mongod --replSet rs0 --bind_ip_all
+      - ./keyfile/mongo-keyfile:/run/secrets/mongo-keyfile:ro
+    command: >
+      bash -c "mkdir -p /data/configdb &&
+               cp /run/secrets/mongo-keyfile /data/configdb/mongo-keyfile &&
+               chown mongodb:mongodb /data/configdb/mongo-keyfile &&
+               chmod 400 /data/configdb/mongo-keyfile &&
+               exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/configdb/mongo-keyfile"
     restart: unless-stopped
     networks:
       - mongodb-network
@@ -58,7 +70,13 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: mongodb123
     volumes:
       - mongodb_data_3:/data/db
-    command: mongod --replSet rs0 --bind_ip_all
+      - ./keyfile/mongo-keyfile:/run/secrets/mongo-keyfile:ro
+    command: >
+      bash -c "mkdir -p /data/configdb &&
+               cp /run/secrets/mongo-keyfile /data/configdb/mongo-keyfile &&
+               chown mongodb:mongodb /data/configdb/mongo-keyfile &&
+               chmod 400 /data/configdb/mongo-keyfile &&
+               exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/configdb/mongo-keyfile"
     restart: unless-stopped
     networks:
       - mongodb-network

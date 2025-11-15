@@ -90,29 +90,32 @@ start_standalone() {
     cd "$DOCKER_DIR"
     
     # 检查是否已经运行
-    if docker-compose ps | grep -c "Up" | grep -q "3"; then
+    if docker-compose ps | grep -q "rmqnamesrv.*Up" && docker-compose ps | grep -q "rmqbroker.*Up"; then
         log_info "RocketMQ 已经在运行中"
         log_info "Name Server: localhost:9876"
         log_info "Broker: localhost:10911"
-        log_info "Console: http://localhost:8083"
+        log_info "控制台未启动，如需使用请手动运行: docker-compose up -d rmqconsole"
         return 0
     fi
     
-    # 使用 Docker Compose 命令
-    docker-compose up -d rmqnamesrv rmqbroker rmqconsole
+    # 确保日志目录存在
+    mkdir -p data/logs/rocketmqlogs
+    chmod -R 755 data/logs 2>/dev/null || true
+    
+    # 使用 Docker Compose 命令（单节点默认不启动控制台）
+    docker-compose up -d rmqnamesrv rmqbroker
     
     log_info "等待 RocketMQ 启动..."
     sleep 5
     
     # 验证启动
-    # 等待所有容器启动
     local retry_count=0
     while [ $retry_count -lt 3 ]; do
-        if docker-compose ps | grep -c "Up" | grep -q "3"; then
+        if docker-compose ps | grep -q "rmqnamesrv.*Up" && docker-compose ps | grep -q "rmqbroker.*Up"; then
             log_info "单机版 RocketMQ 启动成功"
             log_info "Name Server: localhost:9876"
             log_info "Broker: localhost:10911"
-            log_info "Console: http://localhost:8083"
+            log_info "控制台未启动，如需使用请手动运行: docker-compose up -d rmqconsole"
             return 0
         fi
         log_info "等待 RocketMQ 容器完全启动... (重试 $((retry_count + 1))/3)"
@@ -121,7 +124,7 @@ start_standalone() {
     done
     
     log_error "单机版 RocketMQ 启动失败"
-    docker-compose logs
+    docker-compose logs rmqnamesrv rmqbroker
     exit 1
 }
 
@@ -129,9 +132,19 @@ start_standalone() {
 start_cluster() {
     log_info "启动集群版 RocketMQ..."
     cd "$DOCKER_DIR"
-    
-    # 检查是否已经运行
-    if docker-compose ps | grep -c "Up" | grep -q "6"; then
+
+    local cluster_services=("rmqnamesrv" "rmqnamesrv2" "rmqbroker" "rmqbroker2" "rmqconsole")
+
+    cluster_is_up() {
+        for svc in "${cluster_services[@]}"; do
+            if ! docker-compose ps "$svc" | grep -q "Up"; then
+                return 1
+            fi
+        done
+        return 0
+    }
+
+    if cluster_is_up; then
         log_info "集群版 RocketMQ 已经在运行中"
         log_info "Name Server:"
         log_info "  - namesrv-1: localhost:9876"
@@ -142,28 +155,32 @@ start_cluster() {
         log_info "Console: http://localhost:8083"
         return 0
     fi
-    
-    # 使用 Docker Compose 命令
+
     docker-compose up -d
-    
+
     log_info "等待 RocketMQ 集群启动..."
-    sleep 8
-    
-    # 验证启动
-    if docker-compose ps | grep -c "Up" | grep -q "6"; then
-        log_info "集群版 RocketMQ 启动成功"
-        log_info "Name Server:"
-        log_info "  - namesrv-1: localhost:9876"
-        log_info "  - namesrv-2: localhost:9877"
-        log_info "Broker:"
-        log_info "  - broker-1: localhost:10911"
-        log_info "  - broker-2: localhost:10921"
-        log_info "Console: http://localhost:8083"
-    else
-        log_error "集群版 RocketMQ 启动失败"
-        docker-compose logs
-        exit 1
-    fi
+    local retry_count=0
+    local max_retries=6
+    while [ $retry_count -lt $max_retries ]; do
+        if cluster_is_up; then
+            log_info "集群版 RocketMQ 启动成功"
+            log_info "Name Server:"
+            log_info "  - namesrv-1: localhost:9876"
+            log_info "  - namesrv-2: localhost:9877"
+            log_info "Broker:"
+            log_info "  - broker-1: localhost:10911"
+            log_info "  - broker-2: localhost:10921"
+            log_info "Console: http://localhost:8083"
+            return 0
+        fi
+        retry_count=$((retry_count + 1))
+        log_info "等待 RocketMQ 集群完全启动... (重试 $retry_count/$max_retries)"
+        sleep 5
+    done
+
+    log_error "集群版 RocketMQ 启动失败"
+    docker-compose logs
+    exit 1
 }
 
 # 停止 RocketMQ
