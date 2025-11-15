@@ -40,6 +40,7 @@ show_help() {
     echo "用法: $0 [命令] [选项]"
     echo ""
     echo "命令:"
+    echo "  single        启动单节点 KRaft Kafka (默认推荐)"
     echo "  kraft         启动 KRaft 模式 Kafka (推荐)"
     echo "  zookeeper     启动 ZooKeeper 模式 Kafka"
     echo "  stop          停止所有 Kafka 容器"
@@ -88,7 +89,41 @@ check_docker() {
     fi
 }
 
-# 启动 KRaft 模式 Kafka
+# 启动单节点 KRaft Kafka
+start_single() {
+    log_info "启动单节点 KRaft Kafka..."
+    cd "$DOCKER_DIR"
+
+    if docker-compose -f docker-compose.single.yml ps | grep -q "kafka-1.*Up"; then
+        log_info "单节点 Kafka 已经在运行中"
+        log_info "Kafka 端点: localhost:9092"
+        return 0
+    fi
+
+    docker-compose -f docker-compose.single.yml up -d
+
+    log_info "等待 Kafka 启动..."
+    sleep 5
+
+    local retry_count=0
+    while [ $retry_count -lt 3 ]; do
+        if docker-compose -f docker-compose.single.yml ps | grep -q "kafka-1.*Up"; then
+            log_info "单节点 Kafka 启动成功"
+            log_info "Kafka 端点: localhost:9092"
+            log_info "Kafka 端点: localhost:9092"
+            return 0
+        fi
+        log_info "等待 Kafka 容器完全启动... (重试 $((retry_count + 1))/3)"
+        sleep 5
+        retry_count=$((retry_count + 1))
+    done
+
+    log_error "单节点 Kafka 启动失败"
+    docker-compose -f docker-compose.single.yml logs
+    exit 1
+}
+
+# 启动多节点 KRaft 模式 Kafka
 start_kraft() {
     log_info "启动 KRaft 模式 Kafka..."
     cd "$DOCKER_DIR"
@@ -146,6 +181,7 @@ stop_kafka() {
     cd "$DOCKER_DIR"
     
     # 停止所有 Kafka 相关容器
+    docker-compose -f docker-compose.single.yml down 2>/dev/null || true
     docker-compose -f docker-compose.kraft.yml down 2>/dev/null || true
     
     log_info "Kafka 容器已停止"
@@ -156,7 +192,7 @@ restart_kafka() {
     log_info "重启 Kafka 容器..."
     stop_kafka
     sleep 2
-    start_kraft
+    start_single
 }
 
 # 查看状态
@@ -222,6 +258,7 @@ clean_kafka() {
         cd "$DOCKER_DIR"
         
         # 停止并删除容器
+        docker-compose -f docker-compose.single.yml down -v 2>/dev/null || true
         docker-compose -f docker-compose.kraft.yml down -v 2>/dev/null || true
         
         # 删除 Kafka 相关镜像
@@ -253,7 +290,7 @@ test_kafka() {
         log_info "测试 KRaft 模式 Kafka..."
         
         # 创建测试主题
-        docker exec kafka-1 kafka-topics --bootstrap-server kafka-1:29092 --create --topic test-topic --partitions 3 --replication-factor 3 2>/dev/null || true
+        docker exec kafka-1 kafka-topics --bootstrap-server kafka-1:29092 --create --topic test-topic --partitions 3 --replication-factor 1 2>/dev/null || true
         
         # 列出主题
         log_info "Kafka 主题列表:"
@@ -284,7 +321,7 @@ test_kafka() {
 create_topic() {
     local topic_name="${1:-test-topic}"
     local partitions="${2:-3}"
-    local replication="${3:-3}"
+    local replication="${3:-1}"
     
     log_info "创建主题: $topic_name (分区: $partitions, 副本: $replication)"
     
@@ -355,6 +392,9 @@ main() {
     
     # 解析参数
     case "${1:-help}" in
+        single|standalone)
+            start_single
+            ;;
         kraft)
             start_kraft
             ;;
