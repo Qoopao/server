@@ -5,34 +5,27 @@ import (
 	"log"
 
 	"github.com/cloudwego/kitex/pkg/klog"
-	"github.com/kitex-contrib/obs-opentelemetry/provider"
+	"github.com/roc/roc-foundation-util-go/log/otel"
 	"github.com/roc/roc-im-server/internal/msggateway"
-	"github.com/roc/roc-im-server/tools/klog_otel"
 )
 
 func main() {
 	ctx := context.Background()
 	log.Println("启动 MsgGateway 服务...")
 
-	// 初始化 OTEL Trace Provider
-	p := provider.NewOpenTelemetryProvider(
-		provider.WithServiceName("msggateway"),
-		provider.WithExportEndpoint("localhost:4317"),
-		provider.WithInsecure(),
+	// 使用 foundation-util-go 统一初始化 OTEL (Trace + Log)
+	kit, err := otel.InitOTEL(ctx,
+		otel.WithServiceName("msggateway"),
+		otel.WithEndpoint("localhost:4317"),
+		otel.WithInsecure(true),
 	)
-	defer p.Shutdown(ctx)
-
-	// 初始化 OTEL Log Provider
-	otelLogger, lp, err := klog_otel.NewKitexLoggerWithConfig(ctx, "msggateway", "localhost:4317", true)
 	if err != nil {
-		log.Fatalf("Failed to init logger: %v", err)
+		log.Fatalf("Failed to init OTEL: %v", err)
 	}
-	defer lp.Shutdown(ctx)
+	defer kit.Shutdown(ctx)
 
 	// 设置日志级别为 DEBUG
-	otelLogger.SetLevel(klog.LevelDebug)
-
-	klog.SetLogger(otelLogger)
+	kit.Logger.SetLevel(klog.LevelDebug)
 
 	// 创建 WebSocket 服务器
 	wsServer := msggateway.NewWsServer(

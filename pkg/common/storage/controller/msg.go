@@ -20,11 +20,11 @@ import (
 	"sort"
 
 	"github.com/cloudwego/kitex/pkg/klog"
+	foundationcache "github.com/roc/roc-foundation-util-go/cache"
+	foundationmq "github.com/roc/roc-foundation-util-go/mq"
 	"github.com/roc/roc-im-server/internal/kitex_gen/conversation"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
-	"github.com/roc/roc-im-server/tools/kvstore"
 	"github.com/roc/roc-im-server/tools/math"
-	"github.com/roc/roc-im-server/tools/mq"
 )
 
 const (
@@ -49,17 +49,18 @@ type CommonMsgDatabase interface {
 	GetConversationInfo(ctx context.Context, conversationID string) (*conversation.ConversationInfo, error)
 }
 
-func NewCommonMsgDatabase(mqi mq.MQ, kvstore kvstore.KVStore) CommonMsgDatabase {
+func NewCommonMsgDatabase(producer foundationmq.Producer, consumer foundationmq.Consumer, cache foundationcache.Cache) CommonMsgDatabase {
 	return &commonMsgDatabase{
-
-		mqi:     mqi,
-		kvstore: kvstore,
+		producer: producer,
+		consumer: consumer,
+		cache:    cache,
 	}
 }
 
 type commonMsgDatabase struct {
-	mqi     mq.MQ
-	kvstore kvstore.KVStore
+	producer foundationmq.Producer
+	consumer foundationmq.Consumer
+	cache    foundationcache.Cache
 }
 
 func (db *commonMsgDatabase) MsgToMQ(ctx context.Context, key string, msgID string) error {
@@ -68,9 +69,10 @@ func (db *commonMsgDatabase) MsgToMQ(ctx context.Context, key string, msgID stri
 		"key", key,
 		"topic", "message_topic")
 
-	err := db.mqi.Publish(ctx, &mq.Message{
+	_, err := db.producer.Send(ctx, &foundationmq.Message{
 		Topic: "message_topic",
-		Body:  []byte(msgID),
+		Key:   key,
+		Value: []byte(msgID),
 	})
 
 	return err
@@ -93,7 +95,7 @@ func (db *commonMsgDatabase) SaveMsgInfo(ctx context.Context, msg *sdkws.MsgData
 		"send_id", msg.SendID,
 		"seq", msg.Seq)
 
-	db.kvstore.Set(ctx, keyForMsgInfo(msg.ServerMsgID), data, 0)
+	db.cache.Set(ctx, keyForMsgInfo(msg.ServerMsgID), data, 0)
 	return nil
 }
 
@@ -106,7 +108,7 @@ func (db *commonMsgDatabase) AppendMsgToConvMsgList(ctx context.Context, convers
 		"conv_id", conversationID,
 		"msg_id", msgID)
 
-	return db.kvstore.RPush(ctx, keyForConvMessageList(conversationID), []byte(msgID))
+	return db.cache.RPush(ctx, keyForConvMessageList(conversationID), []byte(msgID))
 }
 
 func (db *commonMsgDatabase) GetMsgInfo(ctx context.Context, messageID string) (*sdkws.MsgData, error) {
@@ -115,9 +117,11 @@ func (db *commonMsgDatabase) GetMsgInfo(ctx context.Context, messageID string) (
 		err  error
 	)
 
-	if data, err = db.kvstore.Get(ctx, keyForMsgInfo(messageID)); err != nil {
+	dataStr, err := db.cache.Get(ctx, keyForMsgInfo(messageID))
+	if err != nil {
 		return nil, err
 	}
+	data = []byte(dataStr)
 
 	message := &sdkws.MsgData{}
 	if err = message.Unmarshal(data); err != nil {
@@ -132,11 +136,11 @@ func (db *commonMsgDatabase) UpdateUserConvList(ctx context.Context, userID stri
 		return errors.New("userID is empty")
 	}
 	// 删除
-	if err := db.kvstore.LRem(ctx, keyForUserConvList(userID), 1, []byte(conversationID)); err != nil {
+	if _, err := db.cache.LRem(ctx, keyForUserConvList(userID), 1, conversationID); err != nil {
 		return err
 	}
 	// 添加到最新
-	_, err := db.kvstore.RPush(ctx, keyForUserConvList(userID), []byte(conversationID))
+	_, err := db.cache.RPush(ctx, keyForUserConvList(userID), []byte(conversationID))
 	return err
 }
 
@@ -146,7 +150,7 @@ func (db *commonMsgDatabase) GetUserConvList(ctx context.Context, userID string,
 		stop  int64
 	)
 
-	length, err := db.kvstore.LLen(ctx, keyForUserConvList(userID))
+	length, err := db.cache.LLen(ctx, keyForUserConvList(userID))
 	if err != nil {
 		return nil, false, 0, 0, err
 	}
@@ -154,7 +158,7 @@ func (db *commonMsgDatabase) GetUserConvList(ctx context.Context, userID string,
 	// 修正区间
 	start, stop = modifyRange(cursor, limit, forward, length)
 
-	convList, err := db.kvstore.LRange(ctx, keyForUserConvList(userID), start, stop)
+	convList, err := db.cache.LRange(ctx, keyForUserConvList(userID), start, stop)
 	if err != nil {
 		return nil, false, 0, 0, err
 	}
@@ -175,7 +179,7 @@ func (db *commonMsgDatabase) GetConvMessageList(ctx context.Context, conversatio
 		msgData *sdkws.MsgData
 	)
 
-	length, err := db.kvstore.LLen(ctx, keyForConvMessageList(conversationID))
+	length, err := db.cache.LLen(ctx, keyForConvMessageList(conversationID))
 	if err != nil {
 		return nil, false, err
 	}
@@ -183,7 +187,7 @@ func (db *commonMsgDatabase) GetConvMessageList(ctx context.Context, conversatio
 	// 修正区间
 	start, stop = modifyRange(cursor, limit, forward, length)
 
-	msgList, err := db.kvstore.LRange(ctx, keyForConvMessageList(conversationID), start, stop)
+	msgList, err := db.cache.LRange(ctx, keyForConvMessageList(conversationID), start, stop)
 	if err != nil {
 		return nil, false, err
 	}
@@ -230,7 +234,7 @@ func (db *commonMsgDatabase) SaveConversationInfo(ctx context.Context, conversat
 	if err != nil {
 		return err
 	}
-	db.kvstore.Set(ctx, keyForConvInfo(conversationID), data, 0)
+	db.cache.Set(ctx, keyForConvInfo(conversationID), data, 0)
 	return nil
 }
 
@@ -240,9 +244,11 @@ func (db *commonMsgDatabase) GetConversationInfo(ctx context.Context, conversati
 		err  error
 	)
 
-	if data, err = db.kvstore.Get(ctx, keyForConvInfo(conversationID)); err != nil {
+	dataStr, err := db.cache.Get(ctx, keyForConvInfo(conversationID))
+	if err != nil {
 		return nil, err
 	}
+	data = []byte(dataStr)
 
 	conversationInfo := &conversation.ConversationInfo{}
 	if err = conversationInfo.Unmarshal(data); err != nil {

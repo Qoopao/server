@@ -1,34 +1,50 @@
 package msgconsumer
 
 import (
+	foundationcache "github.com/roc/roc-foundation-util-go/cache"
+	"github.com/roc/roc-foundation-util-go/cache/redis"
+	foundationmq "github.com/roc/roc-foundation-util-go/mq"
+	"github.com/roc/roc-foundation-util-go/mq/kafka"
 	"github.com/roc/roc-im-server/pkg/common/storage/controller"
-	"github.com/roc/roc-im-server/tools/kvstore"
-	"github.com/roc/roc-im-server/tools/mq"
 )
 
 func Start() {
 	var (
-		mqi   mq.MQ
-		err   error
-		store kvstore.KVStore
+		producer foundationmq.Producer
+		consumer foundationmq.Consumer
+		cache    foundationcache.Cache
+		err      error
 	)
 
-	mqi, err = mq.NewSaramaMQ([]string{"localhost:9092"})
+	producer, err = kafka.NewKafkaProducer([]kafka.ProducerOption{
+		kafka.WithProducerBrokers([]string{"localhost:9092"}),
+	})
 	if err != nil {
-		panic("[error] mq create error" + err.Error())
+		panic("[error] producer create error: " + err.Error())
 	}
 
-	store, err = kvstore.NewKVStore(kvstore.Config{
-		Address:  "localhost:6379",
-		Password: "redis123",
-		DB:       0,
+	consumer, err = kafka.NewKafkaConsumer([]kafka.ConsumerOption{
+		kafka.WithConsumerBrokers([]string{"localhost:9092"}),
+		kafka.WithConsumerGroupID("msgconsumer-group"),
 	})
+	if err != nil {
+		panic("[error] consumer create error: " + err.Error())
+	}
 
-	consumer := ConsumerMessage{
-		MessageDB: controller.NewCommonMsgDatabase(mqi, store),
-		mqi:       mqi,
+	cache, err = redis.NewRedisCache([]redis.Option{
+		redis.WithAddress("localhost:6379"),
+		redis.WithPassword("redis123"),
+		redis.WithDB(0),
+	})
+	if err != nil {
+		panic("[error] cache create error: " + err.Error())
+	}
+
+	msgConsumer := ConsumerMessage{
+		MessageDB: controller.NewCommonMsgDatabase(producer, consumer, cache),
+		consumer:  consumer,
 	}
 
 	// 直接运行，阻塞在这里
-	consumer.Run()
+	msgConsumer.Run()
 }

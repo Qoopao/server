@@ -15,16 +15,18 @@ import (
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
 	"github.com/google/uuid"
+	foundationcache "github.com/roc/roc-foundation-util-go/cache"
+	"github.com/roc/roc-foundation-util-go/cache/redis"
+	foundationmq "github.com/roc/roc-foundation-util-go/mq"
+	"github.com/roc/roc-foundation-util-go/mq/kafka"
+	foundationregistry "github.com/roc/roc-foundation-util-go/service_registry/registry"
+	"github.com/roc/roc-foundation-util-go/service_registry/registry/etcd"
 	msg "github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
 	"github.com/roc/roc-im-server/pkg/common/storage/controller"
-	"github.com/roc/roc-im-server/tools/klog_otel"
-	"github.com/roc/roc-im-server/tools/kvstore"
-	"github.com/roc/roc-im-server/tools/mq"
-	serviceregistry "github.com/roc/roc-im-server/tools/serviceRegistry"
 	"go.uber.org/zap"
 
-	"github.com/kitex-contrib/obs-opentelemetry/provider"
 	"github.com/kitex-contrib/obs-opentelemetry/tracing"
+	"github.com/roc/roc-foundation-util-go/log/otel"
 	// "go.opentelemetry.io/contrib/bridges/otelslog"
 	// "go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	// "go.opentelemetry.io/otel/log/global"
@@ -41,20 +43,34 @@ func Start() {
 	defer Sync()
 
 	var (
-		err   error
-		mqi   mq.MQ
-		store kvstore.KVStore
+		err      error
+		producer foundationmq.Producer
+		consumer foundationmq.Consumer
+		cache    foundationcache.Cache
 	)
 
-	mqi, err = mq.NewSaramaMQ([]string{"localhost:9092"})
+	// 创建 Kafka Producer
+	producer, err = kafka.NewKafkaProducer([]kafka.ProducerOption{
+		kafka.WithProducerBrokers([]string{"localhost:9092"}),
+	})
 	if err != nil {
 		panic(err.Error())
 	}
 
-	store, err = kvstore.NewKVStore(kvstore.Config{
-		Address:  "localhost:6379",
-		Password: "redis123",
-		DB:       0,
+	// 创建 Kafka Consumer
+	consumer, err = kafka.NewKafkaConsumer([]kafka.ConsumerOption{
+		kafka.WithConsumerBrokers([]string{"localhost:9092"}),
+		kafka.WithConsumerGroupID("msg-service-group"),
+	})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// 创建 Redis Cache
+	cache, err = redis.NewRedisCache([]redis.Option{
+		redis.WithAddress("localhost:6379"),
+		redis.WithPassword("redis123"),
+		redis.WithDB(0),
 	})
 	if err != nil {
 		panic(err.Error())
@@ -76,69 +92,62 @@ func Start() {
 
 	// 创建服务实例信息
 	instanceID := fmt.Sprintf("msg-service-%s", uuid.New().String()[:8])
-	instance := &serviceregistry.ServiceInstance{
-		InstanceID:  instanceID,
+
+	// 创建 Etcd Registry
+	registry, err := etcd.NewEtcdRegistry(
+		etcd.WithEndpoints([]string{"localhost:2379"}),
+		etcd.WithDialTimeout(5*time.Second),
+	)
+	if err != nil {
+		log.Fatalf("Failed to create etcd registry: %v", err)
+	}
+	defer registry.Close()
+
+	// 注册服务实例
+	instance := &foundationregistry.ServiceInstance{
 		ServiceName: "msg-service",
+		InstanceID:  instanceID,
 		Host:        localIP,
 		Port:        port,
-		Status:      serviceregistry.StatusHealthy,
 		Weight:      1,
 		Metadata: map[string]string{
-			"version":      "1.0.0",
-			"active_count": "0",
+			"version": "1.0.0",
 		},
 	}
 
-	// 创建服务注册中心
-	registry, err := createServiceRegistry()
-	if err != nil {
-		log.Fatalf("Failed to create service registry: %v", err)
-	}
-
-	// 注册服务实例
-	if err := registry.RegisterInstance(context.Background(), instance); err != nil {
+	if err := registry.Register(context.Background(), instance); err != nil {
 		log.Fatalf("Failed to register service instance: %v", err)
 	}
 
-	p := provider.NewOpenTelemetryProvider(
-		provider.WithServiceName("msg-service"),
-		provider.WithExportEndpoint("localhost:4317"),
-		provider.WithInsecure(),
+	// 使用 foundation-util-go 统一初始化 OTEL
+	kit, err := otel.InitOTEL(context.Background(),
+		otel.WithServiceName("msg-service"),
+		otel.WithEndpoint("localhost:4317"),
+		otel.WithInsecure(true),
 	)
-	defer p.Shutdown(context.Background())
+	if err != nil {
+		log.Fatalf("Failed to init OTEL: %v", err)
+	}
+	defer kit.Shutdown(context.Background())
 
 	// 创建服务器
 	svr := msg.NewServer(
 		&MessageServiceImpl{
-			MsgDatabase: controller.NewCommonMsgDatabase(mqi, store),
+			MsgDatabase: controller.NewCommonMsgDatabase(producer, consumer, cache),
 		},
 		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP(localIP), Port: port}),
 		server.WithSuite(tracing.NewServerSuite()),
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "msg-service"}),
 	)
 
-	// // 3. 初始化 otel log provider
-	// lp := initLog(context.Background())
-	// defer lp.Shutdown(context.Background())
-
-	// // 4. 使用第三方 logger 打印日志，日志会自动上报至后台服务
-	// otelLogger.Info("rhpmark logger successfully")
-
-	kitexLogger, lp, err := klog_otel.NewKitexLoggerWithConfig(context.Background(), "msg-service", "localhost:4317", true)
-	if err != nil {
-		panic(err)
-	}
-	defer lp.Shutdown(context.Background())
-
-	klog.SetLogger(kitexLogger)
-	klog.SetLevel(klog.LevelDebug)
+	// 设置日志级别为 DEBUG
+	kit.Logger.SetLevel(klog.LevelDebug)
 
 	// 优雅关闭处理
 	defer func() {
-		if err := registry.DeregisterInstance(context.Background(), instanceID); err != nil {
+		if err := registry.Deregister(context.Background(), instance); err != nil {
 			Logger.Error("Failed to deregister service instance", zap.Error(err))
 		}
-		registry.Close()
 	}()
 
 	Logger.Info("Message service starting",
@@ -192,18 +201,3 @@ func getLocalIP() (string, error) {
 }
 
 // createServiceRegistry 创建服务注册中心
-func createServiceRegistry() (serviceregistry.ServiceRegistry, error) {
-	// 从环境变量获取 Etcd 配置
-	etcdEndpoints := []string{"localhost:2379"}
-	if endpoints := os.Getenv("ETCD_ENDPOINTS"); endpoints != "" {
-		etcdEndpoints = []string{endpoints}
-	}
-
-	config := serviceregistry.EtcdConfig{
-		Endpoints:   etcdEndpoints,
-		RootPath:    "/roc-im-server/services",
-		DialTimeout: 5 * time.Second,
-	}
-
-	return serviceregistry.NewEtcdRegistry(config, Logger)
-}

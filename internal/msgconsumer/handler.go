@@ -6,37 +6,29 @@ import (
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/transport"
 	"github.com/openimsdk/tools/log"
+	foundationmq "github.com/roc/roc-foundation-util-go/mq"
 	"github.com/roc/roc-im-server/internal/kitex_gen/push"
 	"github.com/roc/roc-im-server/internal/kitex_gen/push/pushservice"
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/roc/roc-im-server/pkg/common/storage/controller"
 	"github.com/roc/roc-im-server/pkg/user"
-	"github.com/roc/roc-im-server/tools/mq"
 	"github.com/roc/roc-im-server/tools/utils"
 )
 
 type ConsumerMessage struct {
 	MessageDB controller.CommonMsgDatabase
-	mqi       mq.MQ
+	consumer  foundationmq.Consumer
 }
 
 func (m *ConsumerMessage) Run() {
 
-	var err error
-
-	m.mqi, err = mq.NewSaramaMQ([]string{"localhost:9092"})
-	if err != nil {
-		panic(err)
-	}
-
 	ctx, _ := context.WithCancel(context.Background())
 
-	err = m.mqi.Subscribe("message_topic", func(ctx context.Context, msg *mq.Message) error {
+	handler := func(msg *foundationmq.Message) error {
 		return m.pushHandler(ctx, msg)
-	},
-		mq.WithAutoAck(true),
-		mq.WithGroupID("push_handler_group"),
-	)
+	}
+
+	err := m.consumer.Subscribe(ctx, handler)
 
 	if err != nil {
 		println("failed to subscribe  %w", err)
@@ -48,16 +40,16 @@ func (m *ConsumerMessage) Run() {
 	return
 }
 
-func (m *ConsumerMessage) pushHandler(ctx context.Context, msg *mq.Message) error {
+func (m *ConsumerMessage) pushHandler(ctx context.Context, msg *foundationmq.Message) error {
 	var (
 		err     error
 		userIDs []string
 		message *sdkws.MsgData
 	)
 
-	log.ZDebug(ctx, "consume messsage_topic ", "msg", string(msg.Body))
+	log.ZDebug(ctx, "consume messsage_topic ", "msg", string(msg.Value))
 
-	messageID := string(msg.Body)
+	messageID := string(msg.Value)
 	if message, err = m.MessageDB.GetMsgInfo(ctx, messageID); err != nil {
 		return err
 	}
