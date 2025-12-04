@@ -7,29 +7,28 @@ import (
 )
 
 func Start() {
-	go func() {
-		var (
-			mqi   mq.MQ
-			err   error
-			store kvstore.KVStore
-		)
+	var (
+		mqi   mq.MQ
+		err   error
+		store kvstore.KVStore
+	)
 
-		mqi, err = mq.NewSaramaMQ([]string{"localhost:9092"})
-		if err != nil {
-			panic("[error] mq create error" + err.Error())
-		}
+	mqi, err = mq.NewSaramaMQ([]string{"localhost:9092"})
+	if err != nil {
+		panic("[error] mq create error" + err.Error())
+	}
 
-		store, err = kvstore.NewKVStore(kvstore.Config{
-			Address:  "localhost:6379",
-			Password: "redis123",
-			DB:       0,
-		})
+	store, err = kvstore.NewKVStore(kvstore.Config{
+		Address:  "localhost:6379",
+		Password: "redis123",
+		DB:       0,
+	})
 
-		consumer := ConsumerMessage{
-			MessageDB: controller.NewCommonMsgDatabase(mqi, store),
-			mqi:       mqi,
-		}
+	consumer := ConsumerMessage{
+		MessageDB: controller.NewCommonMsgDatabase(mqi, store),
+		mqi:       mqi,
+	}
 
-		consumer.Run()
-	}()
+	// 直接运行，阻塞在这里
+	consumer.Run()
 }
