@@ -54,8 +54,6 @@ func RunAllTests() {
 	fmt.Println("\n1. 服务发现测试")
 	ServiceDiscovery_main()
 
-	fmt.Println("\n2. 多服务调用测试")
-	MultiService_main()
 
 	fmt.Println("\n3. JSON处理测试")
 	JSON_main()

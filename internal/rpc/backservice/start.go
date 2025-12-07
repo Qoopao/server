@@ -6,7 +6,9 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/cloudwego/kitex/client"
@@ -28,7 +30,41 @@ import (
 
 // Start 启动 BackService 服务器
 func Start() {
-	// 使用 foundation-util-go 统一初始化 OTEL（初始化 klog）
+	// 初始化 OTEL
+	kit := initOTEL()
+	defer kit.Shutdown(context.Background())
+
+	// 获取配置信息
+	port := getServicePort()
+	localIP := getLocalIP()
+
+	// 创建 Etcd Registry
+	registry := createEtcdRegistry()
+	defer registry.Close()
+
+	// 创建服务实例
+	instance := createServiceInstance(localIP, port)
+
+	// 创建服务器
+	svr := createBackServiceServer(localIP, port)
+
+	// 启动服务器
+	startServer(svr)
+
+	// 注册服务到 etcd
+	registerService(registry, instance)
+
+	// 设置优雅关闭处理
+	defer setupGracefulShutdown(registry, instance)
+
+	klog.Infof("BackService starting - instance_id: %s, address: %s:%d", instance.InstanceID, localIP, port)
+
+	// 等待关闭信号
+	waitForShutdown()
+}
+
+// initOTEL 初始化 OTEL 并设置日志级别
+func initOTEL() *otel.OTELKit {
 	kit, err := otel.InitOTEL(context.Background(),
 		otel.WithServiceName("backservice"),
 		otel.WithEndpoint("localhost:4317"),
@@ -38,29 +74,32 @@ func Start() {
 		// 注意：OTEL 初始化失败时，klog 还未初始化，使用标准库 log
 		log.Fatalf("Failed to init OTEL: %v", err)
 	}
-	defer kit.Shutdown(context.Background())
-
-	// 设置日志级别为 DEBUG
 	kit.Logger.SetLevel(klog.LevelDebug)
+	return kit
+}
 
-	// 获取服务端口，支持环境变量配置
+// getServicePort 获取服务端口，支持环境变量配置
+func getServicePort() int {
 	port := 10300
 	if portStr := os.Getenv("BACKSERVICE_PORT"); portStr != "" {
 		if p, err := strconv.Atoi(portStr); err == nil {
 			port = p
 		}
 	}
+	return port
+}
 
-	// 获取本机IP
+// getLocalIP 获取本机IP
+func getLocalIP() string {
 	localIP, err := network.GetLocalIP()
 	if err != nil {
 		klog.Fatalf("Failed to get local IP: %v", err)
 	}
+	return localIP
+}
 
-	// 创建服务实例信息
-	instanceID := fmt.Sprintf("backservice-%s", uuid.New().String()[:8])
-
-	// 创建 Etcd Registry
+// createEtcdRegistry 创建 Etcd Registry
+func createEtcdRegistry() foundationregistry.Registry {
 	registry, err := etcd.NewEtcdRegistry(
 		etcd.WithEndpoints([]string{"localhost:2379"}),
 		etcd.WithDialTimeout(5*time.Second),
@@ -68,13 +107,16 @@ func Start() {
 	if err != nil {
 		klog.Fatalf("Failed to create etcd registry: %v", err)
 	}
-	defer registry.Close()
+	return registry
+}
 
-	// 注册服务实例
-	instance := &foundationregistry.ServiceInstance{
+// createServiceInstance 创建服务实例信息
+func createServiceInstance(host string, port int) *foundationregistry.ServiceInstance {
+	instanceID := fmt.Sprintf("backservice-%s", uuid.New().String()[:8])
+	return &foundationregistry.ServiceInstance{
 		ServiceName: "backservice-im",
 		InstanceID:  instanceID,
-		Host:        localIP,
+		Host:        host,
 		Port:        port,
 		Weight:      1,
 		Status:      foundationregistry.StatusHealthy,
@@ -82,51 +124,64 @@ func Start() {
 			"version": "1.0.0",
 		},
 	}
+}
 
-	// 向 backbonservice 注册服务（service = "backservice", method = "*"）
-	// 在后台异步注册，避免阻塞启动（backbon-service 可能还未启动）
-	// 注册逻辑会在 registerToBackbonService 内部执行（等待 1 秒后注册到 etcd）
+// createBackServiceServer 创建 BackService 服务器
+func createBackServiceServer(host string, port int) server.Server {
+	return backservice.NewServer(
+		NewBackServiceImpl(),
+		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP(host), Port: port}),
+		server.WithSuite(tracing.NewServerSuite()),
+		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "backservice"}),
+	)
+}
+
+// startServer 启动服务器
+func startServer(svr server.Server) {
+	go func() {
+		if err := svr.Run(); err != nil {
+			klog.Fatalf("Failed to start backservice server: %v", err)
+		}
+	}()
+
+	// 等待 1 秒确保服务已经启动并监听端口
+	time.Sleep(1 * time.Second)
+}
+
+// registerService 注册服务到 etcd
+func registerService(registry foundationregistry.Registry, instance *foundationregistry.ServiceInstance) {
+	// 服务启动后再注册到 etcd，避免保活机制在服务未就绪时删除注册
+	if err := registry.Register(context.Background(), instance); err != nil {
+		klog.Fatalf("Failed to register service instance: %v", err)
+	}
+	klog.Infof("Successfully registered backservice-im to etcd")
+
+	// 异步注册到 backbonservice
 	go func() {
 		ctx := context.Background()
 		if err := registerToBackbonService(ctx, registry, instance); err != nil {
 			klog.Warnf("Failed to register to backbonservice: %v", err)
 		}
 	}()
+}
 
-	// 创建服务器
-	svr := backservice.NewServer(
-		NewBackServiceImpl(),
-		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP(localIP), Port: port}),
-		server.WithSuite(tracing.NewServerSuite()),
-		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "backservice"}),
-	)
-
-	// 优雅关闭处理
-	defer func() {
-		if err := registry.Deregister(context.Background(), instance); err != nil {
-			klog.Errorf("Failed to deregister service instance: %v", err)
-		}
-	}()
-
-	klog.Infof("BackService starting - instance_id: %s, address: %s:%d", instanceID, localIP, port)
-
-	err = svr.Run()
-
-	if err != nil {
-		klog.Errorf("Failed to run server: %v", err)
+// setupGracefulShutdown 设置优雅关闭处理
+func setupGracefulShutdown(registry foundationregistry.Registry, instance *foundationregistry.ServiceInstance) {
+	if err := registry.Deregister(context.Background(), instance); err != nil {
+		klog.Errorf("Failed to deregister service instance: %v", err)
 	}
+}
+
+// waitForShutdown 等待关闭信号
+func waitForShutdown() {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	<-sigChan
+	klog.Info("Shutting down...")
 }
 
 // registerToBackbonService 向 backbonservice 注册服务
 func registerToBackbonService(ctx context.Context, registry foundationregistry.Registry, instance *foundationregistry.ServiceInstance) error {
-	// 等待 1 秒确保服务已经启动并监听端口
-	time.Sleep(1 * time.Second)
-
-	// 注册服务实例到 etcd
-	if err := registry.Register(ctx, instance); err != nil {
-		return fmt.Errorf("failed to register service instance to etcd: %w", err)
-	}
-	klog.Infof("Successfully registered backservice-im to etcd")
 
 	// 创建服务发现客户端
 	lb := loadbalancer.NewRoundRobinLoadBalancer()
