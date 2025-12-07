@@ -178,3 +178,7 @@ require (
 )
 
 replace github.com/roc/roc-foundation-util-go => ../roc-foundation-util-go
+
+require github.com/rhp-QE/roc-foundation-service v0.0.0-00010101000000-000000000000
+
+replace github.com/rhp-QE/roc-foundation-service => ../roc-foundation-service

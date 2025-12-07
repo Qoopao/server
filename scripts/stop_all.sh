@@ -34,6 +34,8 @@ stop_service() {
 stop_service "msggateway"
 stop_service "msg-service"
 stop_service "conversation-service"
+stop_service "backservice"
+stop_service "longconnection"
 stop_service "msgconsumer"
 
 # 等待端口完全释放
@@ -42,7 +44,7 @@ echo "⏳ 等待端口释放..."
 sleep 2
 
 # 强制清理端口（如果还被占用）
-for port in 10010 10100 10200; do
+for port in 10010 10100 10200 10300 6060 8956; do
     if lsof -ti:$port >/dev/null 2>&1; then
         echo "⚠️  强制释放端口 $port"
         lsof -ti:$port | xargs -r kill -9

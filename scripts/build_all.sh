@@ -31,6 +31,16 @@ echo "📦 构建 msgconsumer..."
 go build -o bin/msgconsumer cmd/msgconsumer/main.go
 echo "✅ msgconsumer 构建完成"
 
+# 构建 backservice
+echo "📦 构建 backservice..."
+go build -o bin/backservice cmd/backservice/main.go
+echo "✅ backservice 构建完成"
+
+# 构建 longconnection
+echo "📦 构建 longconnection..."
+go build -o bin/longconnection cmd/longconnection/main.go
+echo "✅ longconnection 构建完成"
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ 所有服务构建完成！"
@@ -43,6 +53,8 @@ echo "启动方式："
 echo "  ./bin/msggateway          # 启动 WebSocket 网关"
 echo "  ./bin/msg-service         # 启动消息服务"
 echo "  ./bin/conversation-service # 启动会话服务"
+echo "  ./bin/backservice         # 启动后端服务"
+echo "  ./bin/longconnection      # 启动长连接服务"
 echo "  ./bin/msgconsumer         # 启动消息消费者"
 echo ""
 

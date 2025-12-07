@@ -9,6 +9,7 @@ import (
 	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/roc/roc-im-server/internal/msgconsumer"
 	"github.com/roc/roc-im-server/internal/msggateway"
+	"github.com/roc/roc-im-server/internal/rpc/backservice"
 	convRpc "github.com/roc/roc-im-server/internal/rpc/conversation"
 	msgRpc "github.com/roc/roc-im-server/internal/rpc/msg"
 	"github.com/roc/roc-im-server/test/redis"
@@ -66,6 +67,11 @@ func main() {
 
 	res, _ := GetLocalIP()
 	println("Local IP:", res)
+
+	// 开启backservice
+	go func() {
+		backservice.Start()
+	}()
 
 	// 开启 push_handler
 	go func() {
