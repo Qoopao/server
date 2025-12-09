@@ -22,10 +22,9 @@ import (
 	"github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backservice"
 	"github.com/roc/roc-foundation-util-go/log/otel"
 	"github.com/roc/roc-foundation-util-go/network"
-	"github.com/roc/roc-foundation-util-go/service_registry/discovery"
-	"github.com/roc/roc-foundation-util-go/service_registry/loadbalancer"
 	foundationregistry "github.com/roc/roc-foundation-util-go/service_registry/registry"
 	"github.com/roc/roc-foundation-util-go/service_registry/registry/etcd"
+	"github.com/roc/roc-im-server/internal/rpc/backservice/servicecontext"
 )
 
 // Start 启动 BackService 服务器
@@ -42,11 +41,15 @@ func Start() {
 	registry := createEtcdRegistry()
 	defer registry.Close()
 
+	// 创建服务上下文
+	serviceCtx := servicecontext.NewServiceContext(registry)
+	defer serviceCtx.Close()
+
 	// 创建服务实例
 	instance := createServiceInstance(localIP, port)
 
 	// 创建服务器
-	svr := createBackServiceServer(localIP, port)
+	svr := createBackServiceServer(localIP, port, serviceCtx)
 
 	// 启动服务器
 	startServer(svr)
@@ -127,9 +130,9 @@ func createServiceInstance(host string, port int) *foundationregistry.ServiceIns
 }
 
 // createBackServiceServer 创建 BackService 服务器
-func createBackServiceServer(host string, port int) server.Server {
+func createBackServiceServer(host string, port int, serviceCtx servicecontext.ServiceContext) server.Server {
 	return backservice.NewServer(
-		NewBackServiceImpl(),
+		NewBackServiceImpl(serviceCtx),
 		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP(host), Port: port}),
 		server.WithSuite(tracing.NewServerSuite()),
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "backservice"}),
@@ -182,13 +185,11 @@ func waitForShutdown() {
 
 // registerToBackbonService 向 backbonservice 注册服务
 func registerToBackbonService(ctx context.Context, registry foundationregistry.Registry, instance *foundationregistry.ServiceInstance) error {
-
-	// 创建服务发现客户端
-	lb := loadbalancer.NewRoundRobinLoadBalancer()
-	discoveryClient := discovery.NewDiscovery(registry, lb)
+	// 创建服务上下文（用于服务发现）
+	serviceCtx := servicecontext.NewServiceContext(registry)
 
 	// 获取 backbon-service 实例
-	backbonInstance, err := discoveryClient.GetInstance(ctx, "backbon-service")
+	backbonInstance, err := serviceCtx.GetDiscovery().GetInstance(ctx, "backbon-service")
 	if err != nil {
 		return fmt.Errorf("no available instance (backbon-service may not be started yet): %w", err)
 	}

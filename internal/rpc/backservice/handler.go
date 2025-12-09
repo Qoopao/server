@@ -6,17 +6,21 @@ import (
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen"
+	"github.com/roc/roc-im-server/internal/rpc/backservice/servicecontext"
 )
 
 // BackServiceImpl 实现 BackService 接口
 // BackService 用于接收来自网关的调用请求，并路由到对应的业务服务
 type BackServiceImpl struct {
-	// TODO: 添加需要的依赖，例如数据库、缓存等
+	// 服务上下文，管理全局共享资源
+	serviceCtx servicecontext.ServiceContext
 }
 
 // NewBackServiceImpl 创建新的 BackServiceImpl
-func NewBackServiceImpl() *BackServiceImpl {
-	return &BackServiceImpl{}
+func NewBackServiceImpl(serviceCtx servicecontext.ServiceContext) *BackServiceImpl {
+	return &BackServiceImpl{
+		serviceCtx: serviceCtx,
+	}
 }
 
 // Call 处理来自网关的调用请求

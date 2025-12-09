@@ -1,0 +1,25 @@
+// 
+// Author : Ruanhuipeng
+// Date   : 2025/05/27
+
+syntax = "proto3";
+package message;
+
+import "sdkws.proto";
+
+option go_package = "github.com/roc/roc-im-server/kitex_gen/message";
+
+// 消息服务
+service MessageService {
+  // 批量发送消息
+  rpc BatchSendMessage(sdkws.BatchSendMessageRequest) returns (sdkws.BatchSendMessageResponse);
+  
+  // 批量更改消息（消息状态、已读状态、置顶状态、属性等）
+  rpc BatchChangeMessages(sdkws.BatchChangeMessagesRequest) returns (sdkws.BatchChangeMessagesResponse);
+  
+  // 单链拉取：获取指定会话的消息列表
+  rpc FetchConvMessageList(sdkws.FetchConvMessageListRequest) returns (sdkws.FetchConvMessageListResponse);
+  
+  // 批量获取消息：根据消息ID列表批量获取消息详情
+  rpc BatchGetMessages(sdkws.BatchGetMessagesRequest) returns (sdkws.BatchGetMessagesResponse);
+}
