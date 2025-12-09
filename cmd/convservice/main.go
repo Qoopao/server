@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	convRpc "github.com/roc/roc-im-server/internal/rpc/conversation"
+	convRpc "github.com/rhp-QE/roc-im-server/internal/rpc/conversation"
 )
 
 func main() {

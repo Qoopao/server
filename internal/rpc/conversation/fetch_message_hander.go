@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	conversation "github.com/roc/roc-im-server/internal/kitex_gen/conversation"
-	sdkws "github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
+	conversation "github.com/rhp-QE/roc-im-server/internal/kitex_gen/conversation"
+	sdkws "github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
 )
 
 func (s *ConversationServiceImpl) fetchConvMessaegList(ctx context.Context, req *sdkws.FetchConvMessageListReq) (resp *sdkws.FetchConvMessageListResp, err error) {

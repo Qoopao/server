@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 
-	"github.com/roc/roc-im-server/tools/kvstore"
+	"github.com/rhp-QE/roc-im-server/tools/kvstore"
 )
 
 type UserService interface {

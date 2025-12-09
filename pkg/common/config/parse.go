@@ -23,7 +23,7 @@ import (
 	"github.com/openimsdk/protocol/constant"
 	"github.com/openimsdk/tools/errs"
 	"github.com/openimsdk/tools/field"
-	"github.com/roc/roc-im-server/pkg/msgprocessor"
+	"github.com/rhp-QE/roc-im-server/pkg/msgprocessor"
 )
 
 const (

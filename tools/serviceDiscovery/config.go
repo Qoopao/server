@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/roc/roc-im-server/tools/loadbalancer"
-	serviceregistry "github.com/roc/roc-im-server/tools/serviceRegistry"
+	"github.com/rhp-QE/roc-im-server/tools/loadbalancer"
+	serviceregistry "github.com/rhp-QE/roc-im-server/tools/serviceRegistry"
 	"go.uber.org/zap"
 )
 

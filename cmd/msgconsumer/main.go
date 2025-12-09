@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/roc/roc-im-server/internal/msgconsumer"
+	"github.com/rhp-QE/roc-im-server/internal/msgconsumer"
 )
 
 func main() {

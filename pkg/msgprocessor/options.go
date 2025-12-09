@@ -14,7 +14,7 @@
 
 package msgprocessor
 
-import "github.com/roc/roc-im-server/protocol/constant"
+import "github.com/rhp-QE/roc-im-server/protocol/constant"
 
 type (
 	Options    map[string]bool

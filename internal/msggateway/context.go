@@ -1,7 +1,7 @@
 package msggateway
 
 import (
-	"github.com/roc/roc-im-server/pkg/common/servererrs"
+	"github.com/rhp-QE/roc-im-server/pkg/common/servererrs"
 	"net/http"
 	"net/url"
 	"strconv"

@@ -1,7 +1,7 @@
 package loadbalancer
 
 import (
-	serviceregistry "github.com/roc/roc-im-server/tools/serviceRegistry"
+	serviceregistry "github.com/rhp-QE/roc-im-server/tools/serviceRegistry"
 )
 
 // LoadBalancer 负载均衡器接口

@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/roc/roc-im-server/tools/mq" // 替换为实际的包路径
+	"github.com/rhp-QE/roc-im-server/tools/mq" // 替换为实际的包路径
 )
 
 func KfakTest() {

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/roc/roc-im-server/tools/kvstore"
+	"github.com/rhp-QE/roc-im-server/tools/kvstore"
 )
 
 type userServiceImpl struct {

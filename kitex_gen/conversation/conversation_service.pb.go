@@ -4,7 +4,7 @@ package conversation
 
 import (
 	"context"
-	"github.com/roc/roc-im-server/kitex_gen/sdkws"
+	"github.com/rhp-QE/roc-im-server/kitex_gen/sdkws"
 )
 
 type ConversationService interface {

@@ -6,13 +6,13 @@ import (
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/transport"
 	"github.com/openimsdk/tools/log"
-	foundationmq "github.com/roc/roc-foundation-util-go/mq"
-	"github.com/roc/roc-im-server/internal/kitex_gen/push"
-	"github.com/roc/roc-im-server/internal/kitex_gen/push/pushservice"
-	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
-	"github.com/roc/roc-im-server/pkg/common/storage/controller"
-	"github.com/roc/roc-im-server/pkg/user"
-	"github.com/roc/roc-im-server/tools/utils"
+	foundationmq "github.com/rhp-QE/roc-foundation-util-go/mq"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/push"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/push/pushservice"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
+	"github.com/rhp-QE/roc-im-server/pkg/common/storage/controller"
+	"github.com/rhp-QE/roc-im-server/pkg/user"
+	"github.com/rhp-QE/roc-im-server/tools/utils"
 )
 
 type ConsumerMessage struct {

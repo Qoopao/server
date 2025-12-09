@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	serviceregistry "github.com/roc/roc-im-server/tools/serviceRegistry"
+	serviceregistry "github.com/rhp-QE/roc-im-server/tools/serviceRegistry"
 )
 
 // ConsistentHashLoadBalancer 一致性哈希负载均衡器

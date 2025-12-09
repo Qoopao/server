@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	serviceregistry "github.com/roc/roc-im-server/tools/serviceRegistry"
+	serviceregistry "github.com/rhp-QE/roc-im-server/tools/serviceRegistry"
 )
 
 // WeightedRandomLoadBalancer 加权随机负载均衡器

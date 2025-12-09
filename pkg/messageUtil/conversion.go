@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/openimsdk/tools/errs"
-	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
-	"github.com/roc/roc-im-server/protocol/constant"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
+	"github.com/rhp-QE/roc-im-server/protocol/constant"
 	"google.golang.org/protobuf/proto"
 )
 

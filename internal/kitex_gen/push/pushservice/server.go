@@ -3,7 +3,7 @@ package pushservice
 
 import (
 	server "github.com/cloudwego/kitex/server"
-	push "github.com/roc/roc-im-server/internal/kitex_gen/push"
+	push "github.com/rhp-QE/roc-im-server/internal/kitex_gen/push"
 )
 
 // NewServer creates a server.Server with the given handler and options.

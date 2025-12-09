@@ -3,7 +3,7 @@ package conversationservice
 
 import (
 	server "github.com/cloudwego/kitex/server"
-	conversation "github.com/roc/roc-im-server/internal/kitex_gen/conversation"
+	conversation "github.com/rhp-QE/roc-im-server/internal/kitex_gen/conversation"
 )
 
 // NewServer creates a server.Server with the given handler and options.

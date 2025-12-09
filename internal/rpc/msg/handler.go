@@ -3,9 +3,9 @@ package msg
 import (
 	"context"
 
-	msg "github.com/roc/roc-im-server/internal/kitex_gen/msg"
-	sdkws "github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
-	"github.com/roc/roc-im-server/pkg/common/storage/controller"
+	msg "github.com/rhp-QE/roc-im-server/internal/kitex_gen/msg"
+	sdkws "github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
+	"github.com/rhp-QE/roc-im-server/pkg/common/storage/controller"
 	"go.uber.org/zap"
 )
 

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync/atomic"
 
-	serviceregistry "github.com/roc/roc-im-server/tools/serviceRegistry"
+	serviceregistry "github.com/rhp-QE/roc-im-server/tools/serviceRegistry"
 )
 
 // RoundRobinLoadBalancer 轮询负载均衡器

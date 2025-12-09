@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	backserviceRpc "github.com/roc/roc-im-server/internal/rpc/backservice"
+	backserviceRpc "github.com/rhp-QE/roc-im-server/internal/rpc/backservice"
 )
 
 func main() {

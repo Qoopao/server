@@ -4,7 +4,7 @@ package conversation
 
 import (
 	"context"
-	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
 
 	"github.com/cloudwego/prutal"
 )

@@ -5,15 +5,14 @@ import (
 	"errors"
 	"net"
 
-	"github.com/roc/roc-im-server/examples"
-	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
-	"github.com/roc/roc-im-server/internal/msgconsumer"
-	"github.com/roc/roc-im-server/internal/msggateway"
-	"github.com/roc/roc-im-server/internal/rpc/backservice"
-	convRpc "github.com/roc/roc-im-server/internal/rpc/conversation"
-	msgRpc "github.com/roc/roc-im-server/internal/rpc/msg"
-	"github.com/roc/roc-im-server/test/redis"
-	// "github.com/roc/roc-im-server/test/kafaka"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
+	"github.com/rhp-QE/roc-im-server/internal/msgconsumer"
+	"github.com/rhp-QE/roc-im-server/internal/msggateway"
+	"github.com/rhp-QE/roc-im-server/internal/rpc/backservice"
+	convRpc "github.com/rhp-QE/roc-im-server/internal/rpc/conversation"
+	msgRpc "github.com/rhp-QE/roc-im-server/internal/rpc/msg"
+	"github.com/rhp-QE/roc-im-server/test/redis"
+	// "github.com/rhp-QE/roc-im-server/test/kafaka"
 )
 
 func test_mar() {

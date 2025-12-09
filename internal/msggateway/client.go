@@ -18,9 +18,9 @@ import (
 	"github.com/openimsdk/tools/errs"
 	"github.com/openimsdk/tools/log"
 	"github.com/openimsdk/tools/utils/stringutil"
-	"github.com/roc/roc-im-server/internal/kitex_gen/conversation/conversationservice"
-	"github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
-	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/conversation/conversationservice"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/msg/messageservice"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
 	"go.opentelemetry.io/otel"
 )
 

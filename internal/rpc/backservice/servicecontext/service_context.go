@@ -11,12 +11,12 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/kitex-contrib/obs-opentelemetry/tracing"
-	"github.com/roc/roc-foundation-util-go/service_registry/discovery"
-	"github.com/roc/roc-foundation-util-go/service_registry/loadbalancer"
-	foundationregistry "github.com/roc/roc-foundation-util-go/service_registry/registry"
-	conversationservice "github.com/roc/roc-im-server/internal/kitex_gen/conversation/conversationservice"
-	messageservice "github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
-	pushservice "github.com/roc/roc-im-server/internal/kitex_gen/push/pushservice"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/discovery"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/loadbalancer"
+	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
+	conversationservice "github.com/rhp-QE/roc-im-server/internal/kitex_gen/conversation/conversationservice"
+	messageservice "github.com/rhp-QE/roc-im-server/internal/kitex_gen/msg/messageservice"
+	pushservice "github.com/rhp-QE/roc-im-server/internal/kitex_gen/push/pushservice"
 )
 
 // ServiceContext 服务上下文接口，定义全局共享资源的访问方法

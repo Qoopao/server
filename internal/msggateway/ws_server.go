@@ -18,14 +18,14 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	// "github.com/openimsdk/open-im-server/v3/pkg/common/prommetrics"
-	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
-	"github.com/roc/roc-im-server/pkg/common/servererrs"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
+	"github.com/rhp-QE/roc-im-server/pkg/common/servererrs"
 
 	// "github.com/openimsdk/protocol/constant"
 	// "github.com/openimsdk/protocol/msggateway"
 	"github.com/openimsdk/tools/discovery"
 	"github.com/openimsdk/tools/log"
-	"github.com/roc/roc-im-server/pkg/user"
+	"github.com/rhp-QE/roc-im-server/pkg/user"
 	// "github.com/openimsdk/tools/utils/stringutil"
 	// "golang.org/x/sync/errgroup"
 )

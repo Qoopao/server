@@ -3,7 +3,7 @@ package messageservice
 
 import (
 	server "github.com/cloudwego/kitex/server"
-	message "github.com/roc/roc-im-server/kitex_gen/message"
+	message "github.com/rhp-QE/roc-im-server/kitex_gen/message"
 )
 
 // NewServer creates a server.Server with the given handler and options.

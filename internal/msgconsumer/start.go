@@ -1,11 +1,11 @@
 package msgconsumer
 
 import (
-	foundationcache "github.com/roc/roc-foundation-util-go/cache"
-	"github.com/roc/roc-foundation-util-go/cache/redis"
-	foundationmq "github.com/roc/roc-foundation-util-go/mq"
-	"github.com/roc/roc-foundation-util-go/mq/kafka"
-	"github.com/roc/roc-im-server/pkg/common/storage/controller"
+	foundationcache "github.com/rhp-QE/roc-foundation-util-go/cache"
+	"github.com/rhp-QE/roc-foundation-util-go/cache/redis"
+	foundationmq "github.com/rhp-QE/roc-foundation-util-go/mq"
+	"github.com/rhp-QE/roc-foundation-util-go/mq/kafka"
+	"github.com/rhp-QE/roc-im-server/pkg/common/storage/controller"
 )
 
 func Start() {

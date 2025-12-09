@@ -10,11 +10,11 @@ import (
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/transport"
 	"github.com/kitex-contrib/obs-opentelemetry/tracing"
-	"github.com/roc/roc-foundation-util-go/service_registry/discovery"
-	"github.com/roc/roc-foundation-util-go/service_registry/loadbalancer"
-	"github.com/roc/roc-foundation-util-go/service_registry/registry/etcd"
-	"github.com/roc/roc-im-server/internal/kitex_gen/conversation/conversationservice"
-	"github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/discovery"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/loadbalancer"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/conversation/conversationservice"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/msg/messageservice"
 	"go.uber.org/zap"
 )
 

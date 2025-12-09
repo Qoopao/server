@@ -17,14 +17,14 @@ import (
 	"github.com/cloudwego/kitex/server"
 	"github.com/google/uuid"
 	"github.com/kitex-contrib/obs-opentelemetry/tracing"
-	"github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen"
-	backbonservice "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backbonservice"
-	"github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backservice"
-	"github.com/roc/roc-foundation-util-go/log/otel"
-	"github.com/roc/roc-foundation-util-go/network"
-	foundationregistry "github.com/roc/roc-foundation-util-go/service_registry/registry"
-	"github.com/roc/roc-foundation-util-go/service_registry/registry/etcd"
-	"github.com/roc/roc-im-server/internal/rpc/backservice/servicecontext"
+	backservice "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/back/backservice"
+	backbon "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backbon"
+	backbonservice "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backbon/backbonservice"
+	"github.com/rhp-QE/roc-foundation-util-go/log/otel"
+	"github.com/rhp-QE/roc-foundation-util-go/network"
+	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
+	"github.com/rhp-QE/roc-im-server/internal/rpc/backservice/servicecontext"
 )
 
 // Start 启动 BackService 服务器
@@ -213,7 +213,7 @@ func registerToBackbonService(ctx context.Context, registry foundationregistry.R
 	// }()
 
 	// 注册服务：service = "backservice", methods = ["*"] (全部方法)
-	registerReq := &kitex_gen.RegisterServiceReq{
+	registerReq := &backbon.RegisterServiceReq{
 		Service: "backservice-im",
 		Methods: []string{"*"}, // 支持所有方法
 	}

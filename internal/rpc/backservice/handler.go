@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/cloudwego/kitex/pkg/klog"
-	"github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen"
-	"github.com/roc/roc-im-server/internal/rpc/backservice/servicecontext"
+	back "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/back"
+	"github.com/rhp-QE/roc-im-server/internal/rpc/backservice/servicecontext"
 )
 
 // BackServiceImpl 实现 BackService 接口
@@ -25,13 +25,13 @@ func NewBackServiceImpl(serviceCtx servicecontext.ServiceContext) *BackServiceIm
 
 // Call 处理来自网关的调用请求
 // 根据 req.Service 和 req.Method 路由到对应的业务服务
-func (s *BackServiceImpl) Call(ctx context.Context, req *kitex_gen.CallRequest) (resp *kitex_gen.CallResponse, err error) {
+func (s *BackServiceImpl) Call(ctx context.Context, req *back.CallRequest) (resp *back.CallResponse, err error) {
 	// 记录请求日志
 	klog.Infof("BackService.Call - requestID: %s, service: %s, method: %s, userID: %s",
 		req.GetRequestID(), req.GetService(), req.GetMethod(), req.GetUserID())
 
 	// 创建响应
-	resp = &kitex_gen.CallResponse{
+	resp = &back.CallResponse{
 		RequestID: req.GetRequestID(),
 		Type:      req.GetType(),
 		Success:   false,

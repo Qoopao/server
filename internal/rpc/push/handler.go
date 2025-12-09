@@ -2,7 +2,7 @@ package push
 
 import (
 	"context"
-	push "github.com/roc/roc-im-server/internal/kitex_gen/push"
+	push "github.com/rhp-QE/roc-im-server/internal/kitex_gen/push"
 )
 
 // PushServiceImpl implements the last service interface defined in the IDL.

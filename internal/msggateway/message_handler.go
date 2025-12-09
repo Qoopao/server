@@ -10,9 +10,9 @@ import (
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/openimsdk/tools/errs"
-	"github.com/roc/roc-im-server/internal/kitex_gen/conversation/conversationservice"
-	"github.com/roc/roc-im-server/internal/kitex_gen/msg/messageservice"
-	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/conversation/conversationservice"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/msg/messageservice"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
 )
 
 const (

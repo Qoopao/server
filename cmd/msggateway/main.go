@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/cloudwego/kitex/pkg/klog"
-	"github.com/roc/roc-foundation-util-go/log/otel"
-	"github.com/roc/roc-im-server/internal/msggateway"
+	"github.com/rhp-QE/roc-foundation-util-go/log/otel"
+	"github.com/rhp-QE/roc-im-server/internal/msggateway"
 )
 
 func main() {

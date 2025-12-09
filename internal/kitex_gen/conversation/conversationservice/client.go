@@ -6,8 +6,8 @@ import (
 	"context"
 	client "github.com/cloudwego/kitex/client"
 	callopt "github.com/cloudwego/kitex/client/callopt"
-	conversation "github.com/roc/roc-im-server/internal/kitex_gen/conversation"
-	sdkws "github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
+	conversation "github.com/rhp-QE/roc-im-server/internal/kitex_gen/conversation"
+	sdkws "github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
 )
 
 // Client is designed to provide IDL-compatible methods with call-option parameter for kitex framework.

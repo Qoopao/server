@@ -11,14 +11,14 @@ import (
 
 	"github.com/cloudwego/kitex/server"
 	"github.com/google/uuid"
-	foundationcache "github.com/roc/roc-foundation-util-go/cache"
-	"github.com/roc/roc-foundation-util-go/cache/redis"
-	foundationmq "github.com/roc/roc-foundation-util-go/mq"
-	"github.com/roc/roc-foundation-util-go/mq/kafka"
-	foundationregistry "github.com/roc/roc-foundation-util-go/service_registry/registry"
-	"github.com/roc/roc-foundation-util-go/service_registry/registry/etcd"
-	conversation "github.com/roc/roc-im-server/internal/kitex_gen/conversation/conversationservice"
-	"github.com/roc/roc-im-server/pkg/common/storage/controller"
+	foundationcache "github.com/rhp-QE/roc-foundation-util-go/cache"
+	"github.com/rhp-QE/roc-foundation-util-go/cache/redis"
+	foundationmq "github.com/rhp-QE/roc-foundation-util-go/mq"
+	"github.com/rhp-QE/roc-foundation-util-go/mq/kafka"
+	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
+	conversation "github.com/rhp-QE/roc-im-server/internal/kitex_gen/conversation/conversationservice"
+	"github.com/rhp-QE/roc-im-server/pkg/common/storage/controller"
 	"go.uber.org/zap"
 )
 

@@ -10,8 +10,8 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/google/uuid"
 	"github.com/openimsdk/tools/errs"
-	"github.com/roc/roc-im-server/internal/kitex_gen/conversation"
-	"github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/conversation"
+	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
 )
 
 // SendMsg implements the MessageServiceImpl interface.

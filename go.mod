@@ -1,4 +1,4 @@
-module github.com/roc/roc-im-server
+module github.com/rhp-QE/roc-im-server
 
 go 1.24.2
 
@@ -43,7 +43,7 @@ require (
 )
 
 require (
-	github.com/roc/roc-foundation-util-go v0.0.0-00010101000000-000000000000
+	github.com/rhp-QE/roc-foundation-util-go v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/contrib/bridges/otelslog v0.13.0
 	go.opentelemetry.io/otel v1.38.0
@@ -177,7 +177,7 @@ require (
 	gorm.io/gorm v1.25.8 // indirect
 )
 
-replace github.com/roc/roc-foundation-util-go => ../roc-foundation-util-go
+replace github.com/rhp-QE/roc-foundation-util-go => ../roc-foundation-util-go
 
 require github.com/rhp-QE/roc-foundation-service v0.0.0-00010101000000-000000000000
 

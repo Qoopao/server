@@ -5,8 +5,8 @@ import (
 	"net"
 
 	"github.com/cloudwego/kitex/server"
-	push "github.com/roc/roc-im-server/internal/kitex_gen/push"
-	pushservice "github.com/roc/roc-im-server/internal/kitex_gen/push/pushservice"
+	push "github.com/rhp-QE/roc-im-server/internal/kitex_gen/push"
+	pushservice "github.com/rhp-QE/roc-im-server/internal/kitex_gen/push/pushservice"
 )
 
 func startPushService(wsServer *WsServer) {

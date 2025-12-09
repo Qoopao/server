@@ -2,9 +2,9 @@ package conversation
 
 import (
 	"context"
-	conversation "github.com/roc/roc-im-server/internal/kitex_gen/conversation"
-	sdkws "github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
-	"github.com/roc/roc-im-server/pkg/common/storage/controller"
+	conversation "github.com/rhp-QE/roc-im-server/internal/kitex_gen/conversation"
+	sdkws "github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
+	"github.com/rhp-QE/roc-im-server/pkg/common/storage/controller"
 )
 
 // ConversationServiceImpl implements the last service interface defined in the IDL.

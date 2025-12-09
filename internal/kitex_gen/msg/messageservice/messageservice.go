@@ -9,8 +9,8 @@ import (
 	kitex "github.com/cloudwego/kitex/pkg/serviceinfo"
 	streaming "github.com/cloudwego/kitex/pkg/streaming"
 	proto "github.com/cloudwego/prutal"
-	msg "github.com/roc/roc-im-server/internal/kitex_gen/msg"
-	sdkws "github.com/roc/roc-im-server/internal/kitex_gen/sdkws"
+	msg "github.com/rhp-QE/roc-im-server/internal/kitex_gen/msg"
+	sdkws "github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
 )
 
 var errInvalidMessageType = errors.New("invalid message type for service method handler")
