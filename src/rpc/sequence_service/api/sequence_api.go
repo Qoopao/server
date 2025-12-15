@@ -1,28 +1,28 @@
-package handler
+package api
 
 import (
 	"context"
 
 	"github.com/cloudwego/kitex/pkg/klog"
-	sequence "github.com/rhp-QE/roc-im-server/kitex_gen/sequence"
+	sequencepb "github.com/rhp-QE/roc-im-server/kitex_gen/sequence"
 	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/service"
 )
 
-// SequenceServiceHandler 实现SequenceService接口（接口层）
-type SequenceServiceHandler struct {
+// SequenceAPI 实现 SequenceService 接口（接口层）
+type SequenceAPI struct {
 	service service.SequenceService
 }
 
-// NewSequenceServiceHandler 创建SequenceServiceHandler实例
-func NewSequenceServiceHandler(seqService service.SequenceService) *SequenceServiceHandler {
-	return &SequenceServiceHandler{
+// NewSequenceAPI 创建 SequenceAPI 实例
+func NewSequenceAPI(seqService service.SequenceService) *SequenceAPI {
+	return &SequenceAPI{
 		service: seqService,
 	}
 }
 
 // GetNextSeq 获取下一个序列号
-func (h *SequenceServiceHandler) GetNextSeq(ctx context.Context, req *sequence.GetNextSeqRequest) (resp *sequence.GetNextSeqResponse, err error) {
-	resp = &sequence.GetNextSeqResponse{}
+func (h *SequenceAPI) GetNextSeq(ctx context.Context, req *sequencepb.GetNextSeqRequest) (resp *sequencepb.GetNextSeqResponse, err error) {
+	resp = &sequencepb.GetNextSeqResponse{}
 
 	if req == nil || req.ConversationId == "" {
 		resp.ErrorCode = "INVALID_REQUEST"
@@ -49,9 +49,9 @@ func (h *SequenceServiceHandler) GetNextSeq(ctx context.Context, req *sequence.G
 }
 
 // BatchGetNextSeq 批量获取序列号
-func (h *SequenceServiceHandler) BatchGetNextSeq(ctx context.Context, req *sequence.BatchGetNextSeqRequest) (resp *sequence.BatchGetNextSeqResponse, err error) {
-	resp = &sequence.BatchGetNextSeqResponse{
-		Results: make([]*sequence.SeqResult, 0),
+func (h *SequenceAPI) BatchGetNextSeq(ctx context.Context, req *sequencepb.BatchGetNextSeqRequest) (resp *sequencepb.BatchGetNextSeqResponse, err error) {
+	resp = &sequencepb.BatchGetNextSeqResponse{
+		Results: make([]*sequencepb.SeqResult, 0),
 	}
 
 	if req == nil || len(req.ConversationIds) == 0 {
@@ -67,7 +67,7 @@ func (h *SequenceServiceHandler) BatchGetNextSeq(ctx context.Context, req *seque
 
 	// 构建响应
 	for _, convID := range req.ConversationIds {
-		result := &sequence.SeqResult{
+		result := &sequencepb.SeqResult{
 			ConversationId: convID,
 		}
 
@@ -88,8 +88,8 @@ func (h *SequenceServiceHandler) BatchGetNextSeq(ctx context.Context, req *seque
 }
 
 // GetMaxSeq 获取当前最大序列号
-func (h *SequenceServiceHandler) GetMaxSeq(ctx context.Context, req *sequence.GetMaxSeqRequest) (resp *sequence.GetMaxSeqResponse, err error) {
-	resp = &sequence.GetMaxSeqResponse{}
+func (h *SequenceAPI) GetMaxSeq(ctx context.Context, req *sequencepb.GetMaxSeqRequest) (resp *sequencepb.GetMaxSeqResponse, err error) {
+	resp = &sequencepb.GetMaxSeqResponse{}
 
 	if req == nil || req.ConversationId == "" {
 		resp.ErrorCode = "INVALID_REQUEST"
@@ -114,3 +114,6 @@ func (h *SequenceServiceHandler) GetMaxSeq(ctx context.Context, req *sequence.Ge
 
 	return resp, nil
 }
+
+// 编译期检查，确保实现了 sequencepb.SequenceService 接口
+var _ sequencepb.SequenceService = (*SequenceAPI)(nil)

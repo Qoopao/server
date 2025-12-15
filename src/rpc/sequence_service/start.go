@@ -22,7 +22,7 @@ import (
 	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
 	sequence "github.com/rhp-QE/roc-im-server/kitex_gen/sequence/sequenceservice"
-	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/handler"
+	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/api"
 	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/service"
 	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/service_context"
 	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/storage"
@@ -173,8 +173,8 @@ func createServiceInstance(host string) *foundationregistry.ServiceInstance {
 func createServer(seqStorage storage.SequenceStorage, host string) server.Server {
 	// 创建服务层
 	seqService := service.NewSequenceService(seqStorage)
-	// 创建处理器层
-	seqHandler := handler.NewSequenceServiceHandler(seqService)
+	// 创建接口层（API）
+	seqHandler := api.NewSequenceAPI(seqService)
 
 	return sequence.NewServer(
 		seqHandler,
