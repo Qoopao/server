@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
-	"errors"
-	"net"
 
+	"github.com/rhp-QE/roc-foundation-util-go/network"
 	"github.com/rhp-QE/roc-im-server/internal/kitex_gen/sdkws"
 	"github.com/rhp-QE/roc-im-server/internal/msgconsumer"
 	"github.com/rhp-QE/roc-im-server/internal/msggateway"
@@ -37,34 +36,17 @@ func test_mar() {
 	panic(err)
 }
 
-func GetLocalIP() (string, error) {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		return "", err
-	}
-
-	for _, addr := range addrs {
-		ipNet, ok := addr.(*net.IPNet)
-		if ok && !ipNet.IP.IsLoopback() {
-			if ipNet.IP.To4() != nil { // 优先IPv4
-				return ipNet.IP.String(), nil
-			}
-		}
-	}
-	return "", errors.New("no non-loopback IP found")
-}
-
 func main() {
 	// 检查是否要运行测试
 	// if len(os.Args) > 1 && os.Args[1] == "test" {
-	examples.Test_main()
+	// examples.Test_main()
 	// return
 	// }
 
 	// test_mar()
 	redis.Redis_Test()
 
-	res, _ := GetLocalIP()
+	res, _ := network.GetLocalIP()
 	println("Local IP:", res)
 
 	// 开启backservice
