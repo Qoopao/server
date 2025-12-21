@@ -1,0 +1,132 @@
+package convmsgconsumer
+
+import (
+	"context"
+	"log"
+	"os"
+	"os/signal"
+	"time"
+
+	"github.com/cloudwego/kitex/pkg/klog"
+	foundationmq "github.com/rhp-QE/roc-foundation-util-go/mq"
+	"github.com/rhp-QE/roc-foundation-util-go/mq/kafka"
+	"github.com/rhp-QE/roc-foundation-util-go/storage"
+	mongodb "github.com/rhp-QE/roc-foundation-util-go/storage/mongodb"
+	"github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/service"
+	servicecontext "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/service_context"
+	convstorage "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/storage"
+	"go.mongodb.org/mongo-driver/bson"
+)
+
+// Start 启动 conv_msg_consumer：从消息 MQ 消费消息，写入 MongoDB
+func Start() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// 创建 MongoDB 存储
+	store := createMongoStorage()
+	// 创建 MQ Consumer
+	consumer := createMQConsumer()
+
+	// 创建 ServiceContext
+	svcCtx := servicecontext.NewServiceContext(store, consumer)
+	defer svcCtx.Close()
+
+	// 组装存储层 & 业务层
+	convStorage := convstorage.NewConvMsgStorage(svcCtx)
+	convService := service.NewConvMsgConsumerService(convStorage)
+
+	// 启动消费循环
+	go func() {
+		handler := func(msg *foundationmq.Message) error {
+			return convService.HandleMessage(ctx, msg)
+		}
+
+		if err := svcCtx.GetConsumer().Subscribe(ctx, handler); err != nil {
+			klog.CtxErrorf(ctx, "[ConvMsgConsumer] subscribe failed", "error", err.Error())
+			cancel()
+		}
+	}()
+
+	klog.Info("[ConvMsgConsumer] started, waiting for messages...")
+
+	// 优雅退出：监听系统信号
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt)
+
+	select {
+	case <-ctx.Done():
+	case <-sigCh:
+		klog.Info("[ConvMsgConsumer] received interrupt signal, shutting down...")
+		cancel()
+	}
+
+	// 等待资源关闭
+	time.Sleep(1 * time.Second)
+	return nil
+}
+
+// createMongoStorage 创建 MongoDB 存储实例
+func createMongoStorage() storage.Storage {
+	uri := os.Getenv("CONV_MONGODB_URI")
+	if uri == "" {
+		uri = "mongodb://localhost:27017"
+	}
+	database := os.Getenv("CONV_MONGODB_DATABASE")
+	if database == "" {
+		database = "im_message"
+	}
+
+	store, err := mongodb.NewMongoStorage(
+		[]mongodb.Option{
+			mongodb.WithURI(uri),
+			mongodb.WithDatabase(database),
+		},
+		storage.WithCollectionPrefix("conv_"),
+	)
+	if err != nil {
+		log.Fatalf("[ConvMsgConsumer] failed to create mongo storage: %v", err)
+	}
+
+	// 为会话消息集合创建必要索引（按 conv_id+seq 查询单链）
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// 实际集合名为 prefix + "messages"（即 conv_messages）
+	if err := store.CreateIndex(ctx, "messages", bson.D{
+		{Key: "conv_id", Value: 1},
+		{Key: "seq", Value: 1},
+	}, false); err != nil {
+		log.Printf("[ConvMsgConsumer] create index conv_id+seq failed: %v", err)
+	}
+
+	return store
+}
+
+// createMQConsumer 创建 Kafka Consumer
+func createMQConsumer() foundationmq.Consumer {
+	brokers := []string{"localhost:9092"}
+	if v := os.Getenv("KAFKA_BROKERS"); v != "" {
+		brokers = []string{v}
+	}
+
+	topic := os.Getenv("MESSAGE_SERVICE_TOPIC")
+	if topic == "" {
+		topic = "im_message_topic"
+	}
+
+	groupID := os.Getenv("CONV_MSG_CONSUMER_GROUP")
+	if groupID == "" {
+		groupID = "conv-msg-consumer-group"
+	}
+
+	consumer, err := kafka.NewKafkaConsumer([]kafka.ConsumerOption{
+		kafka.WithConsumerBrokers(brokers),
+		kafka.WithConsumerGroupID(groupID),
+		kafka.WithConsumerTopics([]string{topic}),
+	})
+	if err != nil {
+		log.Fatalf("[ConvMsgConsumer] failed to create kafka consumer: %v", err)
+	}
+	return consumer
+}
