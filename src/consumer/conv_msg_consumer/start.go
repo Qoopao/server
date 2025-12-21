@@ -10,6 +10,8 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	foundationmq "github.com/rhp-QE/roc-foundation-util-go/mq"
 	"github.com/rhp-QE/roc-foundation-util-go/mq/kafka"
+	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
+	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
 	"github.com/rhp-QE/roc-foundation-util-go/storage"
 	mongodb "github.com/rhp-QE/roc-foundation-util-go/storage/mongodb"
 	convapi "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/api"
@@ -28,14 +30,17 @@ func Start() error {
 	store := createMongoStorage()
 	// 创建 MQ Consumer
 	consumer := createMQConsumer()
+	// 创建 Etcd Registry
+	registry := createEtcdRegistry()
+	defer registry.Close()
 
 	// 创建 ServiceContext
-	svcCtx := servicecontext.NewServiceContext(store, consumer)
+	svcCtx := servicecontext.NewServiceContext(store, consumer, registry)
 	defer svcCtx.Close()
 
 	// 组装各层：storage → service → api
 	convStorage := convstorage.NewConvMsgStorage(svcCtx)
-	convService := service.NewConvMsgConsumerService(convStorage)
+	convService := service.NewConvMsgConsumerService(convStorage, svcCtx)
 	convAPI := convapi.NewConvMsgConsumerAPI(convService)
 
 	// 启动消费循环（api 层负责订阅消息队列）
@@ -127,4 +132,21 @@ func createMQConsumer() foundationmq.Consumer {
 		log.Fatalf("[ConvMsgConsumer] failed to create kafka consumer: %v", err)
 	}
 	return consumer
+}
+
+// createEtcdRegistry 创建 Etcd Registry
+func createEtcdRegistry() foundationregistry.Registry {
+	endpoints := []string{"localhost:2379"}
+	if v := os.Getenv("ETCD_ENDPOINTS"); v != "" {
+		endpoints = []string{v}
+	}
+
+	registry, err := etcd.NewEtcdRegistry(
+		etcd.WithEndpoints(endpoints),
+		etcd.WithDialTimeout(5*time.Second),
+	)
+	if err != nil {
+		log.Fatalf("[ConvMsgConsumer] failed to create etcd registry: %v", err)
+	}
+	return registry
 }

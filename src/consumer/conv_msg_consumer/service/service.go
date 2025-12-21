@@ -5,23 +5,26 @@ import (
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/rhp-QE/roc-im-server/kitex_gen/sdkws"
+	servicecontext "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/service_context"
 	convstorage "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/storage"
 )
 
 // ConvMsgConsumerService 会话消息消费者业务接口
 type ConvMsgConsumerService interface {
-	// HandleMessage 处理消息业务逻辑：保存消息 → 更新会话 → 更新用户最近会话链
+	// HandleMessage 处理消息业务逻辑：保存消息 → 更新会话 → 更新用户最近会话链 → 推送消息
 	HandleMessage(ctx context.Context, msg *sdkws.MessageData) error
 }
 
 type convMsgConsumerServiceImpl struct {
-	storage convstorage.ConvMsgStorage
+	storage    convstorage.ConvMsgStorage
+	serviceCtx servicecontext.ServiceContext
 }
 
 // NewConvMsgConsumerService 创建 ConvMsgConsumerService 实例
-func NewConvMsgConsumerService(storage convstorage.ConvMsgStorage) ConvMsgConsumerService {
+func NewConvMsgConsumerService(storage convstorage.ConvMsgStorage, serviceCtx servicecontext.ServiceContext) ConvMsgConsumerService {
 	return &convMsgConsumerServiceImpl{
-		storage: storage,
+		storage:    storage,
+		serviceCtx: serviceCtx,
 	}
 }
 
@@ -42,6 +45,9 @@ func (s *convMsgConsumerServiceImpl) HandleMessage(ctx context.Context, msg *sdk
 	if err := s.updateUserRecentConvsIfSmallConv(ctx, msg); err != nil {
 		return err
 	}
+
+	// 4. 调用长链服务向用户推送消息
+	s.pushMessage(ctx, msg)
 
 	klog.CtxDebugf(ctx, "[ConvMsgConsumer] message processed successfully",
 		"conv_id", msg.ConvID,
