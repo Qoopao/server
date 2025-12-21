@@ -7,7 +7,7 @@ package message;
 
 import "sdkws.proto";
 
-option go_package = "github.com/roc/roc-im-server/kitex_gen/message";
+option go_package = "github.com/rhp-QE/roc-im-server/kitex_gen/message";
 
 // 消息服务
 service MessageService {

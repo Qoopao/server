@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/cloudwego/kitex/pkg/klog"
+	"github.com/google/uuid"
 	"github.com/openimsdk/tools/errs"
 	"github.com/rhp-QE/roc-im-server/kitex_gen/sdkws"
 	sequencepb "github.com/rhp-QE/roc-im-server/kitex_gen/sequence"
@@ -75,11 +76,18 @@ func (s *messageServiceImpl) BatchSendMessage(ctx context.Context, req *sdkws.Ba
 
 		// 设置消息 seq
 		msg.Seq = seqResp.Seq
+
+		// 生成消息ID
+		if msg.SMessageID == "" {
+			msg.SMessageID = uuid.New().String()
+		}
+
 		successMsgs = append(successMsgs, msg)
 
-		klog.CtxDebugf(ctx, "BatchSendMessage: seq assigned",
+		klog.CtxDebugf(ctx, "BatchSendMessage: seq and msgID assigned",
 			"conv_id", msg.ConvID,
-			"seq", msg.Seq)
+			"seq", msg.Seq,
+			"msg_id", msg.SMessageID)
 	}
 
 	// 将成功分配 seq 的消息批量投递到 MQ

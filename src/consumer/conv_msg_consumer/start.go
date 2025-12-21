@@ -12,6 +12,7 @@ import (
 	"github.com/rhp-QE/roc-foundation-util-go/mq/kafka"
 	"github.com/rhp-QE/roc-foundation-util-go/storage"
 	mongodb "github.com/rhp-QE/roc-foundation-util-go/storage/mongodb"
+	convapi "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/api"
 	"github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/service"
 	servicecontext "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/service_context"
 	convstorage "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/storage"
@@ -32,17 +33,14 @@ func Start() error {
 	svcCtx := servicecontext.NewServiceContext(store, consumer)
 	defer svcCtx.Close()
 
-	// 组装存储层 & 业务层
+	// 组装各层：storage → service → api
 	convStorage := convstorage.NewConvMsgStorage(svcCtx)
 	convService := service.NewConvMsgConsumerService(convStorage)
+	convAPI := convapi.NewConvMsgConsumerAPI(convService)
 
-	// 启动消费循环
+	// 启动消费循环（api 层负责订阅消息队列）
 	go func() {
-		handler := func(msg *foundationmq.Message) error {
-			return convService.HandleMessage(ctx, msg)
-		}
-
-		if err := svcCtx.GetConsumer().Subscribe(ctx, handler); err != nil {
+		if err := convAPI.Subscribe(ctx, svcCtx.GetConsumer()); err != nil {
 			klog.CtxErrorf(ctx, "[ConvMsgConsumer] subscribe failed", "error", err.Error())
 			cancel()
 		}

@@ -15,7 +15,7 @@
 syntax = "proto3";
 package sdkws;
 
-option go_package = "github.com/roc/roc-im-server/kitex_gen/sdkws";
+option go_package = "github.com/rhp-QE/roc-im-server/kitex_gen/sdkws";
 
 // 包含消息的完整信息，是系统中最核心的消息结构
 message MessageData {
@@ -43,17 +43,19 @@ message ConversationData {
   string convID = 1;          // 会话ID
   string ownerID = 2;     // 会话拥有者用户ID
   int32 convType = 3;         // 会话类型
-  repeated MessageData messages = 4;  // 会话消息列表
-  MessageData lastMessage = 5;        // 会话最后一条消息
-  int64 unreadCount = 6;  // 会话未读消息数量
-  bool isMuted = 7;           // 会话是否静音
-  bool isTop = 8;             // 会话是否置顶
-  bool isDelete = 9;
-  bool isBlocked = 10;
-  string syncExt = 11;
-  string members = 12;
-  string name = 13;
-  string avatarURL = 14;
+  int64 version = 4;          // 会话版本
+  repeated MessageData messages = 5;  // 会话消息列表
+  MessageData lastMessage = 6;        // 会话最后一条消息
+  string lastMessageID = 7; // 会话最后一条消息ID
+  int64 unreadCount = 8;  // 会话未读消息数量
+  bool isMuted = 9;           // 会话是否静音
+  bool isTop = 10;             // 会话是否置顶
+  bool isDelete = 11;
+  bool isBlocked = 12;
+  string syncExt = 13;
+  string members = 14;
+  string name = 15;
+  string avatarURL = 16;
 }
 
 

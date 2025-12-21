@@ -152,20 +152,22 @@ func (x *MessageData) GetPropertys() string {
 
 // 会话信息
 type ConversationData struct {
-	ConvID      string         `protobuf:"bytes,1,opt,name=convID" json:"convID,omitempty"`            // 会话ID
-	OwnerID     string         `protobuf:"bytes,2,opt,name=ownerID" json:"ownerID,omitempty"`          // 会话拥有者用户ID
-	ConvType    int32          `protobuf:"varint,3,opt,name=convType" json:"convType,omitempty"`       // 会话类型
-	Messages    []*MessageData `protobuf:"bytes,4,rep,name=messages" json:"messages,omitempty"`        // 会话消息列表
-	LastMessage *MessageData   `protobuf:"bytes,5,opt,name=lastMessage" json:"lastMessage,omitempty"`  // 会话最后一条消息
-	UnreadCount int64          `protobuf:"varint,6,opt,name=unreadCount" json:"unreadCount,omitempty"` // 会话未读消息数量
-	IsMuted     bool           `protobuf:"varint,7,opt,name=isMuted" json:"isMuted,omitempty"`         // 会话是否静音
-	IsTop       bool           `protobuf:"varint,8,opt,name=isTop" json:"isTop,omitempty"`             // 会话是否置顶
-	IsDelete    bool           `protobuf:"varint,9,opt,name=isDelete" json:"isDelete,omitempty"`
-	IsBlocked   bool           `protobuf:"varint,10,opt,name=isBlocked" json:"isBlocked,omitempty"`
-	SyncExt     string         `protobuf:"bytes,11,opt,name=syncExt" json:"syncExt,omitempty"`
-	Members     string         `protobuf:"bytes,12,opt,name=members" json:"members,omitempty"`
-	Name        string         `protobuf:"bytes,13,opt,name=name" json:"name,omitempty"`
-	AvatarURL   string         `protobuf:"bytes,14,opt,name=avatarURL" json:"avatarURL,omitempty"`
+	ConvID        string         `protobuf:"bytes,1,opt,name=convID" json:"convID,omitempty"`               // 会话ID
+	OwnerID       string         `protobuf:"bytes,2,opt,name=ownerID" json:"ownerID,omitempty"`             // 会话拥有者用户ID
+	ConvType      int32          `protobuf:"varint,3,opt,name=convType" json:"convType,omitempty"`          // 会话类型
+	Version       int64          `protobuf:"varint,4,opt,name=version" json:"version,omitempty"`            // 会话版本
+	Messages      []*MessageData `protobuf:"bytes,5,rep,name=messages" json:"messages,omitempty"`           // 会话消息列表
+	LastMessage   *MessageData   `protobuf:"bytes,6,opt,name=lastMessage" json:"lastMessage,omitempty"`     // 会话最后一条消息
+	LastMessageID string         `protobuf:"bytes,7,opt,name=lastMessageID" json:"lastMessageID,omitempty"` // 会话最后一条消息ID
+	UnreadCount   int64          `protobuf:"varint,8,opt,name=unreadCount" json:"unreadCount,omitempty"`    // 会话未读消息数量
+	IsMuted       bool           `protobuf:"varint,9,opt,name=isMuted" json:"isMuted,omitempty"`            // 会话是否静音
+	IsTop         bool           `protobuf:"varint,10,opt,name=isTop" json:"isTop,omitempty"`               // 会话是否置顶
+	IsDelete      bool           `protobuf:"varint,11,opt,name=isDelete" json:"isDelete,omitempty"`
+	IsBlocked     bool           `protobuf:"varint,12,opt,name=isBlocked" json:"isBlocked,omitempty"`
+	SyncExt       string         `protobuf:"bytes,13,opt,name=syncExt" json:"syncExt,omitempty"`
+	Members       string         `protobuf:"bytes,14,opt,name=members" json:"members,omitempty"`
+	Name          string         `protobuf:"bytes,15,opt,name=name" json:"name,omitempty"`
+	AvatarURL     string         `protobuf:"bytes,16,opt,name=avatarURL" json:"avatarURL,omitempty"`
 }
 
 func (x *ConversationData) Reset() { *x = ConversationData{} }
@@ -195,6 +197,13 @@ func (x *ConversationData) GetConvType() int32 {
 	return 0
 }
 
+func (x *ConversationData) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
 func (x *ConversationData) GetMessages() []*MessageData {
 	if x != nil {
 		return x.Messages
@@ -207,6 +216,13 @@ func (x *ConversationData) GetLastMessage() *MessageData {
 		return x.LastMessage
 	}
 	return nil
+}
+
+func (x *ConversationData) GetLastMessageID() string {
+	if x != nil {
+		return x.LastMessageID
+	}
+	return ""
 }
 
 func (x *ConversationData) GetUnreadCount() int64 {
