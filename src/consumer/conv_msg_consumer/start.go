@@ -96,12 +96,26 @@ func createMongoStorage() storage.Storage {
 	defer cancel()
 
 	// 实际集合名为 prefix + "messages"（即 conv_messages）
-	// 索引：按 conv_id+seq 查询单链
+	// 索引1：按 _id（即 msg_id）查询消息（_id 本身已有主键索引，这里显式创建便于查询优化）
+	if err := store.CreateIndex(ctx, "messages", bson.D{
+		{Key: "_id", Value: 1},
+	}, false); err != nil {
+		log.Printf("[ConvMsgConsumer] create index messages _id failed: %v", err)
+	}
+	// 索引2：按 conv_id+seq 查询单链
 	if err := store.CreateIndex(ctx, "messages", bson.D{
 		{Key: "conv_id", Value: 1},
 		{Key: "seq", Value: 1},
 	}, false); err != nil {
 		log.Printf("[ConvMsgConsumer] create index conv_id+seq failed: %v", err)
+	}
+
+	// 实际集合名为 prefix + "conversations"（即 conv_conversations）
+	// 索引：按 _id（即 conv_id）查询会话（_id 本身已有主键索引，这里显式创建便于查询优化）
+	if err := store.CreateIndex(ctx, "conversations", bson.D{
+		{Key: "_id", Value: 1},
+	}, false); err != nil {
+		log.Printf("[ConvMsgConsumer] create index conversations _id failed: %v", err)
 	}
 
 	// 实际集合名为 prefix + "user_recent_conversations"（即 conv_user_recent_conversations）
