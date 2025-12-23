@@ -10,125 +10,141 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// UpdateUserRecentConversation 更新用户最近会话链（将会话移到最前面）
+// UpdateUserRecentConversation 更新用户最近会话链（一个 user+conv 一条文档，按 Version 排序）
+// Version 字段作用：1) 防止旧状态覆盖新状态（并发安全） 2) 客户端增量同步（通过 version 判断会话是否有更新）
+// TODO: Version 当前使用时间戳，后续改为用户维度的序列号服务生成
 func (s *convMsgStorageImpl) UpdateUserRecentConversation(ctx context.Context, userID string, convID string, lastSeq int64) error {
 	if userID == "" || convID == "" {
 		return nil
 	}
 
-	store := s.getStore()
-	filter := bson.M{"_id": userID}
-	var doc orm.UserRecentConversationsDocument
-	err := store.FindOne(ctx, collectionUserRecentConversations, filter, &doc)
+	now := time.Now()
+	doc := &orm.UserRecentConversationsDocument{
+		ID:             userID + ":" + convID,
+		UserID:         userID,
+		ConvID:         convID,
+		LastMessageSeq: lastSeq,
+		Version:        now.UnixNano(), // TODO: 后续改为用户维度的序列号服务生成
+		UpdatedAt:      now,
+	}
 
-	// 检查是否是文档不存在的错误
-	if err != nil {
-		if err == foundationstorage.ErrNotFound {
-			// 文档不存在，创建新文档
-			return s.createUserRecentConversations(ctx, userID, convID, lastSeq)
+	// 1. 先尝试更新已有文档（正常路径：绝大部分都是已经存在的会话）
+	if updated, err := s.tryUpdateExisting(ctx, doc); err != nil {
+		return err
+	} else if updated {
+		return nil
+	}
+
+	// 2. 更新失败（文档不存在或版本已更新），尝试插入新文档
+	return s.tryInsertNew(ctx, doc)
+}
+
+// tryUpdateExisting 尝试更新已有文档（只有当旧 Version < 新 Version 时才允许被覆盖）
+func (s *convMsgStorageImpl) tryUpdateExisting(ctx context.Context, doc *orm.UserRecentConversationsDocument) (bool, error) {
+	store := s.getStore()
+
+	filter := bson.M{
+		"_id":     doc.ID,
+		"version": bson.M{"$lt": doc.Version}, // 只有旧版本才允许被更新
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"user_id":          doc.UserID,
+			"conv_id":          doc.ConvID,
+			"last_message_seq": doc.LastMessageSeq,
+			"version":          doc.Version,
+			"updated_at":       doc.UpdatedAt,
+		},
+	}
+
+	if err := store.UpdateOne(ctx, collectionUserRecentConversations, filter, update); err == nil {
+		// 更新成功（命中了旧版本）
+		klog.CtxDebugf(ctx, "[ConvMsgStorage] update existing user recent conversation doc success",
+			"user_id", doc.UserID,
+			"conv_id", doc.ConvID,
+			"last_message_seq", doc.LastMessageSeq,
+			"version", doc.Version)
+		return true, nil
+	} else if err != foundationstorage.ErrNotFound {
+		// 真实错误，直接返回
+		klog.CtxErrorf(ctx, "[ConvMsgStorage] update user recent conversation doc failed",
+			"user_id", doc.UserID,
+			"conv_id", doc.ConvID,
+			"error", err.Error())
+		return false, err
+	}
+
+	// ErrNotFound：文档不存在或版本已 >= 本次版本
+	return false, nil
+}
+
+// tryInsertNew 尝试插入新文档，如果遇到重复键则尝试条件更新
+func (s *convMsgStorageImpl) tryInsertNew(ctx context.Context, doc *orm.UserRecentConversationsDocument) error {
+	store := s.getStore()
+
+	if _, err := store.InsertOne(ctx, collectionUserRecentConversations, doc); err != nil {
+		if err != foundationstorage.ErrDuplicateKey {
+			// 非重复键错误，直接返回
+			klog.CtxErrorf(ctx, "[ConvMsgStorage] insert user recent conversation doc failed",
+				"user_id", doc.UserID,
+				"conv_id", doc.ConvID,
+				"error", err.Error())
+			return err
 		}
-		klog.CtxErrorf(ctx, "[ConvMsgStorage] find user recent conversations failed",
-			"user_id", userID,
-			"error", err.Error())
-		return err
+
+		// 重复键：已有其他并发写入，尝试条件更新
+		return s.tryUpdateUserRecentConvAfterDuplicateInsert(ctx, doc)
 	}
 
-	// 文档存在，更新数组
-	return s.updateUserRecentConversations(ctx, userID, convID, lastSeq)
-}
-
-// createUserRecentConversations 创建用户最近会话链文档
-func (s *convMsgStorageImpl) createUserRecentConversations(ctx context.Context, userID string, convID string, lastSeq int64) error {
-	now := time.Now()
-	store := s.getStore()
-
-	newItem := orm.ConversationItem{
-		ConvID:    convID,
-		LastSeq:   lastSeq,
-		UpdatedAt: now,
-	}
-	newDoc := &orm.UserRecentConversationsDocument{
-		ID:            userID,
-		Conversations: []orm.ConversationItem{newItem},
-	}
-
-	_, err := store.InsertOne(ctx, collectionUserRecentConversations, newDoc)
-	if err != nil {
-		klog.CtxErrorf(ctx, "[ConvMsgStorage] create user recent conversations failed",
-			"user_id", userID,
-			"conv_id", convID,
-			"error", err.Error())
-		return err
-	}
-
-	klog.CtxDebugf(ctx, "[ConvMsgStorage] create user recent conversations success",
-		"user_id", userID,
-		"conv_id", convID)
+	// 插入成功（第一次出现这个 user+conv 的会话记录）
+	klog.CtxDebugf(ctx, "[ConvMsgStorage] insert new user recent conversation doc success",
+		"user_id", doc.UserID,
+		"conv_id", doc.ConvID,
+		"last_message_seq", doc.LastMessageSeq,
+		"version", doc.Version)
 	return nil
 }
 
-// updateUserRecentConversations 更新用户最近会话链（先删除再添加到最前面）
-func (s *convMsgStorageImpl) updateUserRecentConversations(ctx context.Context, userID string, convID string, lastSeq int64) error {
-	filter := bson.M{"_id": userID}
-
-	// 1. 先删除已存在的该会话（如果存在）
-	if err := s.removeConversationFromList(ctx, filter, convID); err != nil {
-		return err
-	}
-
-	// 2. 再将该会话添加到数组最前面
-	if err := s.addConversationToList(ctx, filter, convID, lastSeq); err != nil {
-		return err
-	}
-
-	klog.CtxDebugf(ctx, "[ConvMsgStorage] update user recent conversations success",
-		"user_id", userID,
-		"conv_id", convID)
-	return nil
-}
-
-// removeConversationFromList 从用户最近会话链中删除指定会话
-func (s *convMsgStorageImpl) removeConversationFromList(ctx context.Context, filter bson.M, convID string) error {
-	store := s.getStore()
-	update := bson.M{
-		"$pull": bson.M{
-			"conversations": bson.M{"conv_id": convID},
-		},
-	}
-	err := store.UpdateOne(ctx, collectionUserRecentConversations, filter, update)
-	if err != nil {
-		klog.CtxErrorf(ctx, "[ConvMsgStorage] remove conversation from user list failed",
-			"conv_id", convID,
-			"error", err.Error())
-		return err
-	}
-	return nil
-}
-
-// addConversationToList 将会话添加到用户最近会话链的最前面
-func (s *convMsgStorageImpl) addConversationToList(ctx context.Context, filter bson.M, convID string, lastSeq int64) error {
-	now := time.Now()
+// tryUpdateUserRecentConvAfterDuplicateInsert 插入遇到重复键后，尝试条件更新（可能覆盖旧版本或被新版本拒绝）
+func (s *convMsgStorageImpl) tryUpdateUserRecentConvAfterDuplicateInsert(ctx context.Context, doc *orm.UserRecentConversationsDocument) error {
 	store := s.getStore()
 
-	newItem := orm.ConversationItem{
-		ConvID:    convID,
-		LastSeq:   lastSeq,
-		UpdatedAt: now,
+	filter := bson.M{
+		"_id":     doc.ID,
+		"version": bson.M{"$lt": doc.Version}, // 只有旧版本才允许被更新
 	}
 	update := bson.M{
-		"$push": bson.M{
-			"conversations": bson.M{
-				"$each":     []orm.ConversationItem{newItem},
-				"$position": 0,
-			},
+		"$set": bson.M{
+			"user_id":          doc.UserID,
+			"conv_id":          doc.ConvID,
+			"last_message_seq": doc.LastMessageSeq,
+			"version":          doc.Version,
+			"updated_at":       doc.UpdatedAt,
 		},
 	}
-	err := store.UpdateOne(ctx, collectionUserRecentConversations, filter, update)
-	if err != nil {
-		klog.CtxErrorf(ctx, "[ConvMsgStorage] add conversation to user list failed",
-			"conv_id", convID,
+
+	if err := store.UpdateOne(ctx, collectionUserRecentConversations, filter, update); err != nil {
+		// 如果这里 ErrNotFound，说明库里的 version 已经 >= 本次 version，本次写是旧写，跳过即可
+		if err == foundationstorage.ErrNotFound {
+			klog.CtxDebugf(ctx, "[ConvMsgStorage] skip outdated user recent conversation update after duplicate insert",
+				"user_id", doc.UserID,
+				"conv_id", doc.ConvID,
+				"last_message_seq", doc.LastMessageSeq,
+				"version", doc.Version)
+			return nil
+		}
+
+		klog.CtxErrorf(ctx, "[ConvMsgStorage] update user recent conversation doc failed after duplicate insert",
+			"user_id", doc.UserID,
+			"conv_id", doc.ConvID,
 			"error", err.Error())
 		return err
 	}
+
+	klog.CtxDebugf(ctx, "[ConvMsgStorage] update existing user recent conversation doc success after duplicate insert",
+		"user_id", doc.UserID,
+		"conv_id", doc.ConvID,
+		"last_message_seq", doc.LastMessageSeq,
+		"version", doc.Version)
 	return nil
 }

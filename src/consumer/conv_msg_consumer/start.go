@@ -85,22 +85,32 @@ func createMongoStorage() storage.Storage {
 			mongodb.WithURI(uri),
 			mongodb.WithDatabase(database),
 		},
-		storage.WithCollectionPrefix("conv_"),
+		storage.WithCollectionPrefix("im_db_"),
 	)
 	if err != nil {
 		log.Fatalf("[ConvMsgConsumer] failed to create mongo storage: %v", err)
 	}
 
-	// 为会话消息集合创建必要索引（按 conv_id+seq 查询单链）
+	// 为集合创建必要索引
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// 实际集合名为 prefix + "messages"（即 conv_messages）
+	// 索引：按 conv_id+seq 查询单链
 	if err := store.CreateIndex(ctx, "messages", bson.D{
 		{Key: "conv_id", Value: 1},
 		{Key: "seq", Value: 1},
 	}, false); err != nil {
 		log.Printf("[ConvMsgConsumer] create index conv_id+seq failed: %v", err)
+	}
+
+	// 实际集合名为 prefix + "user_recent_conversations"（即 conv_user_recent_conversations）
+	// 索引：按 user_id+version 查询和排序（客户端增量同步）
+	if err := store.CreateIndex(ctx, "user_recent_conversations", bson.D{
+		{Key: "user_id", Value: 1},
+		{Key: "version", Value: -1}, // 降序，最新的在前
+	}, false); err != nil {
+		log.Printf("[ConvMsgConsumer] create index user_id+version failed: %v", err)
 	}
 
 	return store
