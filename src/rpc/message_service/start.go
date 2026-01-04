@@ -22,11 +22,13 @@ import (
 	"github.com/rhp-QE/roc-foundation-util-go/network"
 	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
+	foundationstorage "github.com/rhp-QE/roc-foundation-util-go/storage"
+	mongodb "github.com/rhp-QE/roc-foundation-util-go/storage/mongodb"
 	message "github.com/rhp-QE/roc-im-server/kitex_gen/message/messageservice"
 	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/api"
 	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/service"
 	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/message_service/service_context"
-	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/storage"
+	msgstorage "github.com/rhp-QE/roc-im-server/src/rpc/message_service/storage"
 )
 
 // Start 启动 message_service
@@ -39,11 +41,15 @@ func Start() error {
 	producer := createMQProducer()
 	defer producer.Close()
 
+	// 创建 MongoDB 存储
+	store := createMongoStorage()
+	defer store.Close()
+
 	// 创建 Etcd Registry
 	registry := createRegistry()
 
 	// 创建 ServiceContext
-	serviceCtx := servicecontext.NewServiceContext(registry, producer)
+	serviceCtx := servicecontext.NewServiceContext(registry, producer, store)
 	defer serviceCtx.Close()
 
 	// 获取本机地址
@@ -102,6 +108,30 @@ func createMQProducer() mq.Producer {
 	return producer
 }
 
+// createMongoStorage 创建 MongoDB 存储实例
+func createMongoStorage() foundationstorage.Storage {
+	uri := os.Getenv("MESSAGE_MONGODB_URI")
+	if uri == "" {
+		uri = "mongodb://localhost:27017"
+	}
+	database := os.Getenv("MESSAGE_MONGODB_DATABASE")
+	if database == "" {
+		database = "im_message"
+	}
+
+	store, err := mongodb.NewMongoStorage(
+		[]mongodb.Option{
+			mongodb.WithURI(uri),
+			mongodb.WithDatabase(database),
+		},
+		foundationstorage.WithCollectionPrefix("im_db_"),
+	)
+	if err != nil {
+		log.Fatalf("Failed to create mongo storage: %v", err)
+	}
+	return store
+}
+
 // createRegistry 创建 Etcd Registry
 func createRegistry() foundationregistry.Registry {
 	endpoints := []string{"localhost:2379"}
@@ -157,7 +187,7 @@ func createServiceInstance(host string) *foundationregistry.ServiceInstance {
 // createServer 创建 kitex 服务器
 func createServer(serviceCtx servicecontext.ServiceContext, host string) server.Server {
 	// 创建存储层
-	msgStorage := storage.NewMessageStorage(serviceCtx)
+	msgStorage := msgstorage.NewMessageStorage(serviceCtx)
 	// 创建逻辑层
 	msgService := service.NewMessageService(msgStorage, serviceCtx)
 	// 创建接口层（API）

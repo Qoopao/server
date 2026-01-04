@@ -12,6 +12,12 @@ import (
 type MessageService interface {
 	// BatchSendMessage 批量发送消息：为每条消息生成顺序号并投递到 MQ
 	BatchSendMessage(ctx context.Context, req *sdkws.BatchSendMessageRequest) (*sdkws.BatchSendMessageResponse, error)
+
+	// FetchConvMessageList 查询会话消息列表
+	FetchConvMessageList(ctx context.Context, req *sdkws.FetchConvMessageListRequest) (*sdkws.FetchConvMessageListResponse, error)
+
+	// BatchGetMessages 根据消息ID列表批量获取消息详情
+	BatchGetMessages(ctx context.Context, req *sdkws.BatchGetMessagesRequest) (*sdkws.BatchGetMessagesResponse, error)
 }
 
 // messageServiceImpl 是 MessageService 的具体实现

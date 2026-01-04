@@ -44,18 +44,68 @@ func (h *MessageAPI) BatchChangeMessages(ctx context.Context, req *sdkws.BatchCh
 	}, nil
 }
 
-// FetchConvMessageList 暂未实现
+// FetchConvMessageList 查询会话消息列表
 func (h *MessageAPI) FetchConvMessageList(ctx context.Context, req *sdkws.FetchConvMessageListRequest) (resp *sdkws.FetchConvMessageListResponse, err error) {
-	klog.CtxWarnf(ctx, "FetchConvMessageList not implemented")
-	return &sdkws.FetchConvMessageListResponse{}, nil
+	// 参数校验
+	if req == nil {
+		return &sdkws.FetchConvMessageListResponse{
+			Messages:  []*sdkws.MessageData{},
+			HaveMore:  false,
+			ErrorCode: 1,
+			Error:     "request is nil",
+		}, nil
+	}
+
+	convID := req.GetConvID()
+	if convID == "" {
+		return &sdkws.FetchConvMessageListResponse{
+			Messages:  []*sdkws.MessageData{},
+			HaveMore:  false,
+			ErrorCode: 1,
+			Error:     "conv_id is empty",
+		}, nil
+	}
+
+	// 调用 service 层
+	resp, err = h.svc.FetchConvMessageList(ctx, req)
+	if err != nil {
+		klog.CtxErrorf(ctx, "FetchConvMessageList failed", "error", err.Error())
+		return &sdkws.FetchConvMessageListResponse{
+			Messages:  []*sdkws.MessageData{},
+			HaveMore:  false,
+			ErrorCode: 1,
+			Error:     err.Error(),
+		}, nil
+	}
+	return resp, nil
 }
 
-// BatchGetMessages 暂未实现
+// BatchGetMessages 根据消息ID列表批量获取消息详情
 func (h *MessageAPI) BatchGetMessages(ctx context.Context, req *sdkws.BatchGetMessagesRequest) (resp *sdkws.BatchGetMessagesResponse, err error) {
-	klog.CtxWarnf(ctx, "BatchGetMessages not implemented")
-	return &sdkws.BatchGetMessagesResponse{
-		Results: []*sdkws.GetMessageResult{},
-	}, nil
+	// 参数校验
+	if req == nil {
+		return &sdkws.BatchGetMessagesResponse{
+			Results: []*sdkws.GetMessageResult{},
+		}, nil
+	}
+
+	messageIDs := req.GetMessageIDs()
+	if len(messageIDs) == 0 {
+		return &sdkws.BatchGetMessagesResponse{
+			Results: []*sdkws.GetMessageResult{},
+		}, nil
+	}
+
+	// 调用 service 层
+	resp, err = h.svc.BatchGetMessages(ctx, req)
+	if err != nil {
+		klog.CtxErrorf(ctx, "BatchGetMessages failed", "error", err.Error())
+		return &sdkws.BatchGetMessagesResponse{
+			Results: []*sdkws.GetMessageResult{},
+		}, err
+	}
+
+	return resp, nil
 }
 
 // 编译期检查，确保实现了 messagepb.MessageService 接口

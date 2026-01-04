@@ -12,6 +12,7 @@ import (
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/discovery"
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/loadbalancer"
 	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
+	foundationstorage "github.com/rhp-QE/roc-foundation-util-go/storage"
 	sequence "github.com/rhp-QE/roc-im-server/kitex_gen/sequence/sequenceservice"
 )
 
@@ -22,6 +23,7 @@ import (
 // 2. 管理服务发现客户端（Discovery）
 // 3. 懒加载 SequenceService 客户端
 // 4. 管理 MQ Producer
+// 5. 管理 MongoDB 存储
 type ServiceContext interface {
 	// GetRegistry 获取服务注册中心
 	GetRegistry() foundationregistry.Registry
@@ -35,6 +37,9 @@ type ServiceContext interface {
 	// GetMQProducer 获取 MQ Producer
 	GetMQProducer() mq.Producer
 
+	// GetStorage 获取 MongoDB 存储
+	GetStorage() foundationstorage.Storage
+
 	// Close 关闭所有全局资源
 	Close() error
 }
@@ -43,6 +48,7 @@ type serviceContextImpl struct {
 	registry  foundationregistry.Registry
 	discovery discovery.Discovery
 	producer  mq.Producer
+	storage   foundationstorage.Storage
 
 	seqClientOnce sync.Once
 	seqClient     sequence.Client
@@ -52,7 +58,8 @@ type serviceContextImpl struct {
 // NewServiceContext 创建 ServiceContext 实例
 // registry: 服务注册中心，用于服务发现
 // producer: MQ 生产者，用于发送消息
-func NewServiceContext(registry foundationregistry.Registry, producer mq.Producer) ServiceContext {
+// storage: MongoDB 存储，用于查询消息
+func NewServiceContext(registry foundationregistry.Registry, producer mq.Producer, storage foundationstorage.Storage) ServiceContext {
 	// 创建服务发现客户端，默认使用轮询负载均衡
 	lb := loadbalancer.NewRoundRobinLoadBalancer()
 	disc := discovery.NewDiscovery(registry, lb)
@@ -61,6 +68,7 @@ func NewServiceContext(registry foundationregistry.Registry, producer mq.Produce
 		registry:  registry,
 		discovery: disc,
 		producer:  producer,
+		storage:   storage,
 	}
 }
 
@@ -74,6 +82,10 @@ func (s *serviceContextImpl) GetDiscovery() discovery.Discovery {
 
 func (s *serviceContextImpl) GetMQProducer() mq.Producer {
 	return s.producer
+}
+
+func (s *serviceContextImpl) GetStorage() foundationstorage.Storage {
+	return s.storage
 }
 
 // GetSequenceServiceClient 懒加载创建 SequenceService 客户端
@@ -120,6 +132,12 @@ func (s *serviceContextImpl) Close() error {
 	if s.discovery != nil {
 		if err := s.discovery.Close(); err != nil {
 			errs = append(errs, fmt.Errorf("failed to close discovery: %w", err))
+		}
+	}
+
+	if s.storage != nil {
+		if err := s.storage.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("failed to close storage: %w", err))
 		}
 	}
 
