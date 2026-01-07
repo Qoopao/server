@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	foundationstorage "github.com/rhp-QE/roc-foundation-util-go/storage"
@@ -12,65 +11,36 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// FetchUserRecentConvList 获取用户最近的会话列表（包含会话和消息）
-func (s *conversationStorageImpl) FetchUserRecentConvList(ctx context.Context, userID string, cursor int64, limit int64, forward bool) ([]*sdkws.ConversationData, int64, int64, bool, error) {
+// FetchUserRecentConvListByVersion 根据版本号查询大于指定 version 的所有最新数据
+func (s *conversationStorageImpl) FetchUserRecentConvListByVersion(ctx context.Context, userID string, version int64) ([]*sdkws.ConversationData, error) {
 	if userID == "" {
-		return nil, 0, 0, false, errors.New("user_id is empty")
-	}
-
-	if limit <= 0 {
-		limit = 20
+		return nil, errors.New("user_id is empty")
 	}
 
 	store := s.serviceCtx.GetStorage()
 	if store == nil {
-		return nil, 0, 0, false, errors.New("storage is nil")
+		return nil, errors.New("storage is nil")
 	}
 
-	// 1. 从 user_recent_conversations 集合查询用户的最近会话列表
-	filter := bson.M{"user_id": userID}
-
-	// cursor 是 updated_at 的时间戳（毫秒），如果 cursor > 0，则添加时间过滤条件
-	var cursorTime time.Time
-	if cursor > 0 {
-		cursorTime = time.Unix(cursor/1000, (cursor%1000)*1000000)
-		if forward {
-			// 向前查询（新会话）：updated_at > cursorTime
-			filter["updated_at"] = bson.M{"$gt": cursorTime}
-		} else {
-			// 向后查询（旧会话）：updated_at < cursorTime
-			filter["updated_at"] = bson.M{"$lt": cursorTime}
-		}
+	// 1. 从 user_recent_conversations 集合查询 version > 指定值的所有数据
+	filter := bson.M{
+		"user_id": userID,
+		"version": bson.M{"$gt": version},
 	}
 
-	// 按 updated_at 降序排序（最新的在前）
-	sort := bson.D{{Key: "updated_at", Value: -1}}
+	// 按 version 升序排序（最旧的在前）
+	sort := bson.D{{Key: "version", Value: 1}}
 
 	var userConvDocs []orm.UserRecentConversationsDocument
-	err := store.Find(ctx, collectionUserRecentConversations, filter, &userConvDocs,
-		foundationstorage.WithLimit(limit+1), // 多查一条用于判断是否有更多
+	err := store.Find(ctx, orm.CollectionUserRecentConversations, filter, &userConvDocs,
 		foundationstorage.WithSort(sort),
 	)
 	if err != nil {
-		klog.CtxErrorf(ctx, "[ConversationStorage] fetch user recent conv list failed",
+		klog.CtxErrorf(ctx, "[ConversationStorage] fetch user recent conv list by version failed",
 			"user_id", userID,
-			"cursor", cursor,
-			"limit", limit,
+			"version", version,
 			"error", err.Error())
-		return nil, 0, 0, false, err
-	}
-
-	// 判断是否有更多数据
-	hasMore := len(userConvDocs) > int(limit)
-	if hasMore {
-		userConvDocs = userConvDocs[:limit]
-	}
-
-	// 计算 left 和 right（时间戳范围）
-	var left, right int64
-	if len(userConvDocs) > 0 {
-		left = userConvDocs[len(userConvDocs)-1].UpdatedAt.UnixMilli()
-		right = userConvDocs[0].UpdatedAt.UnixMilli()
+		return nil, err
 	}
 
 	// 2. 收集所有会话ID
@@ -80,7 +50,7 @@ func (s *conversationStorageImpl) FetchUserRecentConvList(ctx context.Context, u
 	}
 
 	if len(convIDs) == 0 {
-		return []*sdkws.ConversationData{}, left, right, hasMore, nil
+		return []*sdkws.ConversationData{}, nil
 	}
 
 	// 3. 批量获取会话详情
@@ -90,11 +60,10 @@ func (s *conversationStorageImpl) FetchUserRecentConvList(ctx context.Context, u
 			"user_id", userID,
 			"conv_ids", convIDs,
 			"error", err.Error())
-		return nil, left, right, hasMore, err
+		return nil, err
 	}
 
-	// 4. 为每个会话获取最新消息（可选，这里获取最新1条）
-	// 注意：根据业务需求，可能需要获取更多消息或跳过此步骤
+	// 4. 组装会话数据列表（保持 version 顺序）
 	convDataList := make([]*sdkws.ConversationData, 0, len(userConvDocs))
 	for _, userConvDoc := range userConvDocs {
 		convData, exists := convMap[userConvDoc.ConvID]
@@ -105,22 +74,100 @@ func (s *conversationStorageImpl) FetchUserRecentConvList(ctx context.Context, u
 			continue
 		}
 
-		// 获取会话的最新消息（可选）
-		// 这里可以根据业务需求决定是否获取消息
-		// 暂时不获取消息，由上层业务决定
+		convDataList = append(convDataList, convData)
+	}
+
+	klog.CtxDebugf(ctx, "[ConversationStorage] fetch user recent conv list by version success",
+		"user_id", userID,
+		"version", version,
+		"count", len(convDataList))
+
+	return convDataList, nil
+}
+
+// FetchUserRecentConvListByVersionRange 根据版本号区间查询数据
+func (s *conversationStorageImpl) FetchUserRecentConvListByVersionRange(ctx context.Context, userID string, lowVersion int64, upVersion int64) ([]*sdkws.ConversationData, error) {
+	if userID == "" {
+		return nil, errors.New("user_id is empty")
+	}
+
+	store := s.serviceCtx.GetStorage()
+	if store == nil {
+		return nil, errors.New("storage is nil")
+	}
+
+	// 1. 从 user_recent_conversations 集合查询版本号在区间内的数据
+	filter := bson.M{
+		"user_id": userID,
+	}
+
+	// 构建版本号区间过滤条件
+	versionFilter := bson.M{}
+	if lowVersion > 0 {
+		versionFilter["$gte"] = lowVersion
+	}
+	if upVersion > 0 {
+		versionFilter["$lte"] = upVersion
+	}
+	if len(versionFilter) > 0 {
+		filter["version"] = versionFilter
+	}
+
+	// 按 version 升序排序
+	sort := bson.D{{Key: "version", Value: 1}}
+
+	var userConvDocs []orm.UserRecentConversationsDocument
+	err := store.Find(ctx, orm.CollectionUserRecentConversations, filter, &userConvDocs,
+		foundationstorage.WithSort(sort),
+	)
+	if err != nil {
+		klog.CtxErrorf(ctx, "[ConversationStorage] fetch user recent conv list by version range failed",
+			"user_id", userID,
+			"low_version", lowVersion,
+			"up_version", upVersion,
+			"error", err.Error())
+		return nil, err
+	}
+
+	// 2. 收集所有会话ID
+	convIDs := make([]string, 0, len(userConvDocs))
+	for _, doc := range userConvDocs {
+		convIDs = append(convIDs, doc.ConvID)
+	}
+
+	if len(convIDs) == 0 {
+		return []*sdkws.ConversationData{}, nil
+	}
+
+	// 3. 批量获取会话详情
+	convMap, err := s.BatchGetConversations(ctx, convIDs, "")
+	if err != nil {
+		klog.CtxErrorf(ctx, "[ConversationStorage] batch get conversations failed",
+			"user_id", userID,
+			"conv_ids", convIDs,
+			"error", err.Error())
+		return nil, err
+	}
+
+	// 4. 组装会话数据列表（保持 version 顺序）
+	convDataList := make([]*sdkws.ConversationData, 0, len(userConvDocs))
+	for _, userConvDoc := range userConvDocs {
+		convData, exists := convMap[userConvDoc.ConvID]
+		if !exists {
+			klog.CtxWarnf(ctx, "[ConversationStorage] conversation not found",
+				"user_id", userID,
+				"conv_id", userConvDoc.ConvID)
+			continue
+		}
 
 		convDataList = append(convDataList, convData)
 	}
 
-	klog.CtxDebugf(ctx, "[ConversationStorage] fetch user recent conv list success",
+	klog.CtxDebugf(ctx, "[ConversationStorage] fetch user recent conv list by version range success",
 		"user_id", userID,
-		"cursor", cursor,
-		"limit", limit,
-		"count", len(convDataList),
-		"has_more", hasMore,
-		"left", left,
-		"right", right)
+		"low_version", lowVersion,
+		"up_version", upVersion,
+		"count", len(convDataList))
 
-	return convDataList, left, right, hasMore, nil
+	return convDataList, nil
 }
-

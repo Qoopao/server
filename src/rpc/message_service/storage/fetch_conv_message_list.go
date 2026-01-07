@@ -11,11 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-const (
-	// collectionMessages 消息集合名称（实际集合名会加上前缀 "im_db_"）
-	collectionMessages = "messages"
-)
-
 // FetchConvMessageListWithRange 查询会话消息列表（仅做查询和数据转换）
 func (s *messageStorageImpl) FetchConvMessageListWithRange(ctx context.Context, convID string, left int64, right int64) ([]*sdkws.MessageData, error) {
 	// 构建查询条件
@@ -46,7 +41,7 @@ func (s *messageStorageImpl) FetchConvMessageListWithRange(ctx context.Context, 
 		return nil, errors.New("storage is nil")
 	}
 
-	err := store.Find(ctx, collectionMessages, filter, &docs,
+	err := store.Find(ctx, orm.CollectionMessages, filter, &docs,
 		foundationstorage.WithSort(sort),
 	)
 	if err != nil {
@@ -97,7 +92,7 @@ func (s *messageStorageImpl) FetchConvLatestMessageList(ctx context.Context, con
 		return nil, errors.New("storage is nil")
 	}
 
-	err := store.Find(ctx, collectionMessages, filter, &docs,
+	err := store.Find(ctx, orm.CollectionMessages, filter, &docs,
 		foundationstorage.WithLimit(limit),
 		foundationstorage.WithSort(sort),
 	)

@@ -38,7 +38,6 @@ func (h *ConversationAPI) FetchUserRecentConvList(ctx context.Context, req *sdkw
 		Conversations: []*sdkws.ConversationData{},
 		Left:          0,
 		Right:         0,
-		HasMore:       false,
 	}, nil
 }
 

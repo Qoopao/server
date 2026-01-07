@@ -143,18 +143,17 @@ message FetchConvMessageListResponse {
 
 // 混链拉取 ------------------------------------
 message FetchUserRecentConvListRequest {
-  string userID = 1;
-  int64 cursor  = 2; // 水位
-  int64 limit   = 3;
-  bool forward  = 4;
-  bool news     = 5; // 是否拉取新消息
+  string userID    = 1;
+  int64 lowerVersion = 2;
+  int64 upperVersion  = 3;
+  bool first       = 4; // 是否是一次完整交互的第一条
 }
 
 message FetchUserRecentConvListResponse {
   repeated ConversationData conversations = 1;
   int64 left = 2; // 左右闭合
   int64 right = 3;
-  bool hasMore = 4;
+  string error = 4;
 }
 //---------------------------------------------
 

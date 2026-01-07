@@ -36,7 +36,7 @@ func (s *convMsgStorageImpl) SaveMessage(ctx context.Context, msgID string, msg 
 		Data:   data,
 	}
 
-	_, err = s.getStore().InsertOne(ctx, collectionMessages, doc)
+	_, err = s.getStore().InsertOne(ctx, orm.CollectionMessages, doc)
 	if err != nil {
 		// 已存在则视为成功（幂等）
 		if errors.Is(err, foundationstorage.ErrDuplicateKey) {

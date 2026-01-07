@@ -58,7 +58,7 @@ func (s *convMsgStorageImpl) tryUpdateConv(ctx context.Context, convID string, l
 		},
 	}
 
-	if err := store.UpdateOne(ctx, collectionConversations, filter, update); err == nil {
+	if err := store.UpdateOne(ctx, orm.CollectionConversations, filter, update); err == nil {
 		// 更新成功（命中了旧 seq）
 		klog.CtxDebugf(ctx, "[ConvMsgStorage] update existing conversation doc success",
 			"conv_id", convID,
@@ -98,7 +98,7 @@ func (s *convMsgStorageImpl) tryInsertConv(ctx context.Context, conv *sdkws.Conv
 		UpdatedAt:      now,
 	}
 
-	if _, err := store.InsertOne(ctx, collectionConversations, doc); err != nil {
+	if _, err := store.InsertOne(ctx, orm.CollectionConversations, doc); err != nil {
 		if err != foundationstorage.ErrDuplicateKey {
 			// 非重复键错误，直接返回
 			klog.CtxErrorf(ctx, "[ConvMsgStorage] insert conversation doc failed",
@@ -135,7 +135,7 @@ func (s *convMsgStorageImpl) tryUpdateConvAfterDuplicateInsert(ctx context.Conte
 		},
 	}
 
-	if err := store.UpdateOne(ctx, collectionConversations, filter, update); err != nil {
+	if err := store.UpdateOne(ctx, orm.CollectionConversations, filter, update); err != nil {
 		// 如果这里 ErrNotFound，说明库里的 seq 已经 >= 本次 seq，本次写是旧写，跳过即可
 		if err == foundationstorage.ErrNotFound {
 			klog.CtxDebugf(ctx, "[ConvMsgStorage] skip outdated conversation update after duplicate insert",

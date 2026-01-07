@@ -57,7 +57,7 @@ func (s *convMsgStorageImpl) tryUpdateExisting(ctx context.Context, doc *orm.Use
 		},
 	}
 
-	if err := store.UpdateOne(ctx, collectionUserRecentConversations, filter, update); err == nil {
+	if err := store.UpdateOne(ctx, orm.CollectionUserRecentConversations, filter, update); err == nil {
 		// 更新成功（命中了旧版本）
 		klog.CtxDebugf(ctx, "[ConvMsgStorage] update existing user recent conversation doc success",
 			"user_id", doc.UserID,
@@ -82,7 +82,7 @@ func (s *convMsgStorageImpl) tryUpdateExisting(ctx context.Context, doc *orm.Use
 func (s *convMsgStorageImpl) tryInsertNew(ctx context.Context, doc *orm.UserRecentConversationsDocument) error {
 	store := s.getStore()
 
-	if _, err := store.InsertOne(ctx, collectionUserRecentConversations, doc); err != nil {
+	if _, err := store.InsertOne(ctx, orm.CollectionUserRecentConversations, doc); err != nil {
 		if err != foundationstorage.ErrDuplicateKey {
 			// 非重复键错误，直接返回
 			klog.CtxErrorf(ctx, "[ConvMsgStorage] insert user recent conversation doc failed",
@@ -123,7 +123,7 @@ func (s *convMsgStorageImpl) tryUpdateUserRecentConvAfterDuplicateInsert(ctx con
 		},
 	}
 
-	if err := store.UpdateOne(ctx, collectionUserRecentConversations, filter, update); err != nil {
+	if err := store.UpdateOne(ctx, orm.CollectionUserRecentConversations, filter, update); err != nil {
 		// 如果这里 ErrNotFound，说明库里的 version 已经 >= 本次 version，本次写是旧写，跳过即可
 		if err == foundationstorage.ErrNotFound {
 			klog.CtxDebugf(ctx, "[ConvMsgStorage] skip outdated user recent conversation update after duplicate insert",

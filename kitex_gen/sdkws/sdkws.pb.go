@@ -624,11 +624,10 @@ func (x *FetchConvMessageListResponse) GetError() string {
 
 // 混链拉取 ------------------------------------
 type FetchUserRecentConvListRequest struct {
-	UserID  string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	Cursor  int64  `protobuf:"varint,2,opt,name=cursor" json:"cursor,omitempty"` // 水位
-	Limit   int64  `protobuf:"varint,3,opt,name=limit" json:"limit,omitempty"`
-	Forward bool   `protobuf:"varint,4,opt,name=forward" json:"forward,omitempty"`
-	News    bool   `protobuf:"varint,5,opt,name=news" json:"news,omitempty"` // 是否拉取新消息
+	UserID       string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
+	LowerVersion int64  `protobuf:"varint,2,opt,name=lowerVersion" json:"lowerVersion,omitempty"`
+	UpperVersion int64  `protobuf:"varint,3,opt,name=upperVersion" json:"upperVersion,omitempty"`
+	First        bool   `protobuf:"varint,4,opt,name=first" json:"first,omitempty"` // 是否是一次完整交互的第一条
 }
 
 func (x *FetchUserRecentConvListRequest) Reset() { *x = FetchUserRecentConvListRequest{} }
@@ -646,30 +645,23 @@ func (x *FetchUserRecentConvListRequest) GetUserID() string {
 	return ""
 }
 
-func (x *FetchUserRecentConvListRequest) GetCursor() int64 {
+func (x *FetchUserRecentConvListRequest) GetLowerVersion() int64 {
 	if x != nil {
-		return x.Cursor
+		return x.LowerVersion
 	}
 	return 0
 }
 
-func (x *FetchUserRecentConvListRequest) GetLimit() int64 {
+func (x *FetchUserRecentConvListRequest) GetUpperVersion() int64 {
 	if x != nil {
-		return x.Limit
+		return x.UpperVersion
 	}
 	return 0
 }
 
-func (x *FetchUserRecentConvListRequest) GetForward() bool {
+func (x *FetchUserRecentConvListRequest) GetFirst() bool {
 	if x != nil {
-		return x.Forward
-	}
-	return false
-}
-
-func (x *FetchUserRecentConvListRequest) GetNews() bool {
-	if x != nil {
-		return x.News
+		return x.First
 	}
 	return false
 }
@@ -678,7 +670,7 @@ type FetchUserRecentConvListResponse struct {
 	Conversations []*ConversationData `protobuf:"bytes,1,rep,name=conversations" json:"conversations,omitempty"`
 	Left          int64               `protobuf:"varint,2,opt,name=left" json:"left,omitempty"` // 左右闭合
 	Right         int64               `protobuf:"varint,3,opt,name=right" json:"right,omitempty"`
-	HasMore       bool                `protobuf:"varint,4,opt,name=hasMore" json:"hasMore,omitempty"`
+	Error         string              `protobuf:"bytes,4,opt,name=error" json:"error,omitempty"`
 }
 
 func (x *FetchUserRecentConvListResponse) Reset() { *x = FetchUserRecentConvListResponse{} }
@@ -710,11 +702,11 @@ func (x *FetchUserRecentConvListResponse) GetRight() int64 {
 	return 0
 }
 
-func (x *FetchUserRecentConvListResponse) GetHasMore() bool {
+func (x *FetchUserRecentConvListResponse) GetError() string {
 	if x != nil {
-		return x.HasMore
+		return x.Error
 	}
-	return false
+	return ""
 }
 
 // 混链连续性检查 -------------------------------

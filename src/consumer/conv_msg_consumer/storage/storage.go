@@ -8,15 +8,6 @@ import (
 	servicecontext "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/service_context"
 )
 
-const (
-	// collectionMessages 存储消息详情（KV：msg_id -> msg.pb），带索引 conv_id/seq/time
-	collectionMessages = "messages"
-	// collectionConversations 存储会话详情快照（KV：conv_id -> last_msg.pb 等）
-	collectionConversations = "conversations"
-	// collectionUserRecentConversations 存储用户最近会话链（KV：uid -> conversations[]）
-	collectionUserRecentConversations = "user_recent_conversations"
-)
-
 // ConvMsgStorage 会话消息相关的持久化接口
 type ConvMsgStorage interface {
 	// SaveMessage 保存一条消息（包含 conv_id/seq 信息，支持按 seq 查询单链）

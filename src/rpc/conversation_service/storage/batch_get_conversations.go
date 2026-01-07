@@ -32,7 +32,7 @@ func (s *conversationStorageImpl) BatchGetConversations(ctx context.Context, con
 
 	// 查询文档
 	var docs []orm.ConversationDocument
-	err := store.Find(ctx, collectionConversations, filter, &docs)
+	err := store.Find(ctx, orm.CollectionConversations, filter, &docs)
 	if err != nil {
 		klog.CtxErrorf(ctx, "[ConversationStorage] batch get conversations failed",
 			"conv_ids", convIDs,
@@ -67,4 +67,3 @@ func (s *conversationStorageImpl) BatchGetConversations(ctx context.Context, con
 
 	return result, nil
 }
-

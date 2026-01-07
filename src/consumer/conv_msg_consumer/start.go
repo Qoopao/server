@@ -85,7 +85,6 @@ func createMongoStorage() storage.Storage {
 			mongodb.WithURI(uri),
 			mongodb.WithDatabase(database),
 		},
-		storage.WithCollectionPrefix("im_db_"),
 	)
 	if err != nil {
 		log.Fatalf("[ConvMsgConsumer] failed to create mongo storage: %v", err)

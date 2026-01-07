@@ -102,7 +102,6 @@ func createMongoStorage() foundationstorage.Storage {
 			mongodb.WithURI(uri),
 			mongodb.WithDatabase(database),
 		},
-		foundationstorage.WithCollectionPrefix("im_db_"),
 	)
 	if err != nil {
 		log.Fatalf("Failed to create mongo storage: %v", err)
@@ -212,4 +211,3 @@ func waitForShutdown() {
 	<-sigChan
 	klog.Info("Conversation service shutting down...")
 }
-

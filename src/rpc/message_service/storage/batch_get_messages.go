@@ -33,7 +33,7 @@ func (s *messageStorageImpl) BatchGetMessages(ctx context.Context, messageIDs []
 		return nil, errors.New("storage is nil")
 	}
 
-	err := store.Find(ctx, collectionMessages, filter, &docs)
+	err := store.Find(ctx, orm.CollectionMessages, filter, &docs)
 	if err != nil {
 		klog.CtxErrorf(ctx, "[MessageStorage] batch get messages failed",
 			"message_ids", messageIDs,
