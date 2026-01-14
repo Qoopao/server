@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/rhp-QE/roc-im-server/kitex_gen/sdkws"
+	consts "github.com/rhp-QE/roc-im-server/src/rpc/const"
 	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/message_service/service_context"
 	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/storage"
 )
@@ -32,6 +33,6 @@ func NewMessageService(storage storage.MessageStorage, serviceCtx servicecontext
 	return &messageServiceImpl{
 		storage:         storage,
 		serviceCtx:      serviceCtx,
-		sequenceSvcName: "sequence-service",
+		sequenceSvcName: consts.SequenceServiceName,
 	}
 }

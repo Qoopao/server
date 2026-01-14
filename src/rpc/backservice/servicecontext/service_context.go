@@ -16,6 +16,7 @@ import (
 	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 	conversationservice "github.com/rhp-QE/roc-im-server/kitex_gen/conversation/conversationservice"
 	messageservice "github.com/rhp-QE/roc-im-server/kitex_gen/message/messageservice"
+	consts "github.com/rhp-QE/roc-im-server/src/rpc/const"
 )
 
 // ServiceContext 服务上下文接口，定义全局共享资源的访问方法
@@ -31,7 +32,6 @@ type ServiceContext interface {
 
 	// GetConversationServiceClient 获取会话服务客户端（懒加载）
 	GetConversationServiceClient() (conversationservice.Client, error)
-
 
 	// Close 关闭所有资源
 	Close() error
@@ -80,7 +80,7 @@ func (i *impl) GetDiscovery() discovery.Discovery {
 
 // GetMessageServiceClient 获取消息服务客户端（懒加载）
 func (i *impl) GetMessageServiceClient() (messageservice.Client, error) {
-	serviceName := "msg-service"
+	serviceName := consts.MessageServiceName
 	client, err := i.getServiceClient(serviceName, func(hostPort string) (interface{}, error) {
 		client, err := messageservice.NewClient(
 			serviceName,
@@ -101,7 +101,7 @@ func (i *impl) GetMessageServiceClient() (messageservice.Client, error) {
 
 // GetConversationServiceClient 获取会话服务客户端（懒加载）
 func (i *impl) GetConversationServiceClient() (conversationservice.Client, error) {
-	serviceName := "conversation-service"
+	serviceName := consts.ConversationServiceName
 	client, err := i.getServiceClient(serviceName, func(hostPort string) (interface{}, error) {
 		client, err := conversationservice.NewClient(
 			serviceName,
@@ -202,4 +202,3 @@ func (i *impl) Close() error {
 
 // 编译时检查，确保 impl 实现了 ServiceContext 接口
 var _ ServiceContext = (*impl)(nil)
-

@@ -14,6 +14,7 @@ import (
 	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 	foundationstorage "github.com/rhp-QE/roc-foundation-util-go/storage"
 	sequence "github.com/rhp-QE/roc-im-server/kitex_gen/sequence/sequenceservice"
+	consts "github.com/rhp-QE/roc-im-server/src/rpc/const"
 )
 
 // ServiceContext 管理 message_service 的全局共享资源
@@ -96,7 +97,7 @@ func (s *serviceContextImpl) GetSequenceServiceClient(ctx context.Context) (sequ
 		discoveryCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 		defer cancel()
 
-		instance, err := s.discovery.GetInstance(discoveryCtx, "sequence-service")
+		instance, err := s.discovery.GetInstance(discoveryCtx, consts.SequenceServiceName)
 		if err != nil {
 			s.seqClientErr = fmt.Errorf("failed to discover sequence-service: %w", err)
 			return
@@ -104,7 +105,7 @@ func (s *serviceContextImpl) GetSequenceServiceClient(ctx context.Context) (sequ
 
 		target := fmt.Sprintf("%s:%d", instance.Host, instance.Port)
 		clientImpl, err := sequence.NewClient(
-			"sequence-service",
+			consts.SequenceServiceName,
 			client.WithHostPorts(target),
 		)
 		if err != nil {

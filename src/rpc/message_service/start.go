@@ -25,6 +25,7 @@ import (
 	foundationstorage "github.com/rhp-QE/roc-foundation-util-go/storage"
 	mongodb "github.com/rhp-QE/roc-foundation-util-go/storage/mongodb"
 	message "github.com/rhp-QE/roc-im-server/kitex_gen/message/messageservice"
+	consts "github.com/rhp-QE/roc-im-server/src/rpc/const"
 	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/api"
 	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/service"
 	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/message_service/service_context"
@@ -81,7 +82,7 @@ func Start() error {
 // initOTEL 初始化 OTEL
 func initOTEL() *otel.OTELKit {
 	kit, err := otel.InitOTEL(context.Background(),
-		otel.WithServiceName("message-service"),
+		otel.WithServiceName(consts.MessageServiceName),
 		otel.WithEndpoint("localhost:4317"),
 		otel.WithInsecure(true),
 	)
@@ -170,9 +171,9 @@ func getServicePort() int {
 
 // createServiceInstance 创建服务实例信息
 func createServiceInstance(host string) *foundationregistry.ServiceInstance {
-	instanceID := fmt.Sprintf("message-service-%s", uuid.New().String()[:8])
+	instanceID := fmt.Sprintf("%s-%s", consts.MessageServiceName, uuid.New().String()[:8])
 	return &foundationregistry.ServiceInstance{
-		ServiceName: "message-service",
+		ServiceName: consts.MessageServiceName,
 		InstanceID:  instanceID,
 		Host:        host,
 		Port:        getServicePort(),
@@ -196,7 +197,7 @@ func createServer(serviceCtx servicecontext.ServiceContext, host string) server.
 		msgHandler,
 		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP(host), Port: getServicePort()}),
 		server.WithSuite(tracing.NewServerSuite()),
-		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "message-service"}),
+		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: consts.MessageServiceName}),
 	)
 }
 

@@ -22,6 +22,7 @@ import (
 	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
 	sequence "github.com/rhp-QE/roc-im-server/kitex_gen/sequence/sequenceservice"
+	consts "github.com/rhp-QE/roc-im-server/src/rpc/const"
 	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/api"
 	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/service"
 	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/service_context"
@@ -71,7 +72,7 @@ func Start() error {
 // initOTEL 初始化 OTEL 并设置日志级别
 func initOTEL() *otel.OTELKit {
 	kit, err := otel.InitOTEL(context.Background(),
-		otel.WithServiceName("sequence-service"),
+		otel.WithServiceName(consts.SequenceServiceName),
 		otel.WithEndpoint("localhost:4317"),
 		otel.WithInsecure(true),
 	)
@@ -156,9 +157,9 @@ func getServicePort() int {
 
 // createServiceInstance 创建服务实例信息
 func createServiceInstance(host string) *foundationregistry.ServiceInstance {
-	instanceID := fmt.Sprintf("sequence-service-%s", uuid.New().String()[:8])
+	instanceID := fmt.Sprintf("%s-%s", consts.SequenceServiceName, uuid.New().String()[:8])
 	return &foundationregistry.ServiceInstance{
-		ServiceName: "sequence-service",
+		ServiceName: consts.SequenceServiceName,
 		InstanceID:  instanceID,
 		Host:        host,
 		Port:        getServicePort(),
@@ -180,7 +181,7 @@ func createServer(seqStorage storage.SequenceStorage, host string) server.Server
 		seqHandler,
 		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP(host), Port: getServicePort()}),
 		server.WithSuite(tracing.NewServerSuite()),
-		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "sequence-service"}),
+		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: consts.SequenceServiceName}),
 	)
 }
 
