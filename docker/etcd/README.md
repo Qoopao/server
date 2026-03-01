@@ -103,7 +103,38 @@ cd docker/etcd
 
 ## 🔍 监控和调试
 
-### 1. 健康检查
+### 1. 查看注册的服务（推荐）
+
+使用提供的监控脚本：
+
+```bash
+# 查看所有服务（默认命名空间 /services）
+cd docker/etcd
+./scripts/view_services.sh
+
+# 查看指定服务
+./scripts/view_services.sh service backbon-service
+
+# 查看长连接服务的命名空间
+ETCD_NAMESPACE=/long-connection-service ./scripts/view_services.sh
+
+# 查看所有命名空间的服务
+ETCD_NAMESPACE=/ ./scripts/view_services.sh
+```
+
+### 2. Web UI 管理界面
+
+启动 etcd-ui 后，访问 http://localhost:8084 可以在浏览器中查看和管理 etcd 数据。
+
+```bash
+# 启动 etcd-ui（如果未启动）
+cd docker/etcd
+docker-compose up -d etcd-ui
+
+# 访问 http://localhost:8084
+```
+
+### 3. 健康检查
 
 ```bash
 # 检查单机版
@@ -115,7 +146,7 @@ docker exec etcd-2 etcdctl endpoint health
 docker exec etcd-3 etcdctl endpoint health
 ```
 
-### 2. 集群信息
+### 4. 集群信息
 
 ```bash
 # 查看集群成员
@@ -125,17 +156,30 @@ docker exec etcd-1 etcdctl member list
 docker exec etcd-1 etcdctl endpoint status
 ```
 
-### 3. 数据操作
+### 5. 直接使用 etcdctl 查看服务
+
+```bash
+# 查看默认命名空间的服务
+docker exec etcd-standalone etcdctl get /services --prefix
+
+# 查看长连接服务的命名空间
+docker exec etcd-standalone etcdctl get /long-connection-service --prefix
+
+# 查看所有键
+docker exec etcd-standalone etcdctl get "" --prefix --keys-only
+```
+
+### 6. 数据操作
 
 ```bash
 # 设置键值
-docker exec etcd-1 etcdctl put /test/key value
+docker exec etcd-standalone etcdctl put /test/key value
 
 # 获取键值
-docker exec etcd-1 etcdctl get /test/key
+docker exec etcd-standalone etcdctl get /test/key
 
 # 删除键值
-docker exec etcd-1 etcdctl del /test/key
+docker exec etcd-standalone etcdctl del /test/key
 ```
 
 ## 🔐 安全配置

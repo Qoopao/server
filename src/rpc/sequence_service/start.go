@@ -22,7 +22,7 @@ import (
 	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
 	sequence "github.com/rhp-QE/roc-im-server/kitex_gen/sequence/sequenceservice"
-	consts "github.com/rhp-QE/roc-im-server/src/rpc/const"
+	consts "github.com/rhp-QE/roc-im-server/src/const"
 	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/api"
 	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/service"
 	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/service_context"
@@ -164,6 +164,7 @@ func createServiceInstance(host string) *foundationregistry.ServiceInstance {
 		Host:        host,
 		Port:        getServicePort(),
 		Weight:      1,
+		Status:      foundationregistry.StatusHealthy,
 		Metadata: map[string]string{
 			"version": "1.0.0",
 		},

@@ -24,6 +24,7 @@ import (
 	"github.com/rhp-QE/roc-foundation-util-go/network"
 	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
+	consts "github.com/rhp-QE/roc-im-server/src/const"
 	"github.com/rhp-QE/roc-im-server/src/rpc/backservice/api"
 	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/backservice/servicecontext"
 )
@@ -118,7 +119,7 @@ func createEtcdRegistry() foundationregistry.Registry {
 func createServiceInstance(host string, port int) *foundationregistry.ServiceInstance {
 	instanceID := fmt.Sprintf("backservice-%s", uuid.New().String()[:8])
 	return &foundationregistry.ServiceInstance{
-		ServiceName: "backservice-im",
+		ServiceName: consts.BackserviceIMName,
 		InstanceID:  instanceID,
 		Host:        host,
 		Port:        port,
@@ -202,6 +203,7 @@ func registerToBackbonService(ctx context.Context, registry foundationregistry.R
 		client.WithHostPorts(hostPort),
 		client.WithSuite(tracing.NewClientSuite()),
 		client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "backbon-service"}),
+		client.WithRPCTimeout(10*time.Second), // 设置 RPC 超时时间为 10 秒
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create backbonservice client: %w", err)
@@ -213,9 +215,9 @@ func registerToBackbonService(ctx context.Context, registry foundationregistry.R
 	// 	}
 	// }()
 
-	// 注册服务：service = "backservice", methods = ["*"] (全部方法)
+	// 注册服务：service = "backservice-im", methods = ["*"] (全部方法)
 	registerReq := &backbon.RegisterServiceReq{
-		Service: "backservice-im",
+		Service: consts.BackserviceIMName,
 		Methods: []string{"*"}, // 支持所有方法
 	}
 

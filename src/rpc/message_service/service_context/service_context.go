@@ -8,13 +8,15 @@ import (
 
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/klog"
+	"github.com/cloudwego/kitex/pkg/rpcinfo"
+	"github.com/kitex-contrib/obs-opentelemetry/tracing"
 	"github.com/rhp-QE/roc-foundation-util-go/mq"
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/discovery"
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/loadbalancer"
 	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 	foundationstorage "github.com/rhp-QE/roc-foundation-util-go/storage"
 	sequence "github.com/rhp-QE/roc-im-server/kitex_gen/sequence/sequenceservice"
-	consts "github.com/rhp-QE/roc-im-server/src/rpc/const"
+	consts "github.com/rhp-QE/roc-im-server/src/const"
 )
 
 // ServiceContext 管理 message_service 的全局共享资源
@@ -105,8 +107,11 @@ func (s *serviceContextImpl) GetSequenceServiceClient(ctx context.Context) (sequ
 
 		target := fmt.Sprintf("%s:%d", instance.Host, instance.Port)
 		clientImpl, err := sequence.NewClient(
-			consts.SequenceServiceName,
+			consts.SequenceServiceName, // 与服务端 WithServerBasicInfo 中设置的服务名称保持一致
 			client.WithHostPorts(target),
+			client.WithSuite(tracing.NewClientSuite()),
+			client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: consts.SequenceServiceName}),
+			client.WithRPCTimeout(10*time.Second), // 设置 RPC 超时时间为 10 秒
 		)
 		if err != nil {
 			s.seqClientErr = fmt.Errorf("failed to create sequence-service client: %w", err)

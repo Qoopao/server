@@ -25,7 +25,7 @@ import (
 	foundationstorage "github.com/rhp-QE/roc-foundation-util-go/storage"
 	mongodb "github.com/rhp-QE/roc-foundation-util-go/storage/mongodb"
 	message "github.com/rhp-QE/roc-im-server/kitex_gen/message/messageservice"
-	consts "github.com/rhp-QE/roc-im-server/src/rpc/const"
+	consts "github.com/rhp-QE/roc-im-server/src/const"
 	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/api"
 	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/service"
 	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/message_service/service_context"
@@ -177,6 +177,7 @@ func createServiceInstance(host string) *foundationregistry.ServiceInstance {
 		InstanceID:  instanceID,
 		Host:        host,
 		Port:        getServicePort(),
+		Status:      foundationregistry.StatusHealthy,
 		Weight:      1,
 		Metadata: map[string]string{
 			"version": "1.0.0",

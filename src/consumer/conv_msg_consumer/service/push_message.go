@@ -10,6 +10,7 @@ import (
 	backbonservice "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backbon/backbonservice"
 	"github.com/rhp-QE/roc-im-server/kitex_gen/sdkws"
 	"github.com/rhp-QE/roc-im-server/src/common/util"
+	consts "github.com/rhp-QE/roc-im-server/src/const"
 )
 
 // pushMessage 调用长链服务向用户推送消息
@@ -104,7 +105,7 @@ func (s *convMsgConsumerServiceImpl) buildPushMessage(msg *sdkws.MessageData) *b
 	return &backbon.PushMessage{
 		RequestID: msg.SMessageID,
 		Type:      "message",
-		Service:   "message-service",
+		Service:   consts.MessageServiceName,
 		Method:    "receive",
 		Payload:   payload,
 		Timestamp: time.Now().Unix(),

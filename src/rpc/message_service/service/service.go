@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/rhp-QE/roc-im-server/kitex_gen/sdkws"
-	consts "github.com/rhp-QE/roc-im-server/src/rpc/const"
+	consts "github.com/rhp-QE/roc-im-server/src/const"
 	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/message_service/service_context"
 	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/storage"
 )

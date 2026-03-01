@@ -9,11 +9,10 @@ import (
 	back "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/back"
 	"github.com/rhp-QE/roc-foundation-util-go/stringutil"
 	"github.com/rhp-QE/roc-im-server/kitex_gen/sdkws"
-	consts "github.com/rhp-QE/roc-im-server/src/rpc/const"
 )
 
 // Call 处理来自网关的调用请求
-// 根据 req.Service 和 req.Method 路由到对应的业务服务
+// 作为网关层，根据客户端的 method（SDKWSMethod）自动路由到对应的后端服务
 func (s *backServiceImpl) Call(ctx context.Context, req *back.CallRequest) (resp *back.CallResponse, err error) {
 	// 创建响应
 	resp = &back.CallResponse{
@@ -40,20 +39,11 @@ func (s *backServiceImpl) Call(ctx context.Context, req *back.CallRequest) (resp
 		return resp, nil
 	}
 
-	// 根据 service 名称路由到对应的服务
+	// 网关层：根据客户端的 method 自动路由到对应的后端服务
+	// 将 SDKWSMethod 枚举映射到对应的后端服务
 	var responsePayload []byte
 	var callErr error
-
-	switch serviceName {
-	case consts.MessageServiceName:
-		responsePayload, callErr = s.callMessageService(ctx, methodName, payload)
-	case consts.ConversationServiceName:
-		responsePayload, callErr = s.callConversationService(ctx, methodName, payload)
-	default:
-		resp.Error = fmt.Sprintf("unknown service: %s", serviceName)
-		klog.CtxErrorf(ctx, "[BackService] unknown service: %s", serviceName)
-		return resp, nil
-	}
+	responsePayload, callErr = s.callBackserviceIM(ctx, methodName, payload)
 
 	// 处理调用结果
 	if callErr != nil {
@@ -72,15 +62,22 @@ func (s *backServiceImpl) Call(ctx context.Context, req *back.CallRequest) (resp
 	return resp, nil
 }
 
-// callMessageService 调用消息服务
-func (s *backServiceImpl) callMessageService(ctx context.Context, methodName string, payload []byte) ([]byte, error) {
-	client, err := s.serviceCtx.GetMessageServiceClient()
+// callBackserviceIM 网关层路由：将客户端的 SDKWSMethod 映射到对应的后端服务
+func (s *backServiceImpl) callBackserviceIM(ctx context.Context, methodName string, payload []byte) ([]byte, error) {
+	// 解析 SDKWSMethod 枚举
+	sdkMethod, err := ParseSDKWSMethod(methodName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get message service client: %w", err)
+		return nil, fmt.Errorf("failed to parse SDKWSMethod: %w", err)
 	}
 
-	switch methodName {
-	case MethodBatchSendMessage:
+	// 根据 SDKWSMethod 直接调用对应的后端服务方法
+	switch sdkMethod {
+	case SDKWSMethodSendMessage:
+		// 101: 发送消息 -> message-service.BatchSendMessage
+		client, err := s.serviceCtx.GetMessageServiceClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get message service client: %w", err)
+		}
 		req := &sdkws.BatchSendMessageRequest{}
 		if err := req.Unmarshal(payload); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal BatchSendMessageRequest: %w", err)
@@ -91,18 +88,12 @@ func (s *backServiceImpl) callMessageService(ctx context.Context, methodName str
 		}
 		return resp.Marshal(nil)
 
-	case MethodBatchChangeMessages:
-		req := &sdkws.BatchChangeMessagesRequest{}
-		if err := req.Unmarshal(payload); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal BatchChangeMessagesRequest: %w", err)
-		}
-		resp, err := client.BatchChangeMessages(ctx, req)
+	case SDKWSMethodPullSingleList:
+		// 102: 拉取单链 -> message-service.FetchConvMessageList
+		client, err := s.serviceCtx.GetMessageServiceClient()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get message service client: %w", err)
 		}
-		return resp.Marshal(nil)
-
-	case MethodFetchConvMessageList:
 		req := &sdkws.FetchConvMessageListRequest{}
 		if err := req.Unmarshal(payload); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal FetchConvMessageListRequest: %w", err)
@@ -113,42 +104,12 @@ func (s *backServiceImpl) callMessageService(ctx context.Context, methodName str
 		}
 		return resp.Marshal(nil)
 
-	case MethodBatchGetMessages:
-		req := &sdkws.BatchGetMessagesRequest{}
-		if err := req.Unmarshal(payload); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal BatchGetMessagesRequest: %w", err)
-		}
-		resp, err := client.BatchGetMessages(ctx, req)
+	case SDKWSMethodPullMixList:
+		// 103: 拉取混链 -> conversation-service.FetchUserRecentConvList
+		client, err := s.serviceCtx.GetConversationServiceClient()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get conversation service client: %w", err)
 		}
-		return resp.Marshal(nil)
-
-	default:
-		return nil, fmt.Errorf("unknown method: %s for message-service", methodName)
-	}
-}
-
-// callConversationService 调用会话服务
-func (s *backServiceImpl) callConversationService(ctx context.Context, methodName string, payload []byte) ([]byte, error) {
-	client, err := s.serviceCtx.GetConversationServiceClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get conversation service client: %w", err)
-	}
-
-	switch methodName {
-	case MethodBatchChangeConversations:
-		req := &sdkws.BatchChangeConversationsRequest{}
-		if err := req.Unmarshal(payload); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal BatchChangeConversationsRequest: %w", err)
-		}
-		resp, err := client.BatchChangeConversations(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-		return resp.Marshal(nil)
-
-	case MethodFetchUserRecentConvList:
 		req := &sdkws.FetchUserRecentConvListRequest{}
 		if err := req.Unmarshal(payload); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal FetchUserRecentConvListRequest: %w", err)
@@ -159,7 +120,22 @@ func (s *backServiceImpl) callConversationService(ctx context.Context, methodNam
 		}
 		return resp.Marshal(nil)
 
-	case MethodUserMessageIntegrityCheck:
+	case SDKWSMethodPushUserMessage:
+		// 104: 下推用户消息（推送消息，不需要后端服务调用）
+		// 返回空响应，推送由网关层处理
+		return nil, fmt.Errorf("PUSH_USER_MESSAGE is a push operation, should be handled by gateway")
+
+	case SDKWSMethodPushCmdMessage:
+		// 105: 下推命令消息（推送消息，不需要后端服务调用）
+		// 返回空响应，推送由网关层处理
+		return nil, fmt.Errorf("PUSH_CMD_MESSAGE is a push operation, should be handled by gateway")
+
+	case SDKWSMethodUserMessageIntegrityCheck:
+		// 106: 混链拉取会话完整性校验 -> conversation-service.UserMessageIntegrityCheck
+		client, err := s.serviceCtx.GetConversationServiceClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get conversation service client: %w", err)
+		}
 		req := &sdkws.UserMessageIntegrityCheckRequest{}
 		if err := req.Unmarshal(payload); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal UserMessageIntegrityCheckRequest: %w", err)
@@ -170,18 +146,39 @@ func (s *backServiceImpl) callConversationService(ctx context.Context, methodNam
 		}
 		return resp.Marshal(nil)
 
-	case MethodBatchGetConversations:
-		req := &sdkws.BatchGetConversationsRequest{}
-		if err := req.Unmarshal(payload); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal BatchGetConversationsRequest: %w", err)
+	case SDKWSMethodMessageChange:
+		// 107: 消息改变 -> message-service.BatchChangeMessages
+		client, err := s.serviceCtx.GetMessageServiceClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get message service client: %w", err)
 		}
-		resp, err := client.BatchGetConversations(ctx, req)
+		req := &sdkws.BatchChangeMessagesRequest{}
+		if err := req.Unmarshal(payload); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal BatchChangeMessagesRequest: %w", err)
+		}
+		resp, err := client.BatchChangeMessages(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		return resp.Marshal(nil)
+
+	case SDKWSMethodConversationChange:
+		// 108: 会话改变 -> conversation-service.BatchChangeConversations
+		client, err := s.serviceCtx.GetConversationServiceClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get conversation service client: %w", err)
+		}
+		req := &sdkws.BatchChangeConversationsRequest{}
+		if err := req.Unmarshal(payload); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal BatchChangeConversationsRequest: %w", err)
+		}
+		resp, err := client.BatchChangeConversations(ctx, req)
 		if err != nil {
 			return nil, err
 		}
 		return resp.Marshal(nil)
 
 	default:
-		return nil, fmt.Errorf("unknown method: %s for conversation-service", methodName)
+		return nil, fmt.Errorf("unsupported SDKWSMethod: %d", sdkMethod)
 	}
 }

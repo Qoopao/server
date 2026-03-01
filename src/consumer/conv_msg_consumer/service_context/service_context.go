@@ -90,6 +90,7 @@ func (s *serviceContextImpl) GetBackbonServiceClient(ctx context.Context) (backb
 			client.WithHostPorts(hostPort),
 			client.WithSuite(tracing.NewClientSuite()),
 			client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
+			client.WithRPCTimeout(10*time.Second), // 设置 RPC 超时时间为 10 秒
 		)
 		if createErr != nil {
 			err = fmt.Errorf("failed to create backbon service client at %s: %w", hostPort, createErr)

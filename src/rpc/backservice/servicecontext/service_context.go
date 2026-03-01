@@ -16,7 +16,7 @@ import (
 	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 	conversationservice "github.com/rhp-QE/roc-im-server/kitex_gen/conversation/conversationservice"
 	messageservice "github.com/rhp-QE/roc-im-server/kitex_gen/message/messageservice"
-	consts "github.com/rhp-QE/roc-im-server/src/rpc/const"
+	consts "github.com/rhp-QE/roc-im-server/src/const"
 )
 
 // ServiceContext 服务上下文接口，定义全局共享资源的访问方法
@@ -87,6 +87,7 @@ func (i *impl) GetMessageServiceClient() (messageservice.Client, error) {
 			client.WithHostPorts(hostPort),
 			client.WithSuite(tracing.NewClientSuite()),
 			client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
+			client.WithRPCTimeout(10*time.Second), // 设置 RPC 超时时间为 10 秒
 		)
 		if err != nil {
 			return nil, err
@@ -108,6 +109,7 @@ func (i *impl) GetConversationServiceClient() (conversationservice.Client, error
 			client.WithHostPorts(hostPort),
 			client.WithSuite(tracing.NewClientSuite()),
 			client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
+			client.WithRPCTimeout(10*time.Second), // 设置 RPC 超时时间为 10 秒
 		)
 		if err != nil {
 			return nil, err
