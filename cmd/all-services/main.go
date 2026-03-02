@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -70,123 +69,49 @@ func main() {
 		},
 	}
 
-	// 创建错误通道和启动状态跟踪
+	// 创建错误通道
 	errChan := make(chan error, len(services)+1)
-	startedServices := make(chan string, len(services)+len(servicesWithoutError)+1)
-	doneChan := make(chan bool, len(servicesWithoutError))
 
-	// 优先启动长连接服务
+	// 优先启动长连接服务（直接依赖 Start 的返回值）
 	log.Printf("正在启动 %s...", longConnectionService.Name)
-	longConnStartTime := time.Now()
-	longConnErrChan := make(chan error, 1)
 	go func() {
-		longConnErrChan <- longConnectionService.Start()
+		if err := longConnectionService.Start(); err != nil {
+			errChan <- fmt.Errorf("%s 启动失败: %v", longConnectionService.Name, err)
+		}
 	}()
 
-	// 等待长连接服务启动（给服务一些时间完成初始化和注册）
 	time.Sleep(3 * time.Second)
 
-	// 检查长连接服务是否启动失败
-	select {
-	case err := <-longConnErrChan:
-		if err != nil {
-			log.Fatalf("%s 启动失败: %v", longConnectionService.Name, err)
-		}
-	default:
-		// 服务还在运行，认为启动成功
-	}
-
-	longConnDuration := time.Since(longConnStartTime)
-	log.Printf("%s 启动成功 (耗时: %v)", longConnectionService.Name, longConnDuration)
-	startedServices <- longConnectionService.Name
-
-	// 等待2秒后再启动其他服务
-	log.Println("等待 2 秒后启动其他服务...")
-	time.Sleep(2 * time.Second)
-
-	// 启动返回 error 的其他服务
-	var wg sync.WaitGroup
+	// 启动返回 error 的其他服务：不再用 sleep + 乐观判断，而是直接看 Start 的返回值
 	for _, svc := range services {
-		wg.Add(1)
 		go func(service Service) {
-			defer wg.Done()
 			log.Printf("正在启动 %s...", service.Name)
-			startTime := time.Now()
-
-			// 在 goroutine 中启动服务（因为 Start() 是阻塞的）
-			serviceErrChan := make(chan error, 1)
-			go func() {
-				serviceErrChan <- service.Start()
-			}()
-
-			// 等待服务启动（给服务一些时间完成初始化和注册）
-			time.Sleep(3 * time.Second)
-
-			// 检查服务是否启动失败（非阻塞检查）
-			select {
-			case err := <-serviceErrChan:
-				if err != nil {
-					errChan <- fmt.Errorf("%s 启动失败: %v", service.Name, err)
-					return
-				}
-			default:
-				// 服务还在运行，认为启动成功
+			if err := service.Start(); err != nil {
+				errChan <- fmt.Errorf("%s 启动失败: %v", service.Name, err)
 			}
-
-			duration := time.Since(startTime)
-			log.Printf("%s 启动成功 (耗时: %v)", service.Name, duration)
-			startedServices <- service.Name
 		}(svc)
 	}
 
-	// 启动不返回 error 的服务
+	// 启动不返回 error 的服务（保持原有行为）
 	for _, svc := range servicesWithoutError {
 		go func(service ServiceWithoutError) {
 			log.Printf("正在启动 %s...", service.Name)
-			startTime := time.Now()
-			// 在 goroutine 中启动服务（因为 Start() 可能是阻塞的）
-			go func() {
-				service.Start()
-			}()
-			// 等待一小段时间确保服务已启动，然后发送启动信号
-			time.Sleep(2 * time.Second)
-			duration := time.Since(startTime)
-			log.Printf("%s 启动成功 (耗时: %v)", service.Name, duration)
-			startedServices <- service.Name
-			doneChan <- true
+			service.Start()
 		}(svc)
 	}
-
-	// 等待所有服务启动完成或出错
-	go func() {
-		wg.Wait()
-		close(errChan)
-	}()
 
 	// 设置优雅关闭
 	setupGracefulShutdown()
 
-	// 监听启动状态和错误
-	totalServices := len(services) + len(servicesWithoutError) + 1 // +1 是长连接服务
-	startedCount := 0
-
-	for {
-		select {
-		case err := <-errChan:
-			log.Fatalf("服务启动失败: %v", err)
-		case serviceName := <-startedServices:
-			startedCount++
-			log.Printf("服务启动进度: %d/%d (%s)", startedCount, totalServices, serviceName)
-			if startedCount == totalServices {
-				log.Println("所有服务启动完成！")
-				goto waitForShutdown
-			}
-		case <-time.After(120 * time.Second):
-			log.Fatalf("服务启动超时（120秒）")
+	// 任何一个 Start 返回错误，都认为整个进程需要退出
+	go func() {
+		if err := <-errChan; err != nil {
+			log.Fatalf("服务启动或运行失败: %v", err)
 		}
-	}
+	}()
 
-waitForShutdown:
+	log.Println("所有服务启动任务已提交，等待关闭信号...")
+
 	// 等待关闭信号
 	waitForShutdown()
 }

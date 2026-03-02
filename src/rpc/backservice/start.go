@@ -85,7 +85,7 @@ func initOTEL() *otel.OTELKit {
 
 // getServicePort 获取服务端口，支持环境变量配置
 func getServicePort() int {
-	port := 10300
+	port := consts.BackservicePortDefault
 	if portStr := os.Getenv("BACKSERVICE_PORT"); portStr != "" {
 		if p, err := strconv.Atoi(portStr); err == nil {
 			port = p
@@ -145,7 +145,9 @@ func createBackServiceServer(host string, port int, serviceCtx servicecontext.Se
 func startServer(svr server.Server) {
 	go func() {
 		if err := svr.Run(); err != nil {
-			klog.Fatalf("Failed to start backservice server: %v", err)
+			// 确保启动失败时整个进程直接退出，而不是仅仅打印日志
+			log.Printf("Failed to start backservice server: %v", err)
+			os.Exit(1)
 		}
 	}()
 

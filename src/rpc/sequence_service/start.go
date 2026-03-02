@@ -146,7 +146,7 @@ func getLocalIP() string {
 
 // getServicePort 获取服务端口
 func getServicePort() int {
-	port := 10300
+	port := consts.SequenceServicePortDefault
 	if portStr := os.Getenv("SEQUENCE_SERVICE_PORT"); portStr != "" {
 		if p, err := strconv.Atoi(portStr); err == nil {
 			port = p
@@ -190,7 +190,9 @@ func createServer(seqStorage storage.SequenceStorage, host string) server.Server
 func startServer(svr server.Server) {
 	go func() {
 		if err := svr.Run(); err != nil {
-			klog.Fatalf("Failed to start sequence server: %v", err)
+			// 这里必须确保整个进程退出，而不是仅仅打日志
+			log.Printf("Failed to start sequence server: %v", err)
+			os.Exit(1)
 		}
 	}()
 

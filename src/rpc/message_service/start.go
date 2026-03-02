@@ -160,7 +160,7 @@ func getLocalIP() string {
 
 // getServicePort 获取服务端口
 func getServicePort() int {
-	port := 10400
+	port := consts.MessageServicePortDefault
 	if portStr := os.Getenv("MESSAGE_SERVICE_PORT"); portStr != "" {
 		if p, err := strconv.Atoi(portStr); err == nil {
 			port = p
@@ -206,7 +206,9 @@ func createServer(serviceCtx servicecontext.ServiceContext, host string) server.
 func startServer(svr server.Server) {
 	go func() {
 		if err := svr.Run(); err != nil {
-			klog.Fatalf("Failed to start message server: %v", err)
+			// 确保启动失败时整个进程直接退出，而不是仅仅打印日志
+			log.Printf("Failed to start message server: %v", err)
+			os.Exit(1)
 		}
 	}()
 
