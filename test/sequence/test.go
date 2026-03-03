@@ -18,7 +18,7 @@ import (
 func SequenceClientTest() {
 	// 1. 解析服务地址配置
 	host := getenvOrDefault("SEQUENCE_SERVICE_HOST", "10.255.255.254")
-	port := getenvOrDefault("SEQUENCE_SERVICE_PORT", "10300")
+	port := getenvOrDefault("SEQUENCE_SERVICE_PORT", "10600")
 	destService := consts.SequenceServiceName
 
 	addr := fmt.Sprintf("%s:%s", host, port)

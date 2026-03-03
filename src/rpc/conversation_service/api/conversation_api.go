@@ -23,43 +23,93 @@ func NewConversationAPI(svc service.ConversationService) *ConversationAPI {
 
 // BatchChangeConversations 批量更改会话（会话状态、已读状态、置顶状态、属性等）
 func (h *ConversationAPI) BatchChangeConversations(ctx context.Context, req *sdkws.BatchChangeConversationsRequest) (resp *sdkws.BatchChangeConversationsResponse, err error) {
-	// TODO: 实现参数校验和业务逻辑
-	klog.CtxWarnf(ctx, "BatchChangeConversations not implemented")
-	return &sdkws.BatchChangeConversationsResponse{
-		Results: []*sdkws.CmdMessageOptResult{},
-	}, nil
+	if req == nil {
+		return &sdkws.BatchChangeConversationsResponse{
+			Results: []*sdkws.CmdMessageOptResult{},
+		}, nil
+	}
+
+	resp, err = h.svc.BatchChangeConversations(ctx, req)
+	if err != nil {
+		klog.CtxErrorf(ctx, "BatchChangeConversations failed",
+			"error", err.Error())
+	}
+	return resp, err
 }
 
 // FetchUserRecentConvList 混链拉取：获取用户最近的会话列表（包含会话和消息）
 func (h *ConversationAPI) FetchUserRecentConvList(ctx context.Context, req *sdkws.FetchUserRecentConvListRequest) (resp *sdkws.FetchUserRecentConvListResponse, err error) {
-	// TODO: 实现参数校验和业务逻辑
-	klog.CtxWarnf(ctx, "FetchUserRecentConvList not implemented")
-	return &sdkws.FetchUserRecentConvListResponse{
-		Conversations: []*sdkws.ConversationData{},
-		Left:          0,
-		Right:         0,
-	}, nil
+	if req == nil {
+		return &sdkws.FetchUserRecentConvListResponse{
+			Conversations: []*sdkws.ConversationData{},
+		}, nil
+	}
+
+	if req.GetUserID() == "" {
+		return &sdkws.FetchUserRecentConvListResponse{
+			Conversations: []*sdkws.ConversationData{},
+			Error:         "user_id is empty",
+		}, nil
+	}
+
+	resp, err = h.svc.FetchUserRecentConvList(ctx, req)
+	if err != nil {
+		klog.CtxErrorf(ctx, "FetchUserRecentConvList failed",
+			"user_id", req.GetUserID(),
+			"error", err.Error())
+	}
+	return resp, err
 }
 
 // UserMessageIntegrityCheck 混链连续性检查：检查用户消息的完整性，并补齐缺失的会话信息
 func (h *ConversationAPI) UserMessageIntegrityCheck(ctx context.Context, req *sdkws.UserMessageIntegrityCheckRequest) (resp *sdkws.UserMessageIntegrityCheckResponse, err error) {
-	// TODO: 实现参数校验和业务逻辑
-	klog.CtxWarnf(ctx, "UserMessageIntegrityCheck not implemented")
-	return &sdkws.UserMessageIntegrityCheckResponse{
-		IsIntegrity:   false,
-		Left:          0,
-		Right:         0,
-		Conversations: []*sdkws.ConversationData{},
-	}, nil
+	if req == nil {
+		return &sdkws.UserMessageIntegrityCheckResponse{
+			IsIntegrity:   false,
+			Left:          0,
+			Right:         0,
+			Conversations: []*sdkws.ConversationData{},
+		}, nil
+	}
+
+	if req.GetUserID() == "" {
+		return &sdkws.UserMessageIntegrityCheckResponse{
+			IsIntegrity:   false,
+			Left:          req.GetLeft(),
+			Right:         req.GetRight(),
+			Conversations: []*sdkws.ConversationData{},
+		}, nil
+	}
+
+	resp, err = h.svc.UserMessageIntegrityCheck(ctx, req)
+	if err != nil {
+		klog.CtxErrorf(ctx, "UserMessageIntegrityCheck failed",
+			"user_id", req.GetUserID(),
+			"left", req.GetLeft(),
+			"right", req.GetRight(),
+			"error", err.Error())
+	}
+	return resp, err
 }
 
 // BatchGetConversations 批量获取会话：根据会话ID列表批量获取会话详情
 func (h *ConversationAPI) BatchGetConversations(ctx context.Context, req *sdkws.BatchGetConversationsRequest) (resp *sdkws.BatchGetConversationsResponse, err error) {
-	// TODO: 实现参数校验和业务逻辑
-	klog.CtxWarnf(ctx, "BatchGetConversations not implemented")
-	return &sdkws.BatchGetConversationsResponse{
-		Results: []*sdkws.GetConversationResult{},
-	}, nil
+	if req == nil {
+		return &sdkws.BatchGetConversationsResponse{
+			Results: []*sdkws.GetConversationResult{},
+		}, nil
+	}
+
+	resp, err = h.svc.BatchGetConversations(ctx, req)
+	if err != nil {
+		klog.CtxErrorf(ctx, "BatchGetConversations failed",
+			"error", err.Error())
+		return &sdkws.BatchGetConversationsResponse{
+			Results: []*sdkws.GetConversationResult{},
+		}, err
+	}
+
+	return resp, nil
 }
 
 // 编译期检查，确保实现了 conversationpb.ConversationService 接口

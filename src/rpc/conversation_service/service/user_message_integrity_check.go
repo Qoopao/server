@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"math"
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/rhp-QE/roc-im-server/kitex_gen/sdkws"
@@ -23,44 +24,84 @@ func (s *conversationServiceImpl) UserMessageIntegrityCheck(ctx context.Context,
 		}, nil
 	}
 
-	// TODO: 实现消息完整性检查逻辑
-	// 1. 检查用户在 [left, right] 时间范围内的会话列表是否完整
-	// 2. 如果 convIDs 不为空，检查这些会话是否存在
-	// 3. 如果发现缺失的会话，补齐会话信息
-	// 目前先返回未实现的结果
+	// 1. 从 user_recent_conversations 中拉取 [left, right] 版本区间内的会话视图
+	serverConvs, err := s.storage.FetchUserRecentConvListByVersionRange(ctx, userID, left, right)
+	if err != nil {
+		klog.CtxErrorf(ctx, "[ConversationService] UserMessageIntegrityCheck fetch recent convs failed",
+			"user_id", userID,
+			"left", left,
+			"right", right,
+			"error", err.Error())
+		return &sdkws.UserMessageIntegrityCheckResponse{
+			IsIntegrity:   false,
+			Left:          left,
+			Right:         right,
+			Conversations: []*sdkws.ConversationData{},
+		}, nil
+	}
 
-	klog.CtxWarnf(ctx, "[ConversationService] UserMessageIntegrityCheck not fully implemented",
-		"user_id", userID,
-		"left", left,
-		"right", right,
-		"conv_ids", convIDs)
+	// 2. 计算服务端视角下该区间的最小/最大版本，以及会话 ID 集合
+	serverMin := int64(math.MaxInt64)
+	serverMax := int64(math.MinInt64)
+	serverConvSet := make(map[string]struct{}, len(serverConvs))
+	for _, conv := range serverConvs {
+		version := conv.GetVersion()
+		if version < serverMin {
+			serverMin = version
+		}
+		if version > serverMax {
+			serverMax = version
+		}
+		serverConvSet[conv.GetConvID()] = struct{}{}
+	}
 
-	// 如果提供了 convIDs，批量获取这些会话
-	var conversations []*sdkws.ConversationData
-	if len(convIDs) > 0 {
-		convMap, err := s.storage.BatchGetConversations(ctx, convIDs, "")
-		if err != nil {
-			klog.CtxErrorf(ctx, "[ConversationService] batch get conversations failed in integrity check",
-				"user_id", userID,
-				"conv_ids", convIDs,
-				"error", err.Error())
-		} else {
-			// 转换为列表
-			conversations = make([]*sdkws.ConversationData, 0, len(convMap))
-			for _, convData := range convMap {
-				conversations = append(conversations, convData)
-			}
+	// 若区间内无会话，则认为是完整的（当前视图为空）
+	if len(serverConvs) == 0 {
+		return &sdkws.UserMessageIntegrityCheckResponse{
+			IsIntegrity:   true,
+			Left:          left,
+			Right:         right,
+			Conversations: []*sdkws.ConversationData{},
+		}, nil
+	}
+
+	// 3. 检查客户端上报的 convIDs 是否覆盖服务端视角下的会话
+	clientConvSet := make(map[string]struct{}, len(convIDs))
+	for _, id := range convIDs {
+		clientConvSet[id] = struct{}{}
+	}
+
+	missingConv := false
+	for id := range serverConvSet {
+		if _, ok := clientConvSet[id]; !ok && len(convIDs) > 0 {
+			missingConv = true
+			break
 		}
 	}
 
-	// 暂时假设完整性检查通过（实际需要实现具体的检查逻辑）
-	isIntegrity := true
+	// 4. 依据版本范围与会话缺失情况给出完整性结论
+	isIntegrity := !missingConv && (left <= serverMin) && (right >= serverMax)
+
+	respLeft := left
+	respRight := right
+	if !isIntegrity {
+		respLeft = serverMin
+		respRight = serverMax
+	}
+
+	klog.CtxDebugf(ctx, "[ConversationService] UserMessageIntegrityCheck finished",
+		"user_id", userID,
+		"req_left", left,
+		"req_right", right,
+		"resp_left", respLeft,
+		"resp_right", respRight,
+		"conv_count", len(serverConvs),
+		"is_integrity", isIntegrity)
 
 	return &sdkws.UserMessageIntegrityCheckResponse{
 		IsIntegrity:   isIntegrity,
-		Left:          left,
-		Right:         right,
-		Conversations: conversations,
+		Left:          respLeft,
+		Right:         respRight,
+		Conversations: serverConvs,
 	}, nil
 }
-

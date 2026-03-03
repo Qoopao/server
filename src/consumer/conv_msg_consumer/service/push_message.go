@@ -8,6 +8,7 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	backbon "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backbon"
 	backbonservice "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backbon/backbonservice"
+	frontier "github.com/rhp-QE/roc-foundation-service/long_connection_service/src/frontier"
 	"github.com/rhp-QE/roc-im-server/kitex_gen/sdkws"
 	"github.com/rhp-QE/roc-im-server/src/common/util"
 	consts "github.com/rhp-QE/roc-im-server/src/const"
@@ -104,9 +105,9 @@ func (s *convMsgConsumerServiceImpl) buildPushMessage(msg *sdkws.MessageData) *b
 
 	return &backbon.PushMessage{
 		RequestID: msg.SMessageID,
-		Type:      "message",
-		Service:   consts.MessageServiceName,
-		Method:    "receive",
+		Type:      frontier.MessageTypePush,
+		Service:   consts.BackserviceIMName,
+		Method:    consts.SDKWSMethodPushUserMessage,
 		Payload:   payload,
 		Timestamp: time.Now().Unix(),
 		Metadata:  metadata,

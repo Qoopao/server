@@ -31,7 +31,7 @@ func (s *conversationServiceImpl) FetchUserRecentConvList(ctx context.Context, r
 	// 根据 first 标志决定查询方式
 	if first {
 		// 第一次拉取：查询大于 lowVersion 的所有最新数据
-		conversations, err = s.storage.FetchUserRecentConvListByVersion(ctx, userID, lowVersion)
+		conversations, err = s.storage.FetchUserRecentConvListByVersion(ctx, userID, upVersion)
 	} else {
 		// 增量拉取：查询 [lowVersion, upVersion] 区间内的数据
 		conversations, err = s.storage.FetchUserRecentConvListByVersionRange(ctx, userID, lowVersion, upVersion)
@@ -55,6 +55,9 @@ func (s *conversationServiceImpl) FetchUserRecentConvList(ctx context.Context, r
 	// 从会话列表中计算最小和最大版本号
 	var left, right int64
 	if len(conversations) > 0 {
+		// 为每个会话附带一小段最近消息 window
+		s.attachRecentMessages(ctx, conversations)
+
 		left = int64(math.MaxInt64)
 		right = int64(math.MinInt64)
 		for _, conv := range conversations {
@@ -86,4 +89,46 @@ func checkRequestParams(ctx context.Context, req *sdkws.FetchUserRecentConvListR
 	}
 
 	return nil
+}
+
+// attachRecentMessages 为每个会话附带固定数量的最近消息
+func (s *conversationServiceImpl) attachRecentMessages(ctx context.Context, conversations []*sdkws.ConversationData) {
+	const perConvMsgLimit int64 = 20
+
+	if len(conversations) == 0 || perConvMsgLimit <= 0 {
+		return
+	}
+
+	client, err := s.serviceCtx.GetMessageServiceClient()
+	if err != nil {
+		klog.CtxErrorf(ctx, "[ConversationService] get message service client failed: %v", err)
+		return
+	}
+
+	for _, conv := range conversations {
+		if conv == nil {
+			continue
+		}
+		convID := conv.GetConvID()
+		if convID == "" {
+			continue
+		}
+
+		msgReq := &sdkws.FetchConvMessageListRequest{
+			ConvID:  convID,
+			Cursor:  -1,              // 从最新消息开始
+			Limit:   perConvMsgLimit, // 每个会话固定条数
+			Forward: false,           // 默认按时间从旧到新返回
+		}
+
+		msgResp, err := client.FetchConvMessageList(ctx, msgReq)
+		if err != nil {
+			klog.CtxErrorf(ctx, "[ConversationService] fetch conv messages failed",
+				"conv_id", convID,
+				"error", err.Error())
+			continue
+		}
+
+		conv.Messages = msgResp.GetMessages()
+	}
 }

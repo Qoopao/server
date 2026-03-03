@@ -6,5 +6,5 @@ const (
 	BackservicePortDefault         = 10300
 	MessageServicePortDefault      = 10400
 	ConversationServicePortDefault = 10500
-	SequenceServicePortDefault     = 10300
+	SequenceServicePortDefault     = 10600
 )
