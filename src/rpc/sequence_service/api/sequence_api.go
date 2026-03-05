@@ -20,20 +20,20 @@ func NewSequenceAPI(seqService service.SequenceService) *SequenceAPI {
 	}
 }
 
-// GetNextSeq 获取下一个序列号
-func (h *SequenceAPI) GetNextSeq(ctx context.Context, req *sequencepb.GetNextSeqRequest) (resp *sequencepb.GetNextSeqResponse, err error) {
+// GetNextSeqInc 获取下一个序列号（简单递增）
+func (h *SequenceAPI) GetNextSeqInc(ctx context.Context, req *sequencepb.GetNextSeqIncRequest) (resp *sequencepb.GetNextSeqResponse, err error) {
 	resp = &sequencepb.GetNextSeqResponse{}
 
-	if req == nil || req.ConversationId == "" {
+	if req == nil || req.Id == "" {
 		resp.ErrorCode = "INVALID_REQUEST"
-		resp.ErrorMsg = "conversation_id is required"
+		resp.ErrorMsg = "id is required"
 		return resp, nil
 	}
 
-	seq, err := h.service.GetNextSeq(ctx, req.ConversationId)
+	seq, err := h.service.GetNextSeqInc(ctx, req.Id)
 	if err != nil {
-		klog.CtxErrorf(ctx, "GetNextSeq failed",
-			"conversation_id", req.ConversationId,
+		klog.CtxErrorf(ctx, "GetNextSeqInc failed",
+			"id", req.Id,
 			"error", err.Error())
 		resp.ErrorCode = "INTERNAL_ERROR"
 		resp.ErrorMsg = err.Error()
@@ -41,76 +41,37 @@ func (h *SequenceAPI) GetNextSeq(ctx context.Context, req *sequencepb.GetNextSeq
 	}
 
 	resp.Seq = seq
-	klog.CtxDebugf(ctx, "GetNextSeq success",
-		"conversation_id", req.ConversationId,
+	klog.CtxDebugf(ctx, "GetNextSeqInc success",
+		"id", req.Id,
 		"seq", seq)
 
 	return resp, nil
 }
 
-// BatchGetNextSeq 批量获取序列号
-func (h *SequenceAPI) BatchGetNextSeq(ctx context.Context, req *sequencepb.BatchGetNextSeqRequest) (resp *sequencepb.BatchGetNextSeqResponse, err error) {
-	resp = &sequencepb.BatchGetNextSeqResponse{
-		Results: make([]*sequencepb.SeqResult, 0),
-	}
+// GetNextSeqConsecutive 获取下一个序列号（连续递增）
+func (h *SequenceAPI) GetNextSeqConsecutive(ctx context.Context, req *sequencepb.GetNextSeqConsecutiveRequest) (resp *sequencepb.GetNextSeqResponse, err error) {
+	resp = &sequencepb.GetNextSeqResponse{}
 
-	if req == nil || len(req.ConversationIds) == 0 {
-		return resp, nil
-	}
-
-	results, err := h.service.BatchGetNextSeq(ctx, req.ConversationIds)
-	if err != nil {
-		klog.CtxErrorf(ctx, "BatchGetNextSeq failed",
-			"error", err.Error())
-		// 即使有错误，也返回部分结果
-	}
-
-	// 构建响应
-	for _, convID := range req.ConversationIds {
-		result := &sequencepb.SeqResult{
-			ConversationId: convID,
-		}
-
-		if seq, ok := results[convID]; ok {
-			result.Seq = seq
-		} else {
-			result.ErrorCode = "FAILED"
-			result.ErrorMsg = "failed to get seq"
-		}
-
-		resp.Results = append(resp.Results, result)
-	}
-
-	klog.CtxDebugf(ctx, "BatchGetNextSeq success",
-		"count", len(resp.Results))
-
-	return resp, nil
-}
-
-// GetMaxSeq 获取当前最大序列号
-func (h *SequenceAPI) GetMaxSeq(ctx context.Context, req *sequencepb.GetMaxSeqRequest) (resp *sequencepb.GetMaxSeqResponse, err error) {
-	resp = &sequencepb.GetMaxSeqResponse{}
-
-	if req == nil || req.ConversationId == "" {
+	if req == nil || req.Id == "" {
 		resp.ErrorCode = "INVALID_REQUEST"
-		resp.ErrorMsg = "conversation_id is required"
+		resp.ErrorMsg = "id is required"
 		return resp, nil
 	}
 
-	maxSeq, err := h.service.GetMaxSeq(ctx, req.ConversationId)
+	seq, err := h.service.GetNextSeqConsecutive(ctx, req.Id)
 	if err != nil {
-		klog.CtxErrorf(ctx, "GetMaxSeq failed",
-			"conversation_id", req.ConversationId,
+		klog.CtxErrorf(ctx, "GetNextSeqConsecutive failed",
+			"id", req.Id,
 			"error", err.Error())
 		resp.ErrorCode = "INTERNAL_ERROR"
 		resp.ErrorMsg = err.Error()
 		return resp, nil
 	}
 
-	resp.MaxSeq = maxSeq
-	klog.CtxDebugf(ctx, "GetMaxSeq success",
-		"conversation_id", req.ConversationId,
-		"max_seq", maxSeq)
+	resp.Seq = seq
+	klog.CtxDebugf(ctx, "GetNextSeqConsecutive success",
+		"id", req.Id,
+		"seq", seq)
 
 	return resp, nil
 }

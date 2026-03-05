@@ -10,57 +10,30 @@ import "sdkws.proto";
 
 option go_package = "github.com/rhp-QE/roc-im-server/kitex_gen/sequence";
 
-// 获取下一个序列号请求
-message GetNextSeqRequest {
-  string conversation_id = 1; // 会话ID
+// 获取下一个序列号请求 (递增)
+message GetNextSeqIncRequest {
+  string id = 1; // 唯一ID
+}
+
+// 获取下一个序列号 (连续递增）
+message GetNextSeqConsecutiveRequest {
+  string id = 1; // 唯一ID
 }
 
 // 获取下一个序列号响应
 message GetNextSeqResponse {
   int64 seq = 1;              // 生成的序列号
-  string error_code = 2;     // 错误码
-  string error_msg = 3;       // 错误信息
-}
-
-// 批量获取序列号请求
-message BatchGetNextSeqRequest {
-  repeated string conversation_ids = 1; // 会话ID列表
-}
-
-// 批量获取序列号响应
-message BatchGetNextSeqResponse {
-  repeated SeqResult results = 1; // 结果列表
-}
-
-// 序列号结果
-message SeqResult {
-  string conversation_id = 1; // 会话ID
-  int64 seq = 2;              // 序列号
-  string error_code = 3;       // 错误码
-  string error_msg = 4;        // 错误信息
-}
-
-// 获取当前最大序列号请求
-message GetMaxSeqRequest {
-  string conversation_id = 1; // 会话ID
-}
-
-// 获取当前最大序列号响应
-message GetMaxSeqResponse {
-  int64 max_seq = 1;          // 当前最大序列号
   string error_code = 2;      // 错误码
-  string error_msg = 3;        // 错误信息
+  string error_msg  = 3;       // 错误信息
 }
+
 
 // 序列号服务
 service SequenceService {
-  // 获取下一个序列号（单个会话）
-  rpc GetNextSeq(GetNextSeqRequest) returns (GetNextSeqResponse);
+  // 获取下一个序列号（递增）
+  rpc GetNextSeqInc(GetNextSeqIncRequest) returns (GetNextSeqResponse);
   
-  // 批量获取序列号（多个会话）
-  rpc BatchGetNextSeq(BatchGetNextSeqRequest) returns (BatchGetNextSeqResponse);
-  
-  // 获取当前最大序列号
-  rpc GetMaxSeq(GetMaxSeqRequest) returns (GetMaxSeqResponse);
+  // 获取下一个序列号（连续递增）
+  rpc GetNextSeqConsecutive(GetNextSeqConsecutiveRequest) returns (GetNextSeqResponse);
 }
 

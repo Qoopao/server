@@ -11,9 +11,8 @@ import (
 
 // Client is designed to provide IDL-compatible methods with call-option parameter for kitex framework.
 type Client interface {
-	GetNextSeq(ctx context.Context, Req *sequence.GetNextSeqRequest, callOptions ...callopt.Option) (r *sequence.GetNextSeqResponse, err error)
-	BatchGetNextSeq(ctx context.Context, Req *sequence.BatchGetNextSeqRequest, callOptions ...callopt.Option) (r *sequence.BatchGetNextSeqResponse, err error)
-	GetMaxSeq(ctx context.Context, Req *sequence.GetMaxSeqRequest, callOptions ...callopt.Option) (r *sequence.GetMaxSeqResponse, err error)
+	GetNextSeqInc(ctx context.Context, Req *sequence.GetNextSeqIncRequest, callOptions ...callopt.Option) (r *sequence.GetNextSeqResponse, err error)
+	GetNextSeqConsecutive(ctx context.Context, Req *sequence.GetNextSeqConsecutiveRequest, callOptions ...callopt.Option) (r *sequence.GetNextSeqResponse, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -45,17 +44,12 @@ type kSequenceServiceClient struct {
 	*kClient
 }
 
-func (p *kSequenceServiceClient) GetNextSeq(ctx context.Context, Req *sequence.GetNextSeqRequest, callOptions ...callopt.Option) (r *sequence.GetNextSeqResponse, err error) {
+func (p *kSequenceServiceClient) GetNextSeqInc(ctx context.Context, Req *sequence.GetNextSeqIncRequest, callOptions ...callopt.Option) (r *sequence.GetNextSeqResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.GetNextSeq(ctx, Req)
+	return p.kClient.GetNextSeqInc(ctx, Req)
 }
 
-func (p *kSequenceServiceClient) BatchGetNextSeq(ctx context.Context, Req *sequence.BatchGetNextSeqRequest, callOptions ...callopt.Option) (r *sequence.BatchGetNextSeqResponse, err error) {
+func (p *kSequenceServiceClient) GetNextSeqConsecutive(ctx context.Context, Req *sequence.GetNextSeqConsecutiveRequest, callOptions ...callopt.Option) (r *sequence.GetNextSeqResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.BatchGetNextSeq(ctx, Req)
-}
-
-func (p *kSequenceServiceClient) GetMaxSeq(ctx context.Context, Req *sequence.GetMaxSeqRequest, callOptions ...callopt.Option) (r *sequence.GetMaxSeqResponse, err error) {
-	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.GetMaxSeq(ctx, Req)
+	return p.kClient.GetNextSeqConsecutive(ctx, Req)
 }

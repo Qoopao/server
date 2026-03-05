@@ -17,7 +17,7 @@ type ConvMsgStorage interface {
 	UpdateConvWithMessage(ctx context.Context, msg *sdkws.MessageData) error
 
 	// UpdateUserRecentConversation 更新用户最近会话链（将会话移到最前面）
-	UpdateUserRecentConversation(ctx context.Context, userID string, convID string, lastSeq int64) error
+	UpdateUserRecentConversation(ctx context.Context, req *UpdateUserRecentConversationRequest) error
 }
 
 type convMsgStorageImpl struct {
@@ -34,4 +34,12 @@ func NewConvMsgStorage(serviceCtx servicecontext.ServiceContext) ConvMsgStorage 
 
 func (s *convMsgStorageImpl) getStore() foundationstorage.Storage {
 	return s.serviceCtx.GetStorage()
+}
+
+// UpdateUserRecentConversationRequest 更新用户最近会话链请求参数
+type UpdateUserRecentConversationRequest struct {
+	UserID         string
+	ConvID         string
+	LastMessageSeq int64 // 会话内最新消息 seq
+	Version        int64 // 版本号（单调递增，用于并发保护）
 }

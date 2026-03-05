@@ -537,10 +537,13 @@ func (x *BatchChangeConversationsResponse) GetResults() []*CmdMessageOptResult {
 
 // 单链拉取 ------------------------------------
 type FetchConvMessageListRequest struct {
-	ConvID  string `protobuf:"bytes,1,opt,name=convID" json:"convID,omitempty"`
-	Cursor  int64  `protobuf:"varint,2,opt,name=cursor" json:"cursor,omitempty"`
-	Limit   int64  `protobuf:"varint,3,opt,name=limit" json:"limit,omitempty"`
-	Forward bool   `protobuf:"varint,4,opt,name=forward" json:"forward,omitempty"`
+	Mode    int64  `protobuf:"varint,1,opt,name=mode" json:"mode,omitempty"`
+	UserID  string `protobuf:"bytes,2,opt,name=userID" json:"userID,omitempty"`
+	ConvID  string `protobuf:"bytes,3,opt,name=convID" json:"convID,omitempty"`
+	Version int64  `protobuf:"varint,4,opt,name=version" json:"version,omitempty"`
+	Limit   int64  `protobuf:"varint,5,opt,name=limit" json:"limit,omitempty"`
+	Left    int64  `protobuf:"varint,6,opt,name=left" json:"left,omitempty"`
+	Right   int64  `protobuf:"varint,7,opt,name=right" json:"right,omitempty"`
 }
 
 func (x *FetchConvMessageListRequest) Reset() { *x = FetchConvMessageListRequest{} }
@@ -551,6 +554,20 @@ func (x *FetchConvMessageListRequest) Marshal(in []byte) ([]byte, error) {
 
 func (x *FetchConvMessageListRequest) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
+func (x *FetchConvMessageListRequest) GetMode() int64 {
+	if x != nil {
+		return x.Mode
+	}
+	return 0
+}
+
+func (x *FetchConvMessageListRequest) GetUserID() string {
+	if x != nil {
+		return x.UserID
+	}
+	return ""
+}
+
 func (x *FetchConvMessageListRequest) GetConvID() string {
 	if x != nil {
 		return x.ConvID
@@ -558,9 +575,9 @@ func (x *FetchConvMessageListRequest) GetConvID() string {
 	return ""
 }
 
-func (x *FetchConvMessageListRequest) GetCursor() int64 {
+func (x *FetchConvMessageListRequest) GetVersion() int64 {
 	if x != nil {
-		return x.Cursor
+		return x.Version
 	}
 	return 0
 }
@@ -572,18 +589,26 @@ func (x *FetchConvMessageListRequest) GetLimit() int64 {
 	return 0
 }
 
-func (x *FetchConvMessageListRequest) GetForward() bool {
+func (x *FetchConvMessageListRequest) GetLeft() int64 {
 	if x != nil {
-		return x.Forward
+		return x.Left
 	}
-	return false
+	return 0
+}
+
+func (x *FetchConvMessageListRequest) GetRight() int64 {
+	if x != nil {
+		return x.Right
+	}
+	return 0
 }
 
 type FetchConvMessageListResponse struct {
-	Messages  []*MessageData `protobuf:"bytes,1,rep,name=messages" json:"messages,omitempty"`
-	HaveMore  bool           `protobuf:"varint,2,opt,name=haveMore" json:"haveMore,omitempty"`
-	ErrorCode int32          `protobuf:"varint,3,opt,name=errorCode" json:"errorCode,omitempty"`
-	Error     string         `protobuf:"bytes,4,opt,name=error" json:"error,omitempty"`
+	Messages []*MessageData `protobuf:"bytes,1,rep,name=messages" json:"messages,omitempty"`
+	Left     int64          `protobuf:"varint,2,opt,name=left" json:"left,omitempty"`
+	Right    int64          `protobuf:"varint,3,opt,name=right" json:"right,omitempty"`
+	HaveMore bool           `protobuf:"varint,4,opt,name=haveMore" json:"haveMore,omitempty"`
+	Error    string         `protobuf:"bytes,5,opt,name=error" json:"error,omitempty"`
 }
 
 func (x *FetchConvMessageListResponse) Reset() { *x = FetchConvMessageListResponse{} }
@@ -601,18 +626,25 @@ func (x *FetchConvMessageListResponse) GetMessages() []*MessageData {
 	return nil
 }
 
+func (x *FetchConvMessageListResponse) GetLeft() int64 {
+	if x != nil {
+		return x.Left
+	}
+	return 0
+}
+
+func (x *FetchConvMessageListResponse) GetRight() int64 {
+	if x != nil {
+		return x.Right
+	}
+	return 0
+}
+
 func (x *FetchConvMessageListResponse) GetHaveMore() bool {
 	if x != nil {
 		return x.HaveMore
 	}
 	return false
-}
-
-func (x *FetchConvMessageListResponse) GetErrorCode() int32 {
-	if x != nil {
-		return x.ErrorCode
-	}
-	return 0
 }
 
 func (x *FetchConvMessageListResponse) GetError() string {
@@ -624,10 +656,12 @@ func (x *FetchConvMessageListResponse) GetError() string {
 
 // 混链拉取 ------------------------------------
 type FetchUserRecentConvListRequest struct {
-	UserID       string `protobuf:"bytes,1,opt,name=userID" json:"userID,omitempty"`
-	LowerVersion int64  `protobuf:"varint,2,opt,name=lowerVersion" json:"lowerVersion,omitempty"`
-	UpperVersion int64  `protobuf:"varint,3,opt,name=upperVersion" json:"upperVersion,omitempty"`
-	First        bool   `protobuf:"varint,4,opt,name=first" json:"first,omitempty"` // 是否是一次完整交互的第一条
+	Mode         int64  `protobuf:"varint,1,opt,name=mode" json:"mode,omitempty"`
+	UserID       string `protobuf:"bytes,2,opt,name=userID" json:"userID,omitempty"`
+	Version      int64  `protobuf:"varint,3,opt,name=version" json:"version,omitempty"`
+	Limit        int64  `protobuf:"varint,4,opt,name=limit" json:"limit,omitempty"`
+	LowVersion   int64  `protobuf:"varint,5,opt,name=lowVersion" json:"lowVersion,omitempty"`
+	UpperVersion int64  `protobuf:"varint,6,opt,name=upperVersion" json:"upperVersion,omitempty"`
 }
 
 func (x *FetchUserRecentConvListRequest) Reset() { *x = FetchUserRecentConvListRequest{} }
@@ -638,6 +672,13 @@ func (x *FetchUserRecentConvListRequest) Marshal(in []byte) ([]byte, error) {
 
 func (x *FetchUserRecentConvListRequest) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
+func (x *FetchUserRecentConvListRequest) GetMode() int64 {
+	if x != nil {
+		return x.Mode
+	}
+	return 0
+}
+
 func (x *FetchUserRecentConvListRequest) GetUserID() string {
 	if x != nil {
 		return x.UserID
@@ -645,9 +686,23 @@ func (x *FetchUserRecentConvListRequest) GetUserID() string {
 	return ""
 }
 
-func (x *FetchUserRecentConvListRequest) GetLowerVersion() int64 {
+func (x *FetchUserRecentConvListRequest) GetVersion() int64 {
 	if x != nil {
-		return x.LowerVersion
+		return x.Version
+	}
+	return 0
+}
+
+func (x *FetchUserRecentConvListRequest) GetLimit() int64 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *FetchUserRecentConvListRequest) GetLowVersion() int64 {
+	if x != nil {
+		return x.LowVersion
 	}
 	return 0
 }
@@ -659,18 +714,12 @@ func (x *FetchUserRecentConvListRequest) GetUpperVersion() int64 {
 	return 0
 }
 
-func (x *FetchUserRecentConvListRequest) GetFirst() bool {
-	if x != nil {
-		return x.First
-	}
-	return false
-}
-
 type FetchUserRecentConvListResponse struct {
 	Conversations []*ConversationData `protobuf:"bytes,1,rep,name=conversations" json:"conversations,omitempty"`
-	Left          int64               `protobuf:"varint,2,opt,name=left" json:"left,omitempty"` // 左右闭合
+	Left          int64               `protobuf:"varint,2,opt,name=left" json:"left,omitempty"`
 	Right         int64               `protobuf:"varint,3,opt,name=right" json:"right,omitempty"`
-	Error         string              `protobuf:"bytes,4,opt,name=error" json:"error,omitempty"`
+	HaveMore      bool                `protobuf:"varint,4,opt,name=haveMore" json:"haveMore,omitempty"`
+	Error         string              `protobuf:"bytes,5,opt,name=error" json:"error,omitempty"`
 }
 
 func (x *FetchUserRecentConvListResponse) Reset() { *x = FetchUserRecentConvListResponse{} }
@@ -700,6 +749,13 @@ func (x *FetchUserRecentConvListResponse) GetRight() int64 {
 		return x.Right
 	}
 	return 0
+}
+
+func (x *FetchUserRecentConvListResponse) GetHaveMore() bool {
+	if x != nil {
+		return x.HaveMore
+	}
+	return false
 }
 
 func (x *FetchUserRecentConvListResponse) GetError() string {

@@ -51,9 +51,9 @@ func (s *messageServiceImpl) BatchSendMessage(ctx context.Context, req *sdkws.Ba
 			continue
 		}
 
-		// 调用 sequence-service 获取下一个 seq
-		seqResp, err := seqClient.GetNextSeq(ctx, &sequencepb.GetNextSeqRequest{
-			ConversationId: msg.ConvID,
+		// 调用 sequence-service 获取下一个 消息序列号（连续递增）
+		seqResp, err := seqClient.GetNextSeqConsecutive(ctx, &sequencepb.GetNextSeqConsecutiveRequest{
+			Id: msg.ConvID,
 		})
 		if err != nil {
 			klog.CtxErrorf(ctx, "BatchSendMessage: GetNextSeq failed",

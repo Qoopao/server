@@ -15,24 +15,17 @@ import (
 var errInvalidMessageType = errors.New("invalid message type for service method handler")
 
 var serviceMethods = map[string]kitex.MethodInfo{
-	"GetNextSeq": kitex.NewMethodInfo(
-		getNextSeqHandler,
-		newGetNextSeqArgs,
-		newGetNextSeqResult,
+	"GetNextSeqInc": kitex.NewMethodInfo(
+		getNextSeqIncHandler,
+		newGetNextSeqIncArgs,
+		newGetNextSeqIncResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"BatchGetNextSeq": kitex.NewMethodInfo(
-		batchGetNextSeqHandler,
-		newBatchGetNextSeqArgs,
-		newBatchGetNextSeqResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
-	"GetMaxSeq": kitex.NewMethodInfo(
-		getMaxSeqHandler,
-		newGetMaxSeqArgs,
-		newGetMaxSeqResult,
+	"GetNextSeqConsecutive": kitex.NewMethodInfo(
+		getNextSeqConsecutiveHandler,
+		newGetNextSeqConsecutiveArgs,
+		newGetNextSeqConsecutiveResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -102,52 +95,52 @@ func newServiceInfo(hasStreaming bool, keepStreamingMethods bool, keepNonStreami
 	return svcInfo
 }
 
-func getNextSeqHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func getNextSeqIncHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(sequence.GetNextSeqRequest)
+		req := new(sequence.GetNextSeqIncRequest)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(sequence.SequenceService).GetNextSeq(ctx, req)
+		resp, err := handler.(sequence.SequenceService).GetNextSeqInc(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *GetNextSeqArgs:
-		success, err := handler.(sequence.SequenceService).GetNextSeq(ctx, s.Req)
+	case *GetNextSeqIncArgs:
+		success, err := handler.(sequence.SequenceService).GetNextSeqInc(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*GetNextSeqResult)
+		realResult := result.(*GetNextSeqIncResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newGetNextSeqArgs() interface{} {
-	return &GetNextSeqArgs{}
+func newGetNextSeqIncArgs() interface{} {
+	return &GetNextSeqIncArgs{}
 }
 
-func newGetNextSeqResult() interface{} {
-	return &GetNextSeqResult{}
+func newGetNextSeqIncResult() interface{} {
+	return &GetNextSeqIncResult{}
 }
 
-type GetNextSeqArgs struct {
-	Req *sequence.GetNextSeqRequest
+type GetNextSeqIncArgs struct {
+	Req *sequence.GetNextSeqIncRequest
 }
 
-func (p *GetNextSeqArgs) Marshal(out []byte) ([]byte, error) {
+func (p *GetNextSeqIncArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *GetNextSeqArgs) Unmarshal(in []byte) error {
-	msg := new(sequence.GetNextSeqRequest)
+func (p *GetNextSeqIncArgs) Unmarshal(in []byte) error {
+	msg := new(sequence.GetNextSeqIncRequest)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -155,37 +148,37 @@ func (p *GetNextSeqArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var GetNextSeqArgs_Req_DEFAULT *sequence.GetNextSeqRequest
+var GetNextSeqIncArgs_Req_DEFAULT *sequence.GetNextSeqIncRequest
 
-func (p *GetNextSeqArgs) GetReq() *sequence.GetNextSeqRequest {
+func (p *GetNextSeqIncArgs) GetReq() *sequence.GetNextSeqIncRequest {
 	if !p.IsSetReq() {
-		return GetNextSeqArgs_Req_DEFAULT
+		return GetNextSeqIncArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *GetNextSeqArgs) IsSetReq() bool {
+func (p *GetNextSeqIncArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *GetNextSeqArgs) GetFirstArgument() interface{} {
+func (p *GetNextSeqIncArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type GetNextSeqResult struct {
+type GetNextSeqIncResult struct {
 	Success *sequence.GetNextSeqResponse
 }
 
-var GetNextSeqResult_Success_DEFAULT *sequence.GetNextSeqResponse
+var GetNextSeqIncResult_Success_DEFAULT *sequence.GetNextSeqResponse
 
-func (p *GetNextSeqResult) Marshal(out []byte) ([]byte, error) {
+func (p *GetNextSeqIncResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *GetNextSeqResult) Unmarshal(in []byte) error {
+func (p *GetNextSeqIncResult) Unmarshal(in []byte) error {
 	msg := new(sequence.GetNextSeqResponse)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
@@ -194,71 +187,71 @@ func (p *GetNextSeqResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *GetNextSeqResult) GetSuccess() *sequence.GetNextSeqResponse {
+func (p *GetNextSeqIncResult) GetSuccess() *sequence.GetNextSeqResponse {
 	if !p.IsSetSuccess() {
-		return GetNextSeqResult_Success_DEFAULT
+		return GetNextSeqIncResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *GetNextSeqResult) SetSuccess(x interface{}) {
+func (p *GetNextSeqIncResult) SetSuccess(x interface{}) {
 	p.Success = x.(*sequence.GetNextSeqResponse)
 }
 
-func (p *GetNextSeqResult) IsSetSuccess() bool {
+func (p *GetNextSeqIncResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *GetNextSeqResult) GetResult() interface{} {
+func (p *GetNextSeqIncResult) GetResult() interface{} {
 	return p.Success
 }
 
-func batchGetNextSeqHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func getNextSeqConsecutiveHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(sequence.BatchGetNextSeqRequest)
+		req := new(sequence.GetNextSeqConsecutiveRequest)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(sequence.SequenceService).BatchGetNextSeq(ctx, req)
+		resp, err := handler.(sequence.SequenceService).GetNextSeqConsecutive(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *BatchGetNextSeqArgs:
-		success, err := handler.(sequence.SequenceService).BatchGetNextSeq(ctx, s.Req)
+	case *GetNextSeqConsecutiveArgs:
+		success, err := handler.(sequence.SequenceService).GetNextSeqConsecutive(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*BatchGetNextSeqResult)
+		realResult := result.(*GetNextSeqConsecutiveResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newBatchGetNextSeqArgs() interface{} {
-	return &BatchGetNextSeqArgs{}
+func newGetNextSeqConsecutiveArgs() interface{} {
+	return &GetNextSeqConsecutiveArgs{}
 }
 
-func newBatchGetNextSeqResult() interface{} {
-	return &BatchGetNextSeqResult{}
+func newGetNextSeqConsecutiveResult() interface{} {
+	return &GetNextSeqConsecutiveResult{}
 }
 
-type BatchGetNextSeqArgs struct {
-	Req *sequence.BatchGetNextSeqRequest
+type GetNextSeqConsecutiveArgs struct {
+	Req *sequence.GetNextSeqConsecutiveRequest
 }
 
-func (p *BatchGetNextSeqArgs) Marshal(out []byte) ([]byte, error) {
+func (p *GetNextSeqConsecutiveArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *BatchGetNextSeqArgs) Unmarshal(in []byte) error {
-	msg := new(sequence.BatchGetNextSeqRequest)
+func (p *GetNextSeqConsecutiveArgs) Unmarshal(in []byte) error {
+	msg := new(sequence.GetNextSeqConsecutiveRequest)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -266,38 +259,38 @@ func (p *BatchGetNextSeqArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var BatchGetNextSeqArgs_Req_DEFAULT *sequence.BatchGetNextSeqRequest
+var GetNextSeqConsecutiveArgs_Req_DEFAULT *sequence.GetNextSeqConsecutiveRequest
 
-func (p *BatchGetNextSeqArgs) GetReq() *sequence.BatchGetNextSeqRequest {
+func (p *GetNextSeqConsecutiveArgs) GetReq() *sequence.GetNextSeqConsecutiveRequest {
 	if !p.IsSetReq() {
-		return BatchGetNextSeqArgs_Req_DEFAULT
+		return GetNextSeqConsecutiveArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *BatchGetNextSeqArgs) IsSetReq() bool {
+func (p *GetNextSeqConsecutiveArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *BatchGetNextSeqArgs) GetFirstArgument() interface{} {
+func (p *GetNextSeqConsecutiveArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type BatchGetNextSeqResult struct {
-	Success *sequence.BatchGetNextSeqResponse
+type GetNextSeqConsecutiveResult struct {
+	Success *sequence.GetNextSeqResponse
 }
 
-var BatchGetNextSeqResult_Success_DEFAULT *sequence.BatchGetNextSeqResponse
+var GetNextSeqConsecutiveResult_Success_DEFAULT *sequence.GetNextSeqResponse
 
-func (p *BatchGetNextSeqResult) Marshal(out []byte) ([]byte, error) {
+func (p *GetNextSeqConsecutiveResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *BatchGetNextSeqResult) Unmarshal(in []byte) error {
-	msg := new(sequence.BatchGetNextSeqResponse)
+func (p *GetNextSeqConsecutiveResult) Unmarshal(in []byte) error {
+	msg := new(sequence.GetNextSeqResponse)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -305,133 +298,22 @@ func (p *BatchGetNextSeqResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *BatchGetNextSeqResult) GetSuccess() *sequence.BatchGetNextSeqResponse {
+func (p *GetNextSeqConsecutiveResult) GetSuccess() *sequence.GetNextSeqResponse {
 	if !p.IsSetSuccess() {
-		return BatchGetNextSeqResult_Success_DEFAULT
+		return GetNextSeqConsecutiveResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *BatchGetNextSeqResult) SetSuccess(x interface{}) {
-	p.Success = x.(*sequence.BatchGetNextSeqResponse)
+func (p *GetNextSeqConsecutiveResult) SetSuccess(x interface{}) {
+	p.Success = x.(*sequence.GetNextSeqResponse)
 }
 
-func (p *BatchGetNextSeqResult) IsSetSuccess() bool {
+func (p *GetNextSeqConsecutiveResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *BatchGetNextSeqResult) GetResult() interface{} {
-	return p.Success
-}
-
-func getMaxSeqHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(sequence.GetMaxSeqRequest)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(sequence.SequenceService).GetMaxSeq(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *GetMaxSeqArgs:
-		success, err := handler.(sequence.SequenceService).GetMaxSeq(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*GetMaxSeqResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newGetMaxSeqArgs() interface{} {
-	return &GetMaxSeqArgs{}
-}
-
-func newGetMaxSeqResult() interface{} {
-	return &GetMaxSeqResult{}
-}
-
-type GetMaxSeqArgs struct {
-	Req *sequence.GetMaxSeqRequest
-}
-
-func (p *GetMaxSeqArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *GetMaxSeqArgs) Unmarshal(in []byte) error {
-	msg := new(sequence.GetMaxSeqRequest)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var GetMaxSeqArgs_Req_DEFAULT *sequence.GetMaxSeqRequest
-
-func (p *GetMaxSeqArgs) GetReq() *sequence.GetMaxSeqRequest {
-	if !p.IsSetReq() {
-		return GetMaxSeqArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *GetMaxSeqArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *GetMaxSeqArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type GetMaxSeqResult struct {
-	Success *sequence.GetMaxSeqResponse
-}
-
-var GetMaxSeqResult_Success_DEFAULT *sequence.GetMaxSeqResponse
-
-func (p *GetMaxSeqResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *GetMaxSeqResult) Unmarshal(in []byte) error {
-	msg := new(sequence.GetMaxSeqResponse)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *GetMaxSeqResult) GetSuccess() *sequence.GetMaxSeqResponse {
-	if !p.IsSetSuccess() {
-		return GetMaxSeqResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *GetMaxSeqResult) SetSuccess(x interface{}) {
-	p.Success = x.(*sequence.GetMaxSeqResponse)
-}
-
-func (p *GetMaxSeqResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *GetMaxSeqResult) GetResult() interface{} {
+func (p *GetNextSeqConsecutiveResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -445,31 +327,21 @@ func newServiceClient(c client.Client) *kClient {
 	}
 }
 
-func (p *kClient) GetNextSeq(ctx context.Context, Req *sequence.GetNextSeqRequest) (r *sequence.GetNextSeqResponse, err error) {
-	var _args GetNextSeqArgs
+func (p *kClient) GetNextSeqInc(ctx context.Context, Req *sequence.GetNextSeqIncRequest) (r *sequence.GetNextSeqResponse, err error) {
+	var _args GetNextSeqIncArgs
 	_args.Req = Req
-	var _result GetNextSeqResult
-	if err = p.c.Call(ctx, "GetNextSeq", &_args, &_result); err != nil {
+	var _result GetNextSeqIncResult
+	if err = p.c.Call(ctx, "GetNextSeqInc", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) BatchGetNextSeq(ctx context.Context, Req *sequence.BatchGetNextSeqRequest) (r *sequence.BatchGetNextSeqResponse, err error) {
-	var _args BatchGetNextSeqArgs
+func (p *kClient) GetNextSeqConsecutive(ctx context.Context, Req *sequence.GetNextSeqConsecutiveRequest) (r *sequence.GetNextSeqResponse, err error) {
+	var _args GetNextSeqConsecutiveArgs
 	_args.Req = Req
-	var _result BatchGetNextSeqResult
-	if err = p.c.Call(ctx, "BatchGetNextSeq", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) GetMaxSeq(ctx context.Context, Req *sequence.GetMaxSeqRequest) (r *sequence.GetMaxSeqResponse, err error) {
-	var _args GetMaxSeqArgs
-	_args.Req = Req
-	var _result GetMaxSeqResult
-	if err = p.c.Call(ctx, "GetMaxSeq", &_args, &_result); err != nil {
+	var _result GetNextSeqConsecutiveResult
+	if err = p.c.Call(ctx, "GetNextSeqConsecutive", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

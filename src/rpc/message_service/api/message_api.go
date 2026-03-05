@@ -49,20 +49,18 @@ func (h *MessageAPI) FetchConvMessageList(ctx context.Context, req *sdkws.FetchC
 	// 参数校验
 	if req == nil {
 		return &sdkws.FetchConvMessageListResponse{
-			Messages:  []*sdkws.MessageData{},
-			HaveMore:  false,
-			ErrorCode: 1,
-			Error:     "request is nil",
+			Messages: []*sdkws.MessageData{},
+			HaveMore: false,
+			Error:    "request is nil",
 		}, nil
 	}
 
 	convID := req.GetConvID()
 	if convID == "" {
 		return &sdkws.FetchConvMessageListResponse{
-			Messages:  []*sdkws.MessageData{},
-			HaveMore:  false,
-			ErrorCode: 1,
-			Error:     "conv_id is empty",
+			Messages: []*sdkws.MessageData{},
+			HaveMore: false,
+			Error:    "conv_id is empty",
 		}, nil
 	}
 
@@ -71,10 +69,9 @@ func (h *MessageAPI) FetchConvMessageList(ctx context.Context, req *sdkws.FetchC
 	if err != nil {
 		klog.CtxErrorf(ctx, "FetchConvMessageList failed", "error", err.Error())
 		return &sdkws.FetchConvMessageListResponse{
-			Messages:  []*sdkws.MessageData{},
-			HaveMore:  false,
-			ErrorCode: 1,
-			Error:     err.Error(),
+			Messages: []*sdkws.MessageData{},
+			HaveMore: false,
+			Error:    err.Error(),
 		}, nil
 	}
 	return resp, nil

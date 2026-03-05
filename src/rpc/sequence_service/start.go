@@ -35,12 +35,11 @@ func Start() error {
 	kit := initOTEL()
 	defer kit.Shutdown(context.Background())
 
-	// 创建Redis客户端和存储
-	redisClient, storage := createRedisStorage()
-	defer redisClient.Close()
+	// 创建 Redis 客户端
+	redisClient := createRedisClient()
 
-	// 创建服务上下文
-	serviceCtx := createServiceContext()
+	// 创建服务上下文（托管 Redis 和注册中心）
+	serviceCtx := createServiceContext(redisClient)
 	defer serviceCtx.Close()
 
 	// 获取本机地址
@@ -50,7 +49,7 @@ func Start() error {
 	instance := createServiceInstance(host)
 
 	// 创建服务器
-	svr := createServer(storage, host)
+	svr := createServer(serviceCtx, host)
 
 	// 启动服务器
 	startServer(svr)
@@ -83,8 +82,8 @@ func initOTEL() *otel.OTELKit {
 	return kit
 }
 
-// createRedisStorage 创建Redis客户端和SequenceStorage
-func createRedisStorage() (*redis.Client, storage.SequenceStorage) {
+// createRedisClient 创建 Redis 客户端
+func createRedisClient() *redis.Client {
 	redisAddr := "localhost:6379"
 	if addr := os.Getenv("REDIS_ADDRESS"); addr != "" {
 		redisAddr = addr
@@ -113,12 +112,11 @@ func createRedisStorage() (*redis.Client, storage.SequenceStorage) {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
 
-	seqStorage := storage.NewSequenceStorage(redisClient)
-	return redisClient, seqStorage
+	return redisClient
 }
 
 // createServiceContext 创建服务上下文
-func createServiceContext() servicecontext.ServiceContext {
+func createServiceContext(redisClient *redis.Client) servicecontext.ServiceContext {
 	etcdEndpoints := []string{"localhost:2379"}
 	if endpoints := os.Getenv("ETCD_ENDPOINTS"); endpoints != "" {
 		etcdEndpoints = []string{endpoints}
@@ -132,7 +130,7 @@ func createServiceContext() servicecontext.ServiceContext {
 		log.Fatalf("Failed to create etcd registry: %v", err)
 	}
 
-	return servicecontext.NewServiceContext(registry)
+	return servicecontext.NewServiceContext(registry, redisClient)
 }
 
 // getLocalIP 获取本机IP
@@ -172,8 +170,9 @@ func createServiceInstance(host string) *foundationregistry.ServiceInstance {
 }
 
 // createServer 创建服务器
-func createServer(seqStorage storage.SequenceStorage, host string) server.Server {
-	// 创建服务层
+func createServer(serviceCtx servicecontext.ServiceContext, host string) server.Server {
+	// 创建存储层和服务层
+	seqStorage := storage.NewSequenceStorage(serviceCtx)
 	seqService := service.NewSequenceService(seqStorage)
 	// 创建接口层（API）
 	seqHandler := api.NewSequenceAPI(seqService)

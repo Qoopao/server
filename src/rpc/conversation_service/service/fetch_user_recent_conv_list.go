@@ -18,31 +18,26 @@ func (s *conversationServiceImpl) FetchUserRecentConvList(ctx context.Context, r
 		}, nil
 	}
 
-	userID := req.GetUserID()
-	lowVersion := req.GetLowerVersion()
-	upVersion := req.GetUpperVersion()
-	first := req.GetFirst()
-
 	var (
 		conversations []*sdkws.ConversationData
 		err           error
 	)
 
 	// 根据 first 标志决定查询方式
-	if first {
+	if req.GetMode() == 0 {
 		// 第一次拉取：查询大于 lowVersion 的所有最新数据
-		conversations, err = s.storage.FetchUserRecentConvListByVersion(ctx, userID, upVersion)
+		conversations, err = s.storage.FetchUserRecentConvListByVersion(ctx, req.GetUserID(), req.GetVersion())
 	} else {
 		// 增量拉取：查询 [lowVersion, upVersion] 区间内的数据
-		conversations, err = s.storage.FetchUserRecentConvListByVersionRange(ctx, userID, lowVersion, upVersion)
+		conversations, err = s.storage.FetchUserRecentConvListByVersionRange(ctx, req.GetUserID(), req.GetLowVersion(), req.GetUpperVersion())
 	}
 
 	if err != nil {
 		klog.CtxErrorf(ctx, "[ConversationService] fetch user recent conv list failed",
-			"user_id", userID,
-			"low_version", lowVersion,
-			"up_version", upVersion,
-			"first", first,
+			"user_id", req.GetUserID(),
+			"low_version", req.GetLowVersion(),
+			"up_version", req.GetUpperVersion(),
+			"mode", req.GetMode(),
 			"error", err.Error())
 		return &sdkws.FetchUserRecentConvListResponse{
 			Conversations: []*sdkws.ConversationData{},
@@ -68,10 +63,10 @@ func (s *conversationServiceImpl) FetchUserRecentConvList(ctx context.Context, r
 	}
 
 	klog.CtxDebugf(ctx, "[ConversationService] fetch user recent conv list success",
-		"user_id", userID,
-		"low_version", lowVersion,
-		"up_version", upVersion,
-		"first", first,
+		"user_id", req.GetUserID(),
+		"low_version", req.GetLowVersion(),
+		"up_version", req.GetUpperVersion(),
+		"mode", req.GetMode(),
 		"count", len(conversations),
 		"left", left,
 		"right", right)
@@ -115,10 +110,9 @@ func (s *conversationServiceImpl) attachRecentMessages(ctx context.Context, conv
 		}
 
 		msgReq := &sdkws.FetchConvMessageListRequest{
-			ConvID:  convID,
-			Cursor:  -1,              // 从最新消息开始
-			Limit:   perConvMsgLimit, // 每个会话固定条数
-			Forward: false,           // 默认按时间从旧到新返回
+			ConvID: convID,
+			Mode:   0,
+			Limit:  perConvMsgLimit, // 每个会话固定条数
 		}
 
 		msgResp, err := client.FetchConvMessageList(ctx, msgReq)

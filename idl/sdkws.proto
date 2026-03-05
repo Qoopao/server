@@ -127,33 +127,46 @@ message BatchChangeConversationsResponse {
 
 // 单链拉取 ------------------------------------
 message FetchConvMessageListRequest {
-  string convID  = 1;
-  int64 cursor   = 2;
-  int64 limit    = 3;
-  bool  forward  = 4;
+  int64 mode = 1;
+
+  string userID      = 2;
+  string convID      = 3;
+
+  int64 version      = 4;
+  int64 limit        = 5;
+
+  int64 left         = 6;
+  int64 right        = 7;
 }
 
 message FetchConvMessageListResponse {
   repeated MessageData messages = 1;
-  bool haveMore = 2;
-  int32 errorCode = 3;
-  string error = 4;
+  int64 left                    = 2;
+  int64 right                   = 3;
+  bool haveMore                 = 4;
+  string error                  = 5;
 }
 // --------------------------------------------
 
 // 混链拉取 ------------------------------------
 message FetchUserRecentConvListRequest {
-  string userID    = 1;
-  int64 lowerVersion = 2;
-  int64 upperVersion  = 3;
-  bool first       = 4; // 是否是一次完整交互的第一条
+  int64 mode = 1;
+
+  string userID    = 2;
+
+  int64 version      = 3;
+  int64 limit        = 4;
+
+  int64 lowVersion   = 5;
+  int64 upperVersion = 6;
 }
 
 message FetchUserRecentConvListResponse {
   repeated ConversationData conversations = 1;
-  int64 left = 2; // 左右闭合
+  int64 left = 2; 
   int64 right = 3;
-  string error = 4;
+  bool haveMore = 4;
+  string error = 5;
 }
 //---------------------------------------------
 

@@ -12,19 +12,19 @@ import (
 
 // UpdateUserRecentConversation 更新用户最近会话链（一个 user+conv 一条文档，按 Version 排序）
 // Version 字段作用：1) 防止旧状态覆盖新状态（并发安全） 2) 客户端增量同步（通过 version 判断会话是否有更新）
-// TODO: Version 当前使用时间戳，后续改为用户维度的序列号服务生成
-func (s *convMsgStorageImpl) UpdateUserRecentConversation(ctx context.Context, userID string, convID string, lastSeq int64) error {
-	if userID == "" || convID == "" {
+// Version 优先使用用户维度的序列号（由 sequence-service 生成），如未提供则回退为时间戳
+func (s *convMsgStorageImpl) UpdateUserRecentConversation(ctx context.Context, req *UpdateUserRecentConversationRequest) error {
+	if req == nil || req.UserID == "" || req.ConvID == "" {
 		return nil
 	}
 
 	now := time.Now()
 	doc := &orm.UserRecentConversationsDocument{
-		ID:             userID + ":" + convID,
-		UserID:         userID,
-		ConvID:         convID,
-		LastMessageSeq: lastSeq,
-		Version:        now.UnixNano(), // TODO: 后续改为用户维度的序列号服务生成
+		ID:             req.UserID + ":" + req.ConvID,
+		UserID:         req.UserID,
+		ConvID:         req.ConvID,
+		LastMessageSeq: req.LastMessageSeq,
+		Version:        req.Version,
 		UpdatedAt:      now,
 	}
 

@@ -7,44 +7,33 @@ import (
 )
 
 // FetchConvMessageList 查询会话消息列表
+// 新版协议：使用 left/right 指定区间；left/right 都为 0 时表示按 limit 拉取最新消息
 func (s *messageServiceImpl) FetchConvMessageList(ctx context.Context, req *sdkws.FetchConvMessageListRequest) (*sdkws.FetchConvMessageListResponse, error) {
-
-	convID := req.GetConvID()
-	cursor := req.GetCursor()
-	limit := req.GetLimit()
-	if limit < 1 {
-		limit = 20
-	}
-
 	var (
 		messages []*sdkws.MessageData
 		err      error
 	)
 
-	if cursor < 0 {
-		messages, err = s.storage.FetchConvLatestMessageList(ctx, convID, limit)
+	// left/right 都为 0：按 limit 拉取最新消息
+	if req.GetMode() == 0 {
+		messages, err = s.storage.FetchConvLatestMessageList(ctx, req.GetConvID(), req.GetLimit())
 	} else {
-		left, right := modifyFetchRange(cursor, limit, req.GetForward())
-		messages, err = s.storage.FetchConvMessageListWithRange(ctx, convID, left, right)
+		messages, err = s.storage.FetchConvMessageListWithRange(ctx, req.GetConvID(), req.GetLeft(), req.GetRight())
 	}
-
 	if err != nil {
 		return nil, err
 	}
 
+	var respLeft, respRight int64
+	if len(messages) > 0 {
+		respLeft = messages[0].GetSeq()
+		respRight = messages[len(messages)-1].GetSeq()
+	}
+
 	return &sdkws.FetchConvMessageListResponse{
 		Messages: messages,
+		Left:     respLeft,
+		Right:    respRight,
+		HaveMore: false,
 	}, nil
-}
-
-func modifyFetchRange(cursor int64, limit int64, forward bool) (int64, int64) {
-	if cursor < 0 { // 意味直接拉取最新数据
-		return 0, 0
-	}
-
-	if forward {
-		return min(0, cursor-limit+1), cursor
-	} else {
-		return cursor, cursor + limit - 1
-	}
 }

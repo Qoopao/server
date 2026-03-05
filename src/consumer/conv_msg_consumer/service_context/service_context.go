@@ -16,6 +16,8 @@ import (
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/loadbalancer"
 	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
 	foundationstorage "github.com/rhp-QE/roc-foundation-util-go/storage"
+	sequence "github.com/rhp-QE/roc-im-server/kitex_gen/sequence/sequenceservice"
+	consts "github.com/rhp-QE/roc-im-server/src/const"
 )
 
 // ServiceContext 管理 conv_msg_consumer 的全局共享资源
@@ -29,6 +31,9 @@ type ServiceContext interface {
 	// GetBackbonServiceClient 获取 backbon 服务客户端（懒加载）
 	GetBackbonServiceClient(ctx context.Context) (backbonservice.Client, error)
 
+	// GetSequenceServiceClient 获取 sequence-service 客户端（懒加载）
+	GetSequenceServiceClient(ctx context.Context) (sequence.Client, error)
+
 	// Close 关闭所有资源
 	Close() error
 }
@@ -39,6 +44,9 @@ type serviceContextImpl struct {
 	registry      foundationregistry.Registry
 	discovery     discovery.Discovery
 	backbonClient sync.Map // 缓存 backbon 服务客户端
+	seqClient     sequence.Client
+	seqClientOnce sync.Once
+	seqClientErr  error
 }
 
 // NewServiceContext 创建 ServiceContext 实例
@@ -107,6 +115,39 @@ func (s *serviceContextImpl) GetBackbonServiceClient(ctx context.Context) (backb
 	}
 
 	return entry.client.(backbonservice.Client), nil
+}
+
+// GetSequenceServiceClient 懒加载创建 SequenceService 客户端
+func (s *serviceContextImpl) GetSequenceServiceClient(ctx context.Context) (sequence.Client, error) {
+	s.seqClientOnce.Do(func() {
+		// 这里使用 3 秒超时，避免长时间阻塞
+		discoveryCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		defer cancel()
+
+		instance, err := s.discovery.GetInstance(discoveryCtx, consts.SequenceServiceName)
+		if err != nil {
+			s.seqClientErr = fmt.Errorf("failed to discover sequence-service: %w", err)
+			return
+		}
+
+		target := fmt.Sprintf("%s:%d", instance.Host, instance.Port)
+		clientImpl, err := sequence.NewClient(
+			consts.SequenceServiceName, // 与服务端 WithServerBasicInfo 中设置的服务名称保持一致
+			client.WithHostPorts(target),
+			client.WithSuite(tracing.NewClientSuite()),
+			client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: consts.SequenceServiceName}),
+			client.WithRPCTimeout(10*time.Second), // 设置 RPC 超时时间为 10 秒
+		)
+		if err != nil {
+			s.seqClientErr = fmt.Errorf("failed to create sequence-service client: %w", err)
+			return
+		}
+
+		klog.Infof("conv_msg_consumer: created sequence-service client, target=%s", target)
+		s.seqClient = clientImpl
+	})
+
+	return s.seqClient, s.seqClientErr
 }
 
 // clientEntry 客户端条目，包含客户端和创建同步原语

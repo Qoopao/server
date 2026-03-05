@@ -8,20 +8,40 @@ import (
 	"github.com/cloudwego/prutal"
 )
 
-// 获取下一个序列号请求
-type GetNextSeqRequest struct {
-	ConversationId string `protobuf:"bytes,1,opt,name=conversation_id" json:"conversation_id,omitempty"` // 会话ID
+// 获取下一个序列号请求 (递增)
+type GetNextSeqIncRequest struct {
+	Id string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"` // 唯一ID
 }
 
-func (x *GetNextSeqRequest) Reset() { *x = GetNextSeqRequest{} }
+func (x *GetNextSeqIncRequest) Reset() { *x = GetNextSeqIncRequest{} }
 
-func (x *GetNextSeqRequest) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+func (x *GetNextSeqIncRequest) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
-func (x *GetNextSeqRequest) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+func (x *GetNextSeqIncRequest) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *GetNextSeqRequest) GetConversationId() string {
+func (x *GetNextSeqIncRequest) GetId() string {
 	if x != nil {
-		return x.ConversationId
+		return x.Id
+	}
+	return ""
+}
+
+// 获取下一个序列号 (连续递增）
+type GetNextSeqConsecutiveRequest struct {
+	Id string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"` // 唯一ID
+}
+
+func (x *GetNextSeqConsecutiveRequest) Reset() { *x = GetNextSeqConsecutiveRequest{} }
+
+func (x *GetNextSeqConsecutiveRequest) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *GetNextSeqConsecutiveRequest) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetNextSeqConsecutiveRequest) GetId() string {
+	if x != nil {
+		return x.Id
 	}
 	return ""
 }
@@ -60,142 +80,7 @@ func (x *GetNextSeqResponse) GetErrorMsg() string {
 	return ""
 }
 
-// 批量获取序列号请求
-type BatchGetNextSeqRequest struct {
-	ConversationIds []string `protobuf:"bytes,1,rep,name=conversation_ids" json:"conversation_ids,omitempty"` // 会话ID列表
-}
-
-func (x *BatchGetNextSeqRequest) Reset() { *x = BatchGetNextSeqRequest{} }
-
-func (x *BatchGetNextSeqRequest) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *BatchGetNextSeqRequest) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *BatchGetNextSeqRequest) GetConversationIds() []string {
-	if x != nil {
-		return x.ConversationIds
-	}
-	return nil
-}
-
-// 批量获取序列号响应
-type BatchGetNextSeqResponse struct {
-	Results []*SeqResult `protobuf:"bytes,1,rep,name=results" json:"results,omitempty"` // 结果列表
-}
-
-func (x *BatchGetNextSeqResponse) Reset() { *x = BatchGetNextSeqResponse{} }
-
-func (x *BatchGetNextSeqResponse) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *BatchGetNextSeqResponse) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *BatchGetNextSeqResponse) GetResults() []*SeqResult {
-	if x != nil {
-		return x.Results
-	}
-	return nil
-}
-
-// 序列号结果
-type SeqResult struct {
-	ConversationId string `protobuf:"bytes,1,opt,name=conversation_id" json:"conversation_id,omitempty"` // 会话ID
-	Seq            int64  `protobuf:"varint,2,opt,name=seq" json:"seq,omitempty"`                        // 序列号
-	ErrorCode      string `protobuf:"bytes,3,opt,name=error_code" json:"error_code,omitempty"`           // 错误码
-	ErrorMsg       string `protobuf:"bytes,4,opt,name=error_msg" json:"error_msg,omitempty"`             // 错误信息
-}
-
-func (x *SeqResult) Reset() { *x = SeqResult{} }
-
-func (x *SeqResult) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *SeqResult) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *SeqResult) GetConversationId() string {
-	if x != nil {
-		return x.ConversationId
-	}
-	return ""
-}
-
-func (x *SeqResult) GetSeq() int64 {
-	if x != nil {
-		return x.Seq
-	}
-	return 0
-}
-
-func (x *SeqResult) GetErrorCode() string {
-	if x != nil {
-		return x.ErrorCode
-	}
-	return ""
-}
-
-func (x *SeqResult) GetErrorMsg() string {
-	if x != nil {
-		return x.ErrorMsg
-	}
-	return ""
-}
-
-// 获取当前最大序列号请求
-type GetMaxSeqRequest struct {
-	ConversationId string `protobuf:"bytes,1,opt,name=conversation_id" json:"conversation_id,omitempty"` // 会话ID
-}
-
-func (x *GetMaxSeqRequest) Reset() { *x = GetMaxSeqRequest{} }
-
-func (x *GetMaxSeqRequest) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *GetMaxSeqRequest) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *GetMaxSeqRequest) GetConversationId() string {
-	if x != nil {
-		return x.ConversationId
-	}
-	return ""
-}
-
-// 获取当前最大序列号响应
-type GetMaxSeqResponse struct {
-	MaxSeq    int64  `protobuf:"varint,1,opt,name=max_seq" json:"max_seq,omitempty"`      // 当前最大序列号
-	ErrorCode string `protobuf:"bytes,2,opt,name=error_code" json:"error_code,omitempty"` // 错误码
-	ErrorMsg  string `protobuf:"bytes,3,opt,name=error_msg" json:"error_msg,omitempty"`   // 错误信息
-}
-
-func (x *GetMaxSeqResponse) Reset() { *x = GetMaxSeqResponse{} }
-
-func (x *GetMaxSeqResponse) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *GetMaxSeqResponse) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *GetMaxSeqResponse) GetMaxSeq() int64 {
-	if x != nil {
-		return x.MaxSeq
-	}
-	return 0
-}
-
-func (x *GetMaxSeqResponse) GetErrorCode() string {
-	if x != nil {
-		return x.ErrorCode
-	}
-	return ""
-}
-
-func (x *GetMaxSeqResponse) GetErrorMsg() string {
-	if x != nil {
-		return x.ErrorMsg
-	}
-	return ""
-}
-
 type SequenceService interface {
-	GetNextSeq(ctx context.Context, req *GetNextSeqRequest) (res *GetNextSeqResponse, err error)
-	BatchGetNextSeq(ctx context.Context, req *BatchGetNextSeqRequest) (res *BatchGetNextSeqResponse, err error)
-	GetMaxSeq(ctx context.Context, req *GetMaxSeqRequest) (res *GetMaxSeqResponse, err error)
+	GetNextSeqInc(ctx context.Context, req *GetNextSeqIncRequest) (res *GetNextSeqResponse, err error)
+	GetNextSeqConsecutive(ctx context.Context, req *GetNextSeqConsecutiveRequest) (res *GetNextSeqResponse, err error)
 }
