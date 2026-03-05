@@ -14,6 +14,7 @@ import (
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
 	"github.com/rhp-QE/roc-foundation-util-go/storage"
 	mongodb "github.com/rhp-QE/roc-foundation-util-go/storage/mongodb"
+	"github.com/rhp-QE/roc-im-server/src/common/orm"
 	convapi "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/api"
 	"github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/service"
 	servicecontext "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/service_context"
@@ -77,7 +78,7 @@ func createMongoStorage() storage.Storage {
 	}
 	database := os.Getenv("CONV_MONGODB_DATABASE")
 	if database == "" {
-		database = "im_message"
+		database = orm.DBMessage
 	}
 
 	store, err := mongodb.NewMongoStorage(

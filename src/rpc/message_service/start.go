@@ -25,6 +25,7 @@ import (
 	foundationstorage "github.com/rhp-QE/roc-foundation-util-go/storage"
 	mongodb "github.com/rhp-QE/roc-foundation-util-go/storage/mongodb"
 	message "github.com/rhp-QE/roc-im-server/kitex_gen/message/messageservice"
+	"github.com/rhp-QE/roc-im-server/src/common/orm"
 	consts "github.com/rhp-QE/roc-im-server/src/const"
 	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/api"
 	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/service"
@@ -117,7 +118,7 @@ func createMongoStorage() foundationstorage.Storage {
 	}
 	database := os.Getenv("MESSAGE_MONGODB_DATABASE")
 	if database == "" {
-		database = "im_message"
+		database = orm.DBMessage
 	}
 
 	store, err := mongodb.NewMongoStorage(

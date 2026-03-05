@@ -1,10 +1,13 @@
 package orm
 
 const (
+	// DBMessage 消息 & 会话相关数据所在的数据库（message_service / conv_msg_consumer / conversation_service）
+	DBMessage = "im_message"
+
 	// CollectionConversations 会话详情集合名称
-	CollectionConversations = "im_db_conversations"
+	CollectionConversations = "conversations"
 	// CollectionUserRecentConversations 用户最近会话链集合名称
-	CollectionUserRecentConversations = "im_db_user_recent_conversations"
+	CollectionUserRecentConversations = "user_recent_conversations"
 	// CollectionMessages 消息集合名称
-	CollectionMessages = "im_db_messages"
+	CollectionMessages = "messages"
 )
