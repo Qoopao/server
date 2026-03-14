@@ -3,15 +3,13 @@ package main
 import (
 	"log"
 
-	"github.com/rhp-QE/roc-im-server/internal/msgconsumer"
+	convMsgConsumer "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer"
 )
 
 func main() {
-	log.Println("启动 MsgConsumer...")
-
-	// 启动消费者（会阻塞）
-	msgconsumer.Start()
-
-	// 阻塞，防止进程退出
+	log.Println("启动 ConvMsgConsumer...")
+	if err := convMsgConsumer.Start(); err != nil {
+		log.Fatalf("ConvMsgConsumer 启动失败: %v", err)
+	}
 	select {}
 }

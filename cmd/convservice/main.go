@@ -3,13 +3,12 @@ package main
 import (
 	"log"
 
-	convRpc "github.com/rhp-QE/roc-im-server/internal/rpc/conversation"
+	convRpc "github.com/rhp-QE/roc-im-server/src/rpc/conversation_service"
 )
 
 func main() {
 	log.Println("启动 Conversation Service...")
-
-	// 启动 RPC 服务
-	convRpc.Start()
+	if err := convRpc.Start(); err != nil {
+		log.Fatalf("Conversation Service 启动失败: %v", err)
+	}
 }
-
