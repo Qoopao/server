@@ -7,21 +7,23 @@ import (
 	"github.com/rhp-QE/roc-im-server/kitex_gen/sdkws"
 	sequencepb "github.com/rhp-QE/roc-im-server/kitex_gen/sequence"
 	sequence "github.com/rhp-QE/roc-im-server/kitex_gen/sequence/sequenceservice"
+	"github.com/rhp-QE/roc-im-server/src/common/orm"
 	"github.com/rhp-QE/roc-im-server/src/common/util"
 	convstorage "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/storage"
 )
 
 const MixUPrefix = "mix2user"
 
-// updateUserRecentConvsIfSmallConv 如果是单聊则更新用户最近会话链（更新发送者和接收者的最近会话链）
+// updateUserRecentConvsIfSmallConv 更新用户最近会话链（单聊 / 群聊都更新，系统通知忽略）
 func (s *convMsgConsumerServiceImpl) updateUserRecentConvsIfSmallConv(ctx context.Context, msg *sdkws.MessageData) error {
-	// 只处理单聊
-	if !util.IsSingleChat(msg) {
+	if msg == nil || util.IsSystemNotification(msg) {
 		return nil
 	}
 
-	// 提取会话成员（发送者和接收者）
-	members := util.GetMessageMembers(msg)
+	members, err := s.getConvMembersForMessage(ctx, msg)
+	if err != nil || len(members) == 0 {
+		return err
+	}
 
 	// 获取 sequence-service 客户端（用户会话版本号服务）
 	seqClient, err := s.serviceCtx.GetSequenceServiceClient(ctx)
@@ -70,4 +72,21 @@ func getNextVersion(ctx context.Context, seqClient sequence.Client, userID, conv
 	}
 
 	return seqResp.Seq, nil
+}
+
+// getConvMembersForMessage 根据消息类型获取需要维护最近会话链的成员列表
+// - 单聊：发送者 + 接收者
+// - 群聊：从会话文档中解析成员 JSON
+// - 其他类型：返回空
+func (s *convMsgConsumerServiceImpl) getConvMembersForMessage(ctx context.Context, msg *sdkws.MessageData) ([]string, error) {
+	switch msg.ConvType {
+	case int32(orm.ConvTypeSingleChat):
+		// 单聊：通过 convID 在 service 层解析成员（findMembersForConv 会优先走 convID 解析，不查 DB）
+		return s.findMembersForConv(ctx, msg.ConvID)
+	case int32(orm.ConvTypeGroupChat):
+		// 群聊：复用统一的成员查询逻辑（包含群主）
+		return s.findMembersForConv(ctx, msg.ConvID)
+	default:
+		return nil, nil
+	}
 }

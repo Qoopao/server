@@ -2,15 +2,19 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	backbon "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backbon"
 	backbonservice "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backbon/backbonservice"
 	frontier "github.com/rhp-QE/roc-foundation-service/long_connection_service/src/frontier"
+	"github.com/rhp-QE/roc-foundation-util-go/array"
+	"github.com/rhp-QE/roc-foundation-util-go/stringutil"
 	"github.com/rhp-QE/roc-im-server/kitex_gen/sdkws"
-	"github.com/rhp-QE/roc-im-server/src/common/util"
+	"github.com/rhp-QE/roc-im-server/src/common/orm"
 	consts "github.com/rhp-QE/roc-im-server/src/const"
 )
 
@@ -69,19 +73,75 @@ func (s *convMsgConsumerServiceImpl) pushMessage(ctx context.Context, msg *sdkws
 
 // getPushTargets 获取推送目标用户列表
 func (s *convMsgConsumerServiceImpl) getPushTargets(msg *sdkws.MessageData) []string {
-	// 单聊：推送给接收者（排除发送者自己）
-	if util.IsSingleChat(msg) {
-		if msg.RecvID != "" && msg.RecvID != msg.SendID {
-			return []string{msg.RecvID}
-		}
+	if msg == nil || msg.ConvID == "" {
 		return nil
 	}
 
-	// 群聊：TODO 从会话中获取成员列表
-	// 目前暂时返回空，后续可以从会话详情中获取成员列表
-	klog.CtxWarnf(context.Background(), "[ConvMsgConsumer] group chat push not implemented",
-		"conv_id", msg.ConvID)
-	return nil
+	convID := msg.ConvID
+	convMembers, err := s.findMembersForConv(context.Background(), convID)
+	if err != nil {
+		klog.CtxErrorf(context.Background(), "[ConvMsgConsumer] findMembersForConv failed",
+			"conv_id", convID,
+			"error", err.Error())
+		return nil
+	}
+
+	if !stringutil.IsEmpty(msg.SendID) {
+		convMembers = stringutil.FilterExclude(convMembers, msg.SendID)
+	}
+
+	return convMembers
+}
+
+// findMembersForConv 在 service 层按 convID 解析成员：
+// - 单聊：0:1:uid1:uid2 直接从 convID 解析成员
+// - 群聊/其他：调用 storage.GetConversationDoc 查询会话文档，再从 ConversationData.Members + OwnerID 构造成员列表
+func (s *convMsgConsumerServiceImpl) findMembersForConv(ctx context.Context, convID string) ([]string, error) {
+	if convID == "" {
+		return nil, nil
+	}
+
+	parts := strings.Split(convID, ":")
+	// 单聊：严格匹配 0:1:uid1:uid2（至少 4 段），才走 convID 解析逻辑
+	if len(parts) >= 4 && parts[0] == "0" && parts[1] == fmt.Sprintf("%d", orm.ConvTypeSingleChat) {
+		userPart := strings.Join(parts[2:], ":")
+		userIDs := strings.Split(userPart, ":")
+		members := make([]string, 0, len(userIDs))
+		seen := make(map[string]struct{}, len(userIDs))
+		for _, uid := range userIDs {
+			if uid == "" {
+				continue
+			}
+			if _, ok := seen[uid]; ok {
+				continue
+			}
+			seen[uid] = struct{}{}
+			members = append(members, uid)
+		}
+		return members, nil
+	}
+
+	conv, err := s.storage.GetConversationData(ctx, convID)
+	if err != nil || conv == nil {
+		return nil, err
+	}
+
+	members := make([]string, 0)
+	if conv.Members != "" {
+		if err := json.Unmarshal([]byte(conv.Members), &members); err != nil {
+			klog.CtxErrorf(ctx, "[ConvMsgConsumer] findMembersForConv unmarshal Members failed",
+				"conv_id", convID,
+				"error", err.Error())
+			return nil, err
+		}
+	}
+
+	if !stringutil.IsEmpty(conv.OwnerID) {
+		members = append(members, conv.OwnerID)
+	}
+
+	// 对成员列表去重
+	return array.Distinct(members), nil
 }
 
 // buildPushMessage 构造 PushMessage

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cloudwego/kitex/pkg/klog"
@@ -34,6 +35,9 @@ func (s *conversationServiceImpl) CreateGroup(ctx context.Context, req *sdkws.Cr
 	if cmdMsg != nil {
 		s.pushCmdToUsers(ctx, userIDs, cmdMsg, conv.ConvID)
 	}
+
+	// 5. 向该群聊发送一条系统消息「群聊创建成功，已邀请 xxx 进群」（调用 message_service）
+	s.sendGroupCreatedSystemMessage(ctx, conv, req)
 
 	return &sdkws.CreateGroupResponse{
 		ErrorCode:    0,
@@ -108,4 +112,55 @@ func (s *conversationServiceImpl) collectGroupPushTargets(req *sdkws.CreateGroup
 		}
 	}
 	return userIDs
+}
+
+// sendGroupCreatedSystemMessage 向群聊发送一条系统消息「群聊创建成功，已邀请 xxx 进群」
+// 只负责调用 message_service，失败时记录日志但不影响群聊创建结果。
+func (s *conversationServiceImpl) sendGroupCreatedSystemMessage(ctx context.Context, conv *sdkws.ConversationData, req *sdkws.CreateGroupRequest) {
+	if conv == nil || req == nil {
+		return
+	}
+
+	client, err := s.serviceCtx.GetMessageServiceClient()
+	if err != nil {
+		klog.CtxErrorf(ctx, "[ConversationService] sendGroupCreatedSystemMessage get message client failed: conv_id=%s err=%v", conv.ConvID, err)
+		return
+	}
+
+	invited := req.GetMemberUIDs()
+	if len(invited) == 0 {
+		// 没有额外成员时，仅提示群聊创建成功
+		invited = nil
+	}
+
+	var text string
+	if len(invited) == 0 {
+		text = "群聊创建成功"
+	} else {
+		text = fmt.Sprintf("群聊创建成功，已邀请 %s 进群", strings.Join(invited, ","))
+	}
+
+	msg := &sdkws.MessageData{
+		SendID:   "",
+		ConvID:   conv.ConvID,
+		ConvType: int32(orm.ConvTypeGroupChat),
+		Content:  []byte(text),
+	}
+
+	batchReq := &sdkws.BatchSendMessageRequest{
+		Msgs: []*sdkws.MessageData{msg},
+	}
+
+	resp, err := client.BatchSendMessage(ctx, batchReq)
+	if err != nil {
+		klog.CtxErrorf(ctx, "[ConversationService] sendGroupCreatedSystemMessage BatchSendMessage failed: conv_id=%s err=%v", conv.ConvID, err)
+		return
+	}
+	if resp != nil && len(resp.Results) > 0 {
+		r := resp.Results[0]
+		if r.GetErrorCode() != "" {
+			klog.CtxWarnf(ctx, "[ConversationService] sendGroupCreatedSystemMessage business error: conv_id=%s code=%s msg=%s",
+				conv.ConvID, r.GetErrorCode(), r.GetErrorMsg())
+		}
+	}
 }

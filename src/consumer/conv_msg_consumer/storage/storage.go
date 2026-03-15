@@ -18,6 +18,9 @@ type ConvMsgStorage interface {
 
 	// UpdateUserRecentConversation 更新用户最近会话链（将会话移到最前面）
 	UpdateUserRecentConversation(ctx context.Context, req *UpdateUserRecentConversationRequest) error
+
+	// GetConversationData 根据 convID 查询会话的 ConversationData（纯存储操作，不做业务解析）
+	GetConversationData(ctx context.Context, convID string) (*sdkws.ConversationData, error)
 }
 
 type convMsgStorageImpl struct {

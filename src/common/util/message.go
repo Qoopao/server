@@ -20,8 +20,8 @@ func IsSystemNotification(msg *sdkws.MessageData) bool {
 	return msg != nil && msg.ConvType == int32(orm.ConvTypeSystemNotification)
 }
 
-// GetMessageMembers 获取消息的会话成员（单聊时返回发送者和接收者）
-func GetMessageMembers(msg *sdkws.MessageData) []string {
+// GetMessageMembersForSingleConv 获取消息的会话成员（单聊时返回发送者和接收者）
+func GetMessageMembersForSingleConv(msg *sdkws.MessageData) []string {
 	if msg == nil {
 		return nil
 	}
@@ -34,4 +34,3 @@ func GetMessageMembers(msg *sdkws.MessageData) []string {
 	}
 	return members
 }
-
