@@ -16,7 +16,6 @@ syntax = "proto3";
 package sdkws;
 
 option go_package = "github.com/rhp-QE/roc-im-server/kitex_gen/sdkws";
-
 // 包含消息的完整信息，是系统中最核心的消息结构
 message MessageData {
   string sendID                    = 1; // 发送者用户ID
@@ -79,7 +78,7 @@ message BatchSendMessageResponse {
 
 // 命令消息 -----------------------------------
 message CmdMessage {
-  int32 cmd                 = 1;
+  int32 cmd  = 1;
   int32 id   = 2;
   // 1001 : 消息状态发生改变 (发送成功、发送失败、删除、撤回)
   // 1002 : 已读状态 发生改变
@@ -92,38 +91,14 @@ message CmdMessage {
   // 2003 : 置顶状态发生改变
   // 2004 :
   // 2005 : 会话syncExt 发生改变
-  MessageData message               = 3;
-  ConversationData conversation = 4;
-  int64 cursor = 5;
-}
 
-message CmdMessageOptResult {
-  int32 cmd = 1;
-  int32 id  = 2;
-  int32 errorCode = 3;
-  string error = 4;
-}
+  // 3001 : 被邀请进群
 
-
-// 更改消息请求 --------------------------------
-message BatchChangeMessagesRequest {
-  repeated CmdMessage cmdMessages = 1;
+  // 二进制数据
+  bytes data = 4;
+  int64 version = 5;
+  string uid = 6;
 }
-
-message BatchChangeMessagesResponse {
-  repeated CmdMessageOptResult results = 1; 
-}
-// -------------------------------------------
-
-// 更改会话请求 --------------------------------
-message BatchChangeConversationsRequest {
-  repeated CmdMessage cmdMessages = 1;
-}
-
-message BatchChangeConversationsResponse {
-  repeated CmdMessageOptResult results = 1;
-}
-// -------------------------------------------
 
 // 单链拉取 ------------------------------------
 message FetchConvMessageListRequest {
@@ -220,4 +195,34 @@ message BatchGetConversationsRequest {
 message BatchGetConversationsResponse {
   repeated GetConversationResult results = 1; // 结果列表，每个结果包含会话和对应的错误信息
 }
+
+// 创建群聊
+message CreateGroupRequest {
+  string ownerID = 1; // 会话拥有者用户ID
+  string name = 2; // 群聊名称
+  repeated string memberUIDs = 3; // 群聊成员用户ID列表
+}
+
+message CreateGroupResponse {
+  int32 errorCode = 1; // 错误码
+  string errorMsg = 2; // 错误信息
+  ConversationData conversation = 3; // 会话数据
+}
+
+// 邀请进群
+message InviteGroupMembersRequest {
+  string convID = 1; // 会话ID
+  repeated string memberUIDs = 2; // 群聊成员用户ID列表
+}
+
+message InviteGroupMembersResponse {
+  int32 errorCode = 1; // 错误码
+  string errorMsg = 2; // 错误信息
+}
+
+// 被邀请进群信息
+message InvitedGroupInfo {
+  ConversationData conversation = 1; // 会话数据
+}
+
 // --------------------------------------------

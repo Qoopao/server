@@ -12,7 +12,6 @@ import (
 // Client is designed to provide IDL-compatible methods with call-option parameter for kitex framework.
 type Client interface {
 	BatchSendMessage(ctx context.Context, Req *sdkws.BatchSendMessageRequest, callOptions ...callopt.Option) (r *sdkws.BatchSendMessageResponse, err error)
-	BatchChangeMessages(ctx context.Context, Req *sdkws.BatchChangeMessagesRequest, callOptions ...callopt.Option) (r *sdkws.BatchChangeMessagesResponse, err error)
 	FetchConvMessageList(ctx context.Context, Req *sdkws.FetchConvMessageListRequest, callOptions ...callopt.Option) (r *sdkws.FetchConvMessageListResponse, err error)
 	BatchGetMessages(ctx context.Context, Req *sdkws.BatchGetMessagesRequest, callOptions ...callopt.Option) (r *sdkws.BatchGetMessagesResponse, err error)
 }
@@ -49,11 +48,6 @@ type kMessageServiceClient struct {
 func (p *kMessageServiceClient) BatchSendMessage(ctx context.Context, Req *sdkws.BatchSendMessageRequest, callOptions ...callopt.Option) (r *sdkws.BatchSendMessageResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.BatchSendMessage(ctx, Req)
-}
-
-func (p *kMessageServiceClient) BatchChangeMessages(ctx context.Context, Req *sdkws.BatchChangeMessagesRequest, callOptions ...callopt.Option) (r *sdkws.BatchChangeMessagesResponse, err error) {
-	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.BatchChangeMessages(ctx, Req)
 }
 
 func (p *kMessageServiceClient) FetchConvMessageList(ctx context.Context, Req *sdkws.FetchConvMessageListRequest, callOptions ...callopt.Option) (r *sdkws.FetchConvMessageListResponse, err error) {

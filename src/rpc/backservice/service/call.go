@@ -141,36 +141,10 @@ func (s *backServiceImpl) callBackserviceIM(ctx context.Context, methodName stri
 		return resp.Marshal(nil)
 
 	case consts.SDKWSMethodMessageChange:
-		// 107: 消息改变 -> message-service.BatchChangeMessages
-		client, err := s.serviceCtx.GetMessageServiceClient()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get message service client: %w", err)
-		}
-		req := &sdkws.BatchChangeMessagesRequest{}
-		if err := req.Unmarshal(payload); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal BatchChangeMessagesRequest: %w", err)
-		}
-		resp, err := client.BatchChangeMessages(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-		return resp.Marshal(nil)
+		return nil, fmt.Errorf("message change is not supported")
 
 	case consts.SDKWSMethodConversationChange:
-		// 108: 会话改变 -> conversation-service.BatchChangeConversations
-		client, err := s.serviceCtx.GetConversationServiceClient()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get conversation service client: %w", err)
-		}
-		req := &sdkws.BatchChangeConversationsRequest{}
-		if err := req.Unmarshal(payload); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal BatchChangeConversationsRequest: %w", err)
-		}
-		resp, err := client.BatchChangeConversations(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-		return resp.Marshal(nil)
+		return nil, fmt.Errorf("conversation change is not support")
 
 	default:
 		return nil, fmt.Errorf("unsupported SDKWSMethod: %s", methodName)

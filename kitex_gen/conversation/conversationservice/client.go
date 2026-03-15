@@ -11,7 +11,6 @@ import (
 
 // Client is designed to provide IDL-compatible methods with call-option parameter for kitex framework.
 type Client interface {
-	BatchChangeConversations(ctx context.Context, Req *sdkws.BatchChangeConversationsRequest, callOptions ...callopt.Option) (r *sdkws.BatchChangeConversationsResponse, err error)
 	FetchUserRecentConvList(ctx context.Context, Req *sdkws.FetchUserRecentConvListRequest, callOptions ...callopt.Option) (r *sdkws.FetchUserRecentConvListResponse, err error)
 	UserMessageIntegrityCheck(ctx context.Context, Req *sdkws.UserMessageIntegrityCheckRequest, callOptions ...callopt.Option) (r *sdkws.UserMessageIntegrityCheckResponse, err error)
 	BatchGetConversations(ctx context.Context, Req *sdkws.BatchGetConversationsRequest, callOptions ...callopt.Option) (r *sdkws.BatchGetConversationsResponse, err error)
@@ -44,11 +43,6 @@ func MustNewClient(destService string, opts ...client.Option) Client {
 
 type kConversationServiceClient struct {
 	*kClient
-}
-
-func (p *kConversationServiceClient) BatchChangeConversations(ctx context.Context, Req *sdkws.BatchChangeConversationsRequest, callOptions ...callopt.Option) (r *sdkws.BatchChangeConversationsResponse, err error) {
-	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.BatchChangeConversations(ctx, Req)
 }
 
 func (p *kConversationServiceClient) FetchUserRecentConvList(ctx context.Context, Req *sdkws.FetchUserRecentConvListRequest, callOptions ...callopt.Option) (r *sdkws.FetchUserRecentConvListResponse, err error) {

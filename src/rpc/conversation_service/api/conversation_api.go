@@ -21,22 +21,6 @@ func NewConversationAPI(svc service.ConversationService) *ConversationAPI {
 	}
 }
 
-// BatchChangeConversations 批量更改会话（会话状态、已读状态、置顶状态、属性等）
-func (h *ConversationAPI) BatchChangeConversations(ctx context.Context, req *sdkws.BatchChangeConversationsRequest) (resp *sdkws.BatchChangeConversationsResponse, err error) {
-	if req == nil {
-		return &sdkws.BatchChangeConversationsResponse{
-			Results: []*sdkws.CmdMessageOptResult{},
-		}, nil
-	}
-
-	resp, err = h.svc.BatchChangeConversations(ctx, req)
-	if err != nil {
-		klog.CtxErrorf(ctx, "BatchChangeConversations failed",
-			"error", err.Error())
-	}
-	return resp, err
-}
-
 // FetchUserRecentConvList 混链拉取：获取用户最近的会话列表（包含会话和消息）
 func (h *ConversationAPI) FetchUserRecentConvList(ctx context.Context, req *sdkws.FetchUserRecentConvListRequest) (resp *sdkws.FetchUserRecentConvListResponse, err error) {
 	if req == nil {

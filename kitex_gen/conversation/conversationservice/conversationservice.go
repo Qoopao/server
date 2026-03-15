@@ -16,13 +16,6 @@ import (
 var errInvalidMessageType = errors.New("invalid message type for service method handler")
 
 var serviceMethods = map[string]kitex.MethodInfo{
-	"BatchChangeConversations": kitex.NewMethodInfo(
-		batchChangeConversationsHandler,
-		newBatchChangeConversationsArgs,
-		newBatchChangeConversationsResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
 	"FetchUserRecentConvList": kitex.NewMethodInfo(
 		fetchUserRecentConvListHandler,
 		newFetchUserRecentConvListArgs,
@@ -108,117 +101,6 @@ func newServiceInfo(hasStreaming bool, keepStreamingMethods bool, keepNonStreami
 		Extra:           extra,
 	}
 	return svcInfo
-}
-
-func batchChangeConversationsHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(sdkws.BatchChangeConversationsRequest)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(conversation.ConversationService).BatchChangeConversations(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *BatchChangeConversationsArgs:
-		success, err := handler.(conversation.ConversationService).BatchChangeConversations(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*BatchChangeConversationsResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newBatchChangeConversationsArgs() interface{} {
-	return &BatchChangeConversationsArgs{}
-}
-
-func newBatchChangeConversationsResult() interface{} {
-	return &BatchChangeConversationsResult{}
-}
-
-type BatchChangeConversationsArgs struct {
-	Req *sdkws.BatchChangeConversationsRequest
-}
-
-func (p *BatchChangeConversationsArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *BatchChangeConversationsArgs) Unmarshal(in []byte) error {
-	msg := new(sdkws.BatchChangeConversationsRequest)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var BatchChangeConversationsArgs_Req_DEFAULT *sdkws.BatchChangeConversationsRequest
-
-func (p *BatchChangeConversationsArgs) GetReq() *sdkws.BatchChangeConversationsRequest {
-	if !p.IsSetReq() {
-		return BatchChangeConversationsArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *BatchChangeConversationsArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *BatchChangeConversationsArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type BatchChangeConversationsResult struct {
-	Success *sdkws.BatchChangeConversationsResponse
-}
-
-var BatchChangeConversationsResult_Success_DEFAULT *sdkws.BatchChangeConversationsResponse
-
-func (p *BatchChangeConversationsResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *BatchChangeConversationsResult) Unmarshal(in []byte) error {
-	msg := new(sdkws.BatchChangeConversationsResponse)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *BatchChangeConversationsResult) GetSuccess() *sdkws.BatchChangeConversationsResponse {
-	if !p.IsSetSuccess() {
-		return BatchChangeConversationsResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *BatchChangeConversationsResult) SetSuccess(x interface{}) {
-	p.Success = x.(*sdkws.BatchChangeConversationsResponse)
-}
-
-func (p *BatchChangeConversationsResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *BatchChangeConversationsResult) GetResult() interface{} {
-	return p.Success
 }
 
 func fetchUserRecentConvListHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
@@ -562,16 +444,6 @@ func newServiceClient(c client.Client) *kClient {
 	return &kClient{
 		c: c,
 	}
-}
-
-func (p *kClient) BatchChangeConversations(ctx context.Context, Req *sdkws.BatchChangeConversationsRequest) (r *sdkws.BatchChangeConversationsResponse, err error) {
-	var _args BatchChangeConversationsArgs
-	_args.Req = Req
-	var _result BatchChangeConversationsResult
-	if err = p.c.Call(ctx, "BatchChangeConversations", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
 }
 
 func (p *kClient) FetchUserRecentConvList(ctx context.Context, Req *sdkws.FetchUserRecentConvListRequest) (r *sdkws.FetchUserRecentConvListResponse, err error) {

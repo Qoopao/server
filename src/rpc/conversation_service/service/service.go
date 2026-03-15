@@ -10,9 +10,6 @@ import (
 
 // ConversationService 定义会话服务的业务接口（逻辑层）
 type ConversationService interface {
-	// BatchChangeConversations 批量更改会话（会话状态、已读状态、置顶状态、属性等）
-	BatchChangeConversations(ctx context.Context, req *sdkws.BatchChangeConversationsRequest) (*sdkws.BatchChangeConversationsResponse, error)
-
 	// FetchUserRecentConvList 混链拉取：获取用户最近的会话列表（包含会话和消息）
 	FetchUserRecentConvList(ctx context.Context, req *sdkws.FetchUserRecentConvListRequest) (*sdkws.FetchUserRecentConvListResponse, error)
 

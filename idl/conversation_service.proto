@@ -21,9 +21,6 @@ option go_package = "github.com/rhp-QE/roc-im-server/kitex_gen/conversation";
 
 // 会话服务
 service ConversationService {
-  // 批量更改会话（会话状态、已读状态、置顶状态、属性等）
-  rpc BatchChangeConversations(sdkws.BatchChangeConversationsRequest) returns (sdkws.BatchChangeConversationsResponse);
-  
   // 混链拉取：获取用户最近的会话列表（包含会话和消息）
   rpc FetchUserRecentConvList(sdkws.FetchUserRecentConvListRequest) returns (sdkws.FetchUserRecentConvListResponse);
   

@@ -36,14 +36,6 @@ func (h *MessageAPI) BatchSendMessage(ctx context.Context, req *sdkws.BatchSendM
 	return resp, err
 }
 
-// BatchChangeMessages 暂未实现
-func (h *MessageAPI) BatchChangeMessages(ctx context.Context, req *sdkws.BatchChangeMessagesRequest) (resp *sdkws.BatchChangeMessagesResponse, err error) {
-	klog.CtxWarnf(ctx, "BatchChangeMessages not implemented")
-	return &sdkws.BatchChangeMessagesResponse{
-		Results: []*sdkws.CmdMessageOptResult{},
-	}, nil
-}
-
 // FetchConvMessageList 查询会话消息列表
 func (h *MessageAPI) FetchConvMessageList(ctx context.Context, req *sdkws.FetchConvMessageListRequest) (resp *sdkws.FetchConvMessageListResponse, err error) {
 	// 参数校验

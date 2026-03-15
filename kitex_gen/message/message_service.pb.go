@@ -9,7 +9,6 @@ import (
 
 type MessageService interface {
 	BatchSendMessage(ctx context.Context, req *sdkws.BatchSendMessageRequest) (res *sdkws.BatchSendMessageResponse, err error)
-	BatchChangeMessages(ctx context.Context, req *sdkws.BatchChangeMessagesRequest) (res *sdkws.BatchChangeMessagesResponse, err error)
 	FetchConvMessageList(ctx context.Context, req *sdkws.FetchConvMessageListRequest) (res *sdkws.FetchConvMessageListResponse, err error)
 	BatchGetMessages(ctx context.Context, req *sdkws.BatchGetMessagesRequest) (res *sdkws.BatchGetMessagesResponse, err error)
 }

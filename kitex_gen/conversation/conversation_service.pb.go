@@ -8,7 +8,6 @@ import (
 )
 
 type ConversationService interface {
-	BatchChangeConversations(ctx context.Context, req *sdkws.BatchChangeConversationsRequest) (res *sdkws.BatchChangeConversationsResponse, err error)
 	FetchUserRecentConvList(ctx context.Context, req *sdkws.FetchUserRecentConvListRequest) (res *sdkws.FetchUserRecentConvListResponse, err error)
 	UserMessageIntegrityCheck(ctx context.Context, req *sdkws.UserMessageIntegrityCheckRequest) (res *sdkws.UserMessageIntegrityCheckResponse, err error)
 	BatchGetConversations(ctx context.Context, req *sdkws.BatchGetConversationsRequest) (res *sdkws.BatchGetConversationsResponse, err error)

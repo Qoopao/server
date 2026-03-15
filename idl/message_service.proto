@@ -14,9 +14,6 @@ service MessageService {
   // 批量发送消息
   rpc BatchSendMessage(sdkws.BatchSendMessageRequest) returns (sdkws.BatchSendMessageResponse);
   
-  // 批量更改消息（消息状态、已读状态、置顶状态、属性等）
-  rpc BatchChangeMessages(sdkws.BatchChangeMessagesRequest) returns (sdkws.BatchChangeMessagesResponse);
-  
   // 单链拉取：获取指定会话的消息列表
   rpc FetchConvMessageList(sdkws.FetchConvMessageListRequest) returns (sdkws.FetchConvMessageListResponse);
   

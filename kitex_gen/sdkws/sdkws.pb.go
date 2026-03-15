@@ -365,14 +365,10 @@ type CmdMessage struct {
 	Cmd int32 `protobuf:"varint,1,opt,name=cmd" json:"cmd,omitempty"`
 	Id  int32 `protobuf:"varint,2,opt,name=id" json:"id,omitempty"`
 
-	// 2001 : 会话状态发生改变 (删除) 会话创建走的另一个接口
-	// 2002 : 会话已读状态发生改变
-	// 2003 : 置顶状态发生改变
-	// 2004 :
-	// 2005 : 会话syncExt 发生改变
-	Message      *MessageData      `protobuf:"bytes,3,opt,name=message" json:"message,omitempty"`
-	Conversation *ConversationData `protobuf:"bytes,4,opt,name=conversation" json:"conversation,omitempty"`
-	Cursor       int64             `protobuf:"varint,5,opt,name=cursor" json:"cursor,omitempty"`
+	// 二进制数据
+	Data    []byte `protobuf:"bytes,4,opt,name=data" json:"data,omitempty"`
+	Version int64  `protobuf:"varint,5,opt,name=version" json:"version,omitempty"`
+	Uid     string `protobuf:"bytes,6,opt,name=uid" json:"uid,omitempty"`
 }
 
 func (x *CmdMessage) Reset() { *x = CmdMessage{} }
@@ -395,144 +391,25 @@ func (x *CmdMessage) GetId() int32 {
 	return 0
 }
 
-func (x *CmdMessage) GetMessage() *MessageData {
+func (x *CmdMessage) GetData() []byte {
 	if x != nil {
-		return x.Message
+		return x.Data
 	}
 	return nil
 }
 
-func (x *CmdMessage) GetConversation() *ConversationData {
+func (x *CmdMessage) GetVersion() int64 {
 	if x != nil {
-		return x.Conversation
-	}
-	return nil
-}
-
-func (x *CmdMessage) GetCursor() int64 {
-	if x != nil {
-		return x.Cursor
+		return x.Version
 	}
 	return 0
 }
 
-type CmdMessageOptResult struct {
-	Cmd       int32  `protobuf:"varint,1,opt,name=cmd" json:"cmd,omitempty"`
-	Id        int32  `protobuf:"varint,2,opt,name=id" json:"id,omitempty"`
-	ErrorCode int32  `protobuf:"varint,3,opt,name=errorCode" json:"errorCode,omitempty"`
-	Error     string `protobuf:"bytes,4,opt,name=error" json:"error,omitempty"`
-}
-
-func (x *CmdMessageOptResult) Reset() { *x = CmdMessageOptResult{} }
-
-func (x *CmdMessageOptResult) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *CmdMessageOptResult) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *CmdMessageOptResult) GetCmd() int32 {
+func (x *CmdMessage) GetUid() string {
 	if x != nil {
-		return x.Cmd
-	}
-	return 0
-}
-
-func (x *CmdMessageOptResult) GetId() int32 {
-	if x != nil {
-		return x.Id
-	}
-	return 0
-}
-
-func (x *CmdMessageOptResult) GetErrorCode() int32 {
-	if x != nil {
-		return x.ErrorCode
-	}
-	return 0
-}
-
-func (x *CmdMessageOptResult) GetError() string {
-	if x != nil {
-		return x.Error
+		return x.Uid
 	}
 	return ""
-}
-
-// 更改消息请求 --------------------------------
-type BatchChangeMessagesRequest struct {
-	CmdMessages []*CmdMessage `protobuf:"bytes,1,rep,name=cmdMessages" json:"cmdMessages,omitempty"`
-}
-
-func (x *BatchChangeMessagesRequest) Reset() { *x = BatchChangeMessagesRequest{} }
-
-func (x *BatchChangeMessagesRequest) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *BatchChangeMessagesRequest) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *BatchChangeMessagesRequest) GetCmdMessages() []*CmdMessage {
-	if x != nil {
-		return x.CmdMessages
-	}
-	return nil
-}
-
-type BatchChangeMessagesResponse struct {
-	Results []*CmdMessageOptResult `protobuf:"bytes,1,rep,name=results" json:"results,omitempty"`
-}
-
-func (x *BatchChangeMessagesResponse) Reset() { *x = BatchChangeMessagesResponse{} }
-
-func (x *BatchChangeMessagesResponse) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *BatchChangeMessagesResponse) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *BatchChangeMessagesResponse) GetResults() []*CmdMessageOptResult {
-	if x != nil {
-		return x.Results
-	}
-	return nil
-}
-
-// 更改会话请求 --------------------------------
-type BatchChangeConversationsRequest struct {
-	CmdMessages []*CmdMessage `protobuf:"bytes,1,rep,name=cmdMessages" json:"cmdMessages,omitempty"`
-}
-
-func (x *BatchChangeConversationsRequest) Reset() { *x = BatchChangeConversationsRequest{} }
-
-func (x *BatchChangeConversationsRequest) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *BatchChangeConversationsRequest) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *BatchChangeConversationsRequest) GetCmdMessages() []*CmdMessage {
-	if x != nil {
-		return x.CmdMessages
-	}
-	return nil
-}
-
-type BatchChangeConversationsResponse struct {
-	Results []*CmdMessageOptResult `protobuf:"bytes,1,rep,name=results" json:"results,omitempty"`
-}
-
-func (x *BatchChangeConversationsResponse) Reset() { *x = BatchChangeConversationsResponse{} }
-
-func (x *BatchChangeConversationsResponse) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *BatchChangeConversationsResponse) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *BatchChangeConversationsResponse) GetResults() []*CmdMessageOptResult {
-	if x != nil {
-		return x.Results
-	}
-	return nil
 }
 
 // 单链拉取 ------------------------------------
@@ -1028,6 +905,146 @@ func (x *BatchGetConversationsResponse) Unmarshal(in []byte) error { return prut
 func (x *BatchGetConversationsResponse) GetResults() []*GetConversationResult {
 	if x != nil {
 		return x.Results
+	}
+	return nil
+}
+
+// 创建群聊
+type CreateGroupRequest struct {
+	OwnerID    string   `protobuf:"bytes,1,opt,name=ownerID" json:"ownerID,omitempty"`       // 会话拥有者用户ID
+	Name       string   `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`             // 群聊名称
+	MemberUIDs []string `protobuf:"bytes,3,rep,name=memberUIDs" json:"memberUIDs,omitempty"` // 群聊成员用户ID列表
+}
+
+func (x *CreateGroupRequest) Reset() { *x = CreateGroupRequest{} }
+
+func (x *CreateGroupRequest) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *CreateGroupRequest) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CreateGroupRequest) GetOwnerID() string {
+	if x != nil {
+		return x.OwnerID
+	}
+	return ""
+}
+
+func (x *CreateGroupRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateGroupRequest) GetMemberUIDs() []string {
+	if x != nil {
+		return x.MemberUIDs
+	}
+	return nil
+}
+
+type CreateGroupResponse struct {
+	ErrorCode    int32             `protobuf:"varint,1,opt,name=errorCode" json:"errorCode,omitempty"`      // 错误码
+	ErrorMsg     string            `protobuf:"bytes,2,opt,name=errorMsg" json:"errorMsg,omitempty"`         // 错误信息
+	Conversation *ConversationData `protobuf:"bytes,3,opt,name=conversation" json:"conversation,omitempty"` // 会话数据
+}
+
+func (x *CreateGroupResponse) Reset() { *x = CreateGroupResponse{} }
+
+func (x *CreateGroupResponse) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *CreateGroupResponse) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CreateGroupResponse) GetErrorCode() int32 {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return 0
+}
+
+func (x *CreateGroupResponse) GetErrorMsg() string {
+	if x != nil {
+		return x.ErrorMsg
+	}
+	return ""
+}
+
+func (x *CreateGroupResponse) GetConversation() *ConversationData {
+	if x != nil {
+		return x.Conversation
+	}
+	return nil
+}
+
+// 邀请进群
+type InviteGroupMembersRequest struct {
+	ConvID     string   `protobuf:"bytes,1,opt,name=convID" json:"convID,omitempty"`         // 会话ID
+	MemberUIDs []string `protobuf:"bytes,2,rep,name=memberUIDs" json:"memberUIDs,omitempty"` // 群聊成员用户ID列表
+}
+
+func (x *InviteGroupMembersRequest) Reset() { *x = InviteGroupMembersRequest{} }
+
+func (x *InviteGroupMembersRequest) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *InviteGroupMembersRequest) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *InviteGroupMembersRequest) GetConvID() string {
+	if x != nil {
+		return x.ConvID
+	}
+	return ""
+}
+
+func (x *InviteGroupMembersRequest) GetMemberUIDs() []string {
+	if x != nil {
+		return x.MemberUIDs
+	}
+	return nil
+}
+
+type InviteGroupMembersResponse struct {
+	ErrorCode int32  `protobuf:"varint,1,opt,name=errorCode" json:"errorCode,omitempty"` // 错误码
+	ErrorMsg  string `protobuf:"bytes,2,opt,name=errorMsg" json:"errorMsg,omitempty"`    // 错误信息
+}
+
+func (x *InviteGroupMembersResponse) Reset() { *x = InviteGroupMembersResponse{} }
+
+func (x *InviteGroupMembersResponse) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *InviteGroupMembersResponse) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *InviteGroupMembersResponse) GetErrorCode() int32 {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return 0
+}
+
+func (x *InviteGroupMembersResponse) GetErrorMsg() string {
+	if x != nil {
+		return x.ErrorMsg
+	}
+	return ""
+}
+
+// 被邀请进群信息
+type InvitedGroupInfo struct {
+	Conversation *ConversationData `protobuf:"bytes,1,opt,name=conversation" json:"conversation,omitempty"` // 会话数据
+}
+
+func (x *InvitedGroupInfo) Reset() { *x = InvitedGroupInfo{} }
+
+func (x *InvitedGroupInfo) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *InvitedGroupInfo) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *InvitedGroupInfo) GetConversation() *ConversationData {
+	if x != nil {
+		return x.Conversation
 	}
 	return nil
 }

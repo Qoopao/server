@@ -23,13 +23,6 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"BatchChangeMessages": kitex.NewMethodInfo(
-		batchChangeMessagesHandler,
-		newBatchChangeMessagesArgs,
-		newBatchChangeMessagesResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
 	"FetchConvMessageList": kitex.NewMethodInfo(
 		fetchConvMessageListHandler,
 		newFetchConvMessageListArgs,
@@ -218,117 +211,6 @@ func (p *BatchSendMessageResult) IsSetSuccess() bool {
 }
 
 func (p *BatchSendMessageResult) GetResult() interface{} {
-	return p.Success
-}
-
-func batchChangeMessagesHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(sdkws.BatchChangeMessagesRequest)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(message.MessageService).BatchChangeMessages(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *BatchChangeMessagesArgs:
-		success, err := handler.(message.MessageService).BatchChangeMessages(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*BatchChangeMessagesResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newBatchChangeMessagesArgs() interface{} {
-	return &BatchChangeMessagesArgs{}
-}
-
-func newBatchChangeMessagesResult() interface{} {
-	return &BatchChangeMessagesResult{}
-}
-
-type BatchChangeMessagesArgs struct {
-	Req *sdkws.BatchChangeMessagesRequest
-}
-
-func (p *BatchChangeMessagesArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *BatchChangeMessagesArgs) Unmarshal(in []byte) error {
-	msg := new(sdkws.BatchChangeMessagesRequest)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var BatchChangeMessagesArgs_Req_DEFAULT *sdkws.BatchChangeMessagesRequest
-
-func (p *BatchChangeMessagesArgs) GetReq() *sdkws.BatchChangeMessagesRequest {
-	if !p.IsSetReq() {
-		return BatchChangeMessagesArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *BatchChangeMessagesArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *BatchChangeMessagesArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type BatchChangeMessagesResult struct {
-	Success *sdkws.BatchChangeMessagesResponse
-}
-
-var BatchChangeMessagesResult_Success_DEFAULT *sdkws.BatchChangeMessagesResponse
-
-func (p *BatchChangeMessagesResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *BatchChangeMessagesResult) Unmarshal(in []byte) error {
-	msg := new(sdkws.BatchChangeMessagesResponse)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *BatchChangeMessagesResult) GetSuccess() *sdkws.BatchChangeMessagesResponse {
-	if !p.IsSetSuccess() {
-		return BatchChangeMessagesResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *BatchChangeMessagesResult) SetSuccess(x interface{}) {
-	p.Success = x.(*sdkws.BatchChangeMessagesResponse)
-}
-
-func (p *BatchChangeMessagesResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *BatchChangeMessagesResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -569,16 +451,6 @@ func (p *kClient) BatchSendMessage(ctx context.Context, Req *sdkws.BatchSendMess
 	_args.Req = Req
 	var _result BatchSendMessageResult
 	if err = p.c.Call(ctx, "BatchSendMessage", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) BatchChangeMessages(ctx context.Context, Req *sdkws.BatchChangeMessagesRequest) (r *sdkws.BatchChangeMessagesResponse, err error) {
-	var _args BatchChangeMessagesArgs
-	_args.Req = Req
-	var _result BatchChangeMessagesResult
-	if err = p.c.Call(ctx, "BatchChangeMessages", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
