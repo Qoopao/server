@@ -11,4 +11,6 @@ const (
 	SDKWSMethodUserMessageIntegrityCheck = "106" // 混链拉取会话完整性校验
 	SDKWSMethodMessageChange             = "107" // 消息改变 请求
 	SDKWSMethodConversationChange        = "108" // 会话改变 请求
+	SDKWSMethodCreateGroup               = "109" // 创建群聊
+	SDKWSMethodInviteGroupMembers        = "110" // 邀请进群
 )

@@ -18,6 +18,12 @@ type ConversationService interface {
 
 	// BatchGetConversations 批量获取会话：根据会话ID列表批量获取会话详情
 	BatchGetConversations(ctx context.Context, req *sdkws.BatchGetConversationsRequest) (*sdkws.BatchGetConversationsResponse, error)
+
+	// CreateGroup 创建群聊（对齐客户端 CreateGroupContext：owner_user_id, member_user_ids, group_name）
+	CreateGroup(ctx context.Context, req *sdkws.CreateGroupRequest) (*sdkws.CreateGroupResponse, error)
+
+	// InviteGroupMembers 邀请进群（对齐客户端 InviteGroupMembersContext：conv_id, member_user_ids）
+	InviteGroupMembers(ctx context.Context, req *sdkws.InviteGroupMembersRequest) (*sdkws.InviteGroupMembersResponse, error)
 }
 
 // conversationServiceImpl 是 ConversationService 的具体实现

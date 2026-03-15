@@ -27,6 +27,12 @@ type ConversationStorage interface {
 	// ownerID: 会话拥有者用户ID（可选，用于过滤）
 	// 返回：会话ID到会话数据的映射
 	BatchGetConversations(ctx context.Context, convIDs []string, ownerID string) (map[string]*sdkws.ConversationData, error)
+
+	// CreateConversation 写入会话文档（仅做 conv 转 doc + 入库，不区分会话类型）
+	CreateConversation(ctx context.Context, conv *sdkws.ConversationData) error
+
+	// UpdateConversation 更新会话文档（仅做 conv 转 doc + UpdateOne）
+	UpdateConversation(ctx context.Context, conv *sdkws.ConversationData) error
 }
 
 type conversationStorageImpl struct {

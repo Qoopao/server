@@ -29,4 +29,10 @@ service ConversationService {
   
   // 批量获取会话：根据会话ID列表批量获取会话详情
   rpc BatchGetConversations(sdkws.BatchGetConversationsRequest) returns (sdkws.BatchGetConversationsResponse);
+
+  // 创建群聊（对齐客户端 CreateGroupContext：owner_user_id, member_user_ids, group_name）
+  rpc CreateGroup(sdkws.CreateGroupRequest) returns (sdkws.CreateGroupResponse);
+
+  // 邀请进群（对齐客户端 InviteGroupMembersContext：conv_id, member_user_ids）
+  rpc InviteGroupMembers(sdkws.InviteGroupMembersRequest) returns (sdkws.InviteGroupMembersResponse);
 }

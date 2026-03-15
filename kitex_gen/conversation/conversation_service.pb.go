@@ -11,4 +11,6 @@ type ConversationService interface {
 	FetchUserRecentConvList(ctx context.Context, req *sdkws.FetchUserRecentConvListRequest) (res *sdkws.FetchUserRecentConvListResponse, err error)
 	UserMessageIntegrityCheck(ctx context.Context, req *sdkws.UserMessageIntegrityCheckRequest) (res *sdkws.UserMessageIntegrityCheckResponse, err error)
 	BatchGetConversations(ctx context.Context, req *sdkws.BatchGetConversationsRequest) (res *sdkws.BatchGetConversationsResponse, err error)
+	CreateGroup(ctx context.Context, req *sdkws.CreateGroupRequest) (res *sdkws.CreateGroupResponse, err error)
+	InviteGroupMembers(ctx context.Context, req *sdkws.InviteGroupMembersRequest) (res *sdkws.InviteGroupMembersResponse, err error)
 }

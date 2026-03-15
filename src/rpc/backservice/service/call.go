@@ -140,6 +140,38 @@ func (s *backServiceImpl) callBackserviceIM(ctx context.Context, methodName stri
 		}
 		return resp.Marshal(nil)
 
+	case consts.SDKWSMethodCreateGroup:
+		// 107: 创建群聊 -> conversation-service.CreateGroup
+		client, err := s.serviceCtx.GetConversationServiceClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get conversation service client: %w", err)
+		}
+		req := &sdkws.CreateGroupRequest{}
+		if err := req.Unmarshal(payload); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal CreateGroupRequest: %w", err)
+		}
+		resp, err := client.CreateGroup(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		return resp.Marshal(nil)
+
+	case consts.SDKWSMethodInviteGroupMembers:
+		// 108: 邀请进群 -> conversation-service.InviteGroupMembers
+		client, err := s.serviceCtx.GetConversationServiceClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get conversation service client: %w", err)
+		}
+		req := &sdkws.InviteGroupMembersRequest{}
+		if err := req.Unmarshal(payload); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal InviteGroupMembersRequest: %w", err)
+		}
+		resp, err := client.InviteGroupMembers(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		return resp.Marshal(nil)
+
 	case consts.SDKWSMethodMessageChange:
 		return nil, fmt.Errorf("message change is not supported")
 

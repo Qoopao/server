@@ -96,5 +96,21 @@ func (h *ConversationAPI) BatchGetConversations(ctx context.Context, req *sdkws.
 	return resp, nil
 }
 
+// CreateGroup 创建群聊（对齐客户端 CreateGroupContext：owner_user_id, member_user_ids, group_name）
+func (h *ConversationAPI) CreateGroup(ctx context.Context, req *sdkws.CreateGroupRequest) (resp *sdkws.CreateGroupResponse, err error) {
+	if req == nil {
+		return &sdkws.CreateGroupResponse{ErrorCode: 400, ErrorMsg: "request is nil"}, nil
+	}
+	return h.svc.CreateGroup(ctx, req)
+}
+
+// InviteGroupMembers 邀请进群（对齐客户端 InviteGroupMembersContext：conv_id, member_user_ids）
+func (h *ConversationAPI) InviteGroupMembers(ctx context.Context, req *sdkws.InviteGroupMembersRequest) (resp *sdkws.InviteGroupMembersResponse, err error) {
+	if req == nil {
+		return &sdkws.InviteGroupMembersResponse{ErrorCode: 400, ErrorMsg: "request is nil"}, nil
+	}
+	return h.svc.InviteGroupMembers(ctx, req)
+}
+
 // 编译期检查，确保实现了 conversationpb.ConversationService 接口
 var _ conversationpb.ConversationService = (*ConversationAPI)(nil)

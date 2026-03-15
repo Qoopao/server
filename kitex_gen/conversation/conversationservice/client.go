@@ -14,6 +14,8 @@ type Client interface {
 	FetchUserRecentConvList(ctx context.Context, Req *sdkws.FetchUserRecentConvListRequest, callOptions ...callopt.Option) (r *sdkws.FetchUserRecentConvListResponse, err error)
 	UserMessageIntegrityCheck(ctx context.Context, Req *sdkws.UserMessageIntegrityCheckRequest, callOptions ...callopt.Option) (r *sdkws.UserMessageIntegrityCheckResponse, err error)
 	BatchGetConversations(ctx context.Context, Req *sdkws.BatchGetConversationsRequest, callOptions ...callopt.Option) (r *sdkws.BatchGetConversationsResponse, err error)
+	CreateGroup(ctx context.Context, Req *sdkws.CreateGroupRequest, callOptions ...callopt.Option) (r *sdkws.CreateGroupResponse, err error)
+	InviteGroupMembers(ctx context.Context, Req *sdkws.InviteGroupMembersRequest, callOptions ...callopt.Option) (r *sdkws.InviteGroupMembersResponse, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -58,4 +60,14 @@ func (p *kConversationServiceClient) UserMessageIntegrityCheck(ctx context.Conte
 func (p *kConversationServiceClient) BatchGetConversations(ctx context.Context, Req *sdkws.BatchGetConversationsRequest, callOptions ...callopt.Option) (r *sdkws.BatchGetConversationsResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.BatchGetConversations(ctx, Req)
+}
+
+func (p *kConversationServiceClient) CreateGroup(ctx context.Context, Req *sdkws.CreateGroupRequest, callOptions ...callopt.Option) (r *sdkws.CreateGroupResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.CreateGroup(ctx, Req)
+}
+
+func (p *kConversationServiceClient) InviteGroupMembers(ctx context.Context, Req *sdkws.InviteGroupMembersRequest, callOptions ...callopt.Option) (r *sdkws.InviteGroupMembersResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.InviteGroupMembers(ctx, Req)
 }

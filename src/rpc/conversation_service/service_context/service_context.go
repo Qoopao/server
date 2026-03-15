@@ -10,6 +10,7 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/kitex-contrib/obs-opentelemetry/tracing"
+	backbonservice "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backbon/backbonservice"
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/discovery"
 	"github.com/rhp-QE/roc-foundation-util-go/service_registry/loadbalancer"
 	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
@@ -33,6 +34,9 @@ type ServiceContext interface {
 
 	// GetMessageServiceClient 获取 message_service 客户端（懒加载）
 	GetMessageServiceClient() (messageservice.Client, error)
+
+	// GetBackbonServiceClient 获取 backbon 服务客户端（懒加载，用于下推 cmd 等）
+	GetBackbonServiceClient(ctx context.Context) (backbonservice.Client, error)
 
 	// Close 关闭所有全局资源
 	Close() error
@@ -95,6 +99,28 @@ func (s *serviceContextImpl) GetMessageServiceClient() (messageservice.Client, e
 	}
 
 	return clientIface.(messageservice.Client), nil
+}
+
+// GetBackbonServiceClient 获取 backbon 服务客户端（懒加载）
+func (s *serviceContextImpl) GetBackbonServiceClient(ctx context.Context) (backbonservice.Client, error) {
+	const serviceName = "backbon-service"
+	clientIface, err := s.getServiceClient(serviceName, func(hostPort string) (interface{}, error) {
+		c, err := backbonservice.NewClient(
+			serviceName,
+			client.WithHostPorts(hostPort),
+			client.WithSuite(tracing.NewClientSuite()),
+			client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
+			client.WithRPCTimeout(10*time.Second),
+		)
+		if err != nil {
+			return nil, err
+		}
+		return c, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return clientIface.(backbonservice.Client), nil
 }
 
 func (s *serviceContextImpl) getServiceClient(

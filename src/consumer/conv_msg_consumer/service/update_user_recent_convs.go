@@ -11,6 +11,8 @@ import (
 	convstorage "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/storage"
 )
 
+const MixUPrefix = "mix2user"
+
 // updateUserRecentConvsIfSmallConv 如果是单聊则更新用户最近会话链（更新发送者和接收者的最近会话链）
 func (s *convMsgConsumerServiceImpl) updateUserRecentConvsIfSmallConv(ctx context.Context, msg *sdkws.MessageData) error {
 	// 只处理单聊
@@ -49,11 +51,10 @@ func (s *convMsgConsumerServiceImpl) updateUserRecentConvsIfSmallConv(ctx contex
 	return nil
 }
 
-// getNextVersion 获取单个用户在指定会话下的最近会话版本号（用户会话序列号）
-// 将 RPC 调用与错误检查封装在一个函数内，避免主业务逻辑被大量错误处理代码打断。
+// getNextVersion 获取单个用户混链版本号 （用户会话序列号）
 func getNextVersion(ctx context.Context, seqClient sequence.Client, userID, convID string) (int64, error) {
 	req := &sequencepb.GetNextSeqIncRequest{
-		Id: fmt.Sprintf("%s:%s", userID, convID),
+		Id: fmt.Sprintf("%s:%s", MixUPrefix, userID),
 	}
 
 	seqResp, err := seqClient.GetNextSeqInc(ctx, req)

@@ -37,6 +37,20 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
+	"CreateGroup": kitex.NewMethodInfo(
+		createGroupHandler,
+		newCreateGroupArgs,
+		newCreateGroupResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"InviteGroupMembers": kitex.NewMethodInfo(
+		inviteGroupMembersHandler,
+		newInviteGroupMembersArgs,
+		newInviteGroupMembersResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
 }
 
 var (
@@ -436,6 +450,228 @@ func (p *BatchGetConversationsResult) GetResult() interface{} {
 	return p.Success
 }
 
+func createGroupHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(sdkws.CreateGroupRequest)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(conversation.ConversationService).CreateGroup(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *CreateGroupArgs:
+		success, err := handler.(conversation.ConversationService).CreateGroup(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*CreateGroupResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newCreateGroupArgs() interface{} {
+	return &CreateGroupArgs{}
+}
+
+func newCreateGroupResult() interface{} {
+	return &CreateGroupResult{}
+}
+
+type CreateGroupArgs struct {
+	Req *sdkws.CreateGroupRequest
+}
+
+func (p *CreateGroupArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *CreateGroupArgs) Unmarshal(in []byte) error {
+	msg := new(sdkws.CreateGroupRequest)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var CreateGroupArgs_Req_DEFAULT *sdkws.CreateGroupRequest
+
+func (p *CreateGroupArgs) GetReq() *sdkws.CreateGroupRequest {
+	if !p.IsSetReq() {
+		return CreateGroupArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *CreateGroupArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CreateGroupArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type CreateGroupResult struct {
+	Success *sdkws.CreateGroupResponse
+}
+
+var CreateGroupResult_Success_DEFAULT *sdkws.CreateGroupResponse
+
+func (p *CreateGroupResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *CreateGroupResult) Unmarshal(in []byte) error {
+	msg := new(sdkws.CreateGroupResponse)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *CreateGroupResult) GetSuccess() *sdkws.CreateGroupResponse {
+	if !p.IsSetSuccess() {
+		return CreateGroupResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *CreateGroupResult) SetSuccess(x interface{}) {
+	p.Success = x.(*sdkws.CreateGroupResponse)
+}
+
+func (p *CreateGroupResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CreateGroupResult) GetResult() interface{} {
+	return p.Success
+}
+
+func inviteGroupMembersHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(sdkws.InviteGroupMembersRequest)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(conversation.ConversationService).InviteGroupMembers(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *InviteGroupMembersArgs:
+		success, err := handler.(conversation.ConversationService).InviteGroupMembers(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*InviteGroupMembersResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newInviteGroupMembersArgs() interface{} {
+	return &InviteGroupMembersArgs{}
+}
+
+func newInviteGroupMembersResult() interface{} {
+	return &InviteGroupMembersResult{}
+}
+
+type InviteGroupMembersArgs struct {
+	Req *sdkws.InviteGroupMembersRequest
+}
+
+func (p *InviteGroupMembersArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *InviteGroupMembersArgs) Unmarshal(in []byte) error {
+	msg := new(sdkws.InviteGroupMembersRequest)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var InviteGroupMembersArgs_Req_DEFAULT *sdkws.InviteGroupMembersRequest
+
+func (p *InviteGroupMembersArgs) GetReq() *sdkws.InviteGroupMembersRequest {
+	if !p.IsSetReq() {
+		return InviteGroupMembersArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *InviteGroupMembersArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *InviteGroupMembersArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type InviteGroupMembersResult struct {
+	Success *sdkws.InviteGroupMembersResponse
+}
+
+var InviteGroupMembersResult_Success_DEFAULT *sdkws.InviteGroupMembersResponse
+
+func (p *InviteGroupMembersResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *InviteGroupMembersResult) Unmarshal(in []byte) error {
+	msg := new(sdkws.InviteGroupMembersResponse)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *InviteGroupMembersResult) GetSuccess() *sdkws.InviteGroupMembersResponse {
+	if !p.IsSetSuccess() {
+		return InviteGroupMembersResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *InviteGroupMembersResult) SetSuccess(x interface{}) {
+	p.Success = x.(*sdkws.InviteGroupMembersResponse)
+}
+
+func (p *InviteGroupMembersResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *InviteGroupMembersResult) GetResult() interface{} {
+	return p.Success
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -471,6 +707,26 @@ func (p *kClient) BatchGetConversations(ctx context.Context, Req *sdkws.BatchGet
 	_args.Req = Req
 	var _result BatchGetConversationsResult
 	if err = p.c.Call(ctx, "BatchGetConversations", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) CreateGroup(ctx context.Context, Req *sdkws.CreateGroupRequest) (r *sdkws.CreateGroupResponse, err error) {
+	var _args CreateGroupArgs
+	_args.Req = Req
+	var _result CreateGroupResult
+	if err = p.c.Call(ctx, "CreateGroup", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) InviteGroupMembers(ctx context.Context, Req *sdkws.InviteGroupMembersRequest) (r *sdkws.InviteGroupMembersResponse, err error) {
+	var _args InviteGroupMembersArgs
+	_args.Req = Req
+	var _result InviteGroupMembersResult
+	if err = p.c.Call(ctx, "InviteGroupMembers", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
