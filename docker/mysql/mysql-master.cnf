@@ -1,0 +1,39 @@
+# MySQL 主库配置文件（主从复制）
+
+[mysqld]
+# 网络配置
+bind-address = 0.0.0.0
+port = 3306
+max_connections = 200
+
+# 字符集
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+# 主从复制
+server-id = 1
+log-bin = mysql-bin
+binlog_format = ROW
+gtid_mode = ON
+enforce_gtid_consistency = ON
+log_slave_updates = ON
+
+# InnoDB 配置
+innodb_buffer_pool_size = 256M
+innodb_log_file_size = 64M
+innodb_flush_log_at_trx_commit = 1
+innodb_file_per_table = 1
+
+# 慢查询日志
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 2
+
+# SQL 模式
+sql_mode = STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+
+[client]
+default-character-set = utf8mb4
+
+[mysql]
+default-character-set = utf8mb4

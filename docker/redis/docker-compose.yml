@@ -98,19 +98,19 @@ services:
     networks:
       - redis-network
 
-  # Redis 管理工具（暂时禁用，因为镜像拉取问题）
-  # redis-commander:
-  #   image: ghcr.io/joeferner/redis-commander:latest
-  #   container_name: redis-commander
-  #   ports:
-  #     - "8081:8081"
-  #   environment:
-  #     - REDIS_HOSTS=local:redis-standalone:6379:0:redis123
-  #   depends_on:
-  #     - redis-standalone
-  #   restart: unless-stopped
-  #   networks:
-  #     - redis-network
+  # Redis 管理工具
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis-standalone:6379:0
+    depends_on:
+      - redis-standalone
+    restart: unless-stopped
+    networks:
+      - redis-network
 
 volumes:
   redis_data:

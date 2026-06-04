@@ -91,14 +91,18 @@ start_standalone() {
     
     # 检查是否已经运行
     if docker-compose ps | grep -q "redis-standalone.*Up"; then
+        if ! docker-compose ps | grep -q "redis-commander.*Up"; then
+            log_info "启动 Redis Commander..."
+            docker-compose up -d redis-commander
+        fi
         log_info "单机版 Redis 已经在运行中"
         log_info "Redis 端点: localhost:6379"
         log_info "Redis UI: http://localhost:8081"
         return 0
     fi
     
-    # 使用 Docker Compose 命令（暂时不启动 redis-commander）
-    docker-compose up -d redis-standalone
+    # 使用 Docker Compose 命令
+    docker-compose up -d redis-standalone redis-commander
     
     log_info "等待 Redis 启动..."
     sleep 3
@@ -110,7 +114,7 @@ start_standalone() {
         if docker-compose ps | grep -q "redis-standalone.*Up"; then
             log_info "单机版 Redis 启动成功"
             log_info "Redis 端点: localhost:6379"
-            log_info "注意: Redis UI 暂时不可用（镜像拉取问题）"
+            log_info "Redis UI: http://localhost:8081"
             return 0
         fi
         log_info "等待 Redis 容器完全启动... (重试 $((retry_count + 1))/3)"
@@ -212,7 +216,7 @@ show_status() {
     log_info "Redis 容器状态:"
     echo ""
     
-    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep redis
+    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "redis|commander"
 }
 
 # 查看日志

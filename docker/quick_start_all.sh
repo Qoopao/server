@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 统一快速启动脚本
-# 支持 etcd, kafka, redis, mongodb, rocketmq, otel (OpenTelemetry监控栈)
+# 支持 etcd, kafka, redis, mongodb, mysql, rocketmq, otel (OpenTelemetry监控栈)
 
 set -e
 
@@ -40,14 +40,15 @@ show_menu() {
     echo "2) 启动 kafka (消息队列)"
     echo "3) 启动 redis (缓存)"
     echo "4) 启动 mongodb (数据库)"
-    echo "5) 启动 rocketmq (消息队列)"
-    echo "6) 启动 otel (OpenTelemetry监控栈)"
-    echo "7) 启动所有服务"
-    echo "8) 停止所有服务"
-    echo "9) 查看服务状态"
+    echo "5) 启动 mysql (数据库)"
+    echo "6) 启动 rocketmq (消息队列)"
+    echo "7) 启动 otel (OpenTelemetry监控栈)"
+    echo "8) 启动所有服务"
+    echo "9) 停止所有服务"
+    echo "10) 查看服务状态"
     echo "0) 退出"
     echo ""
-    read -p "请输入选择 (0-9): " choice
+    read -p "请输入选择 (0-10): " choice
 }
 
 # 启动 etcd
@@ -102,6 +103,19 @@ start_mongodb() {
     cd ..
 }
 
+# 启动 mysql
+start_mysql() {
+    echo -e "${GREEN}📦 启动 mysql...${NC}"
+    cd "$(dirname "$0")/mysql"
+    # 检查是否已经运行
+    if docker ps | grep -q "mysql-standalone"; then
+        echo -e "${YELLOW}⚠️  mysql 已经在运行中${NC}"
+    else
+        ./deploy.sh standalone
+    fi
+    cd ..
+}
+
 # 启动 rocketmq
 start_rocketmq() {
     echo -e "${GREEN}📦 启动 rocketmq...${NC}"
@@ -140,6 +154,7 @@ start_all() {
     start_kafka
     start_redis
     start_mongodb
+    start_mysql
     start_rocketmq
     start_otel
 }
@@ -169,6 +184,12 @@ stop_all() {
     # 停止 mongodb
     echo -e "${YELLOW}停止 mongodb...${NC}"
     cd "$(dirname "$0")/mongodb"
+    ./deploy.sh stop
+    cd ..
+    
+    # 停止 mysql
+    echo -e "${YELLOW}停止 mysql...${NC}"
+    cd "$(dirname "$0")/mysql"
     ./deploy.sh stop
     cd ..
     
@@ -220,6 +241,13 @@ show_status() {
         echo -e "${YELLOW}❌ mongodb: 未运行${NC}"
     fi
     
+    # 检查 mysql
+    if docker ps | grep -q "mysql-standalone"; then
+        echo -e "${GREEN}✅ mysql: 运行中${NC}"
+    else
+        echo -e "${YELLOW}❌ mysql: 未运行${NC}"
+    fi
+    
     # 检查 rocketmq
     if docker ps | grep -q "rmqnamesrv"; then
         echo -e "${GREEN}✅ rocketmq: 运行中${NC}"
@@ -247,9 +275,11 @@ show_info() {
     echo "  - kafka: localhost:9092,9094,9096"
     echo "  - kafka-ui: http://localhost:8080"
     echo "  - redis: localhost:6379"
-    echo "  - redis-ui: http://localhost:8081 (暂时不可用)"
+    echo "  - redis-ui: http://localhost:8081"
     echo "  - mongodb: localhost:27017"
     echo "  - mongo-express: http://localhost:8082"
+    echo "  - mysql: localhost:3306 (root/mysql123, app_user/app123)"
+    echo "  - adminer: http://localhost:8084"
     echo "  - rocketmq: localhost:9876"
     echo "  - rocketmq-console: http://localhost:8083"
     echo "  - grafana: http://localhost:3000 (admin/admin123)"
@@ -262,6 +292,7 @@ show_info() {
     echo "  docker/kafka/deploy.sh status"
     echo "  docker/redis/deploy.sh status"
     echo "  docker/mongodb/deploy.sh status"
+    echo "  docker/mysql/deploy.sh status"
     echo "  docker/rocketmq/deploy.sh status"
     echo "  docker/otel/deploy.sh status"
 }
@@ -288,21 +319,25 @@ while true; do
             show_info
             ;;
         5)
-            start_rocketmq
+            start_mysql
             show_info
             ;;
         6)
-            start_otel
+            start_rocketmq
             show_info
             ;;
         7)
-            start_all
+            start_otel
             show_info
             ;;
         8)
-            stop_all
+            start_all
+            show_info
             ;;
         9)
+            stop_all
+            ;;
+        10)
             show_status
             ;;
         0)

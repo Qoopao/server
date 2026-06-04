@@ -1,0 +1,124 @@
+services:
+  # MySQL 单机版
+  mysql-standalone:
+    image: mysql:8.0
+    container_name: mysql-standalone
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql123
+      MYSQL_DATABASE: app
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app123
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-standalone.cnf:/etc/mysql/conf.d/custom.cnf
+      - ./mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    networks:
+      - mysql-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pmysql123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL 主从复制 - 主库
+  mysql-master:
+    image: mysql:8.0
+    container_name: mysql-master
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql123
+      MYSQL_DATABASE: app
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app123
+    volumes:
+      - mysql_data_master:/var/lib/mysql
+      - ./mysql-master.cnf:/etc/mysql/conf.d/custom.cnf
+      - ./mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    networks:
+      - mysql-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pmysql123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL 主从复制 - 从库 1
+  mysql-slave-1:
+    image: mysql:8.0
+    container_name: mysql-slave-1
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql123
+    volumes:
+      - mysql_data_slave_1:/var/lib/mysql
+      - ./mysql-slave.cnf:/etc/mysql/conf.d/custom.cnf
+    command: --server-id=2
+    restart: unless-stopped
+    networks:
+      - mysql-network
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pmysql123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL 主从复制 - 从库 2
+  mysql-slave-2:
+    image: mysql:8.0
+    container_name: mysql-slave-2
+    ports:
+      - "3309:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql123
+    volumes:
+      - mysql_data_slave_2:/var/lib/mysql
+      - ./mysql-slave.cnf:/etc/mysql/conf.d/custom.cnf
+    command: --server-id=3
+    restart: unless-stopped
+    networks:
+      - mysql-network
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pmysql123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL 管理工具
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    ports:
+      - "8084:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql-standalone
+    depends_on:
+      - mysql-standalone
+    restart: unless-stopped
+    networks:
+      - mysql-network
+
+volumes:
+  mysql_data:
+    driver: local
+  mysql_data_master:
+    driver: local
+  mysql_data_slave_1:
+    driver: local
+  mysql_data_slave_2:
+    driver: local
+
+networks:
+  mysql-network:
+    driver: bridge
