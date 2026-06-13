@@ -29,6 +29,12 @@ import (
 	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/backservice/servicecontext"
 )
 
+const (
+	backbonRegisterMaxAttempts = 30
+	backbonRegisterInterval    = time.Second
+	backbonRegisterTimeout     = 5 * time.Second
+)
+
 // Start 启动 BackService 服务器
 func Start() {
 	// 初始化 OTEL
@@ -163,13 +169,9 @@ func registerService(registry foundationregistry.Registry, instance *foundationr
 	}
 	klog.Infof("Successfully registered backservice-im to etcd")
 
-	// 异步注册到 backbonservice
-	go func() {
-		ctx := context.Background()
-		if err := registerToBackbonService(ctx, registry, instance); err != nil {
-			klog.Warnf("Failed to register to backbonservice: %v", err)
-		}
-	}()
+	// 异步注册到 backbonservice。all-services 内多服务并发启动时，backbon-service
+	// 可能已经监听但尚未完成 etcd 注册，因此这里需要重试避免长链路由缺失。
+	go registerToBackbonServiceWithRetry(context.Background(), registry, instance)
 }
 
 // setupGracefulShutdown 设置优雅关闭处理
@@ -185,6 +187,31 @@ func waitForShutdown() {
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
 	klog.Info("Shutting down...")
+}
+
+func registerToBackbonServiceWithRetry(ctx context.Context, registry foundationregistry.Registry, instance *foundationregistry.ServiceInstance) {
+	for attempt := 1; attempt <= backbonRegisterMaxAttempts; attempt++ {
+		attemptCtx, cancel := context.WithTimeout(ctx, backbonRegisterTimeout)
+		err := registerToBackbonService(attemptCtx, registry, instance)
+		cancel()
+		if err == nil {
+			return
+		}
+
+		if attempt == backbonRegisterMaxAttempts {
+			klog.Errorf("Failed to register to backbonservice after %d attempts: %v", backbonRegisterMaxAttempts, err)
+			return
+		}
+
+		klog.Warnf("Failed to register to backbonservice (attempt %d/%d): %v", attempt, backbonRegisterMaxAttempts, err)
+
+		select {
+		case <-ctx.Done():
+			klog.Warnf("Stopped registering to backbonservice: %v", ctx.Err())
+			return
+		case <-time.After(backbonRegisterInterval):
+		}
+	}
 }
 
 // registerToBackbonService 向 backbonservice 注册服务
