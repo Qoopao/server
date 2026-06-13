@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -30,7 +32,16 @@ type ServiceWithoutError struct {
 
 // startLongConnectionService 启动长连接服务的包装函数
 func startLongConnectionService() error {
-	return start.Start("")
+	if configPath := os.Getenv("LONG_CONNECTION_CONFIG"); configPath != "" {
+		return start.Start(configPath)
+	}
+
+	_, file, _, ok := runtime.Caller(0)
+	if ok {
+		return start.Start(filepath.Join(filepath.Dir(file), "config.yaml"))
+	}
+
+	return start.Start("cmd/all-services/config.yaml")
 }
 
 func main() {
