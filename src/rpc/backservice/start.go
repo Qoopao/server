@@ -12,21 +12,21 @@ import (
 	"time"
 
 	"github.com/cloudwego/kitex/client"
+	kitexdiscovery "github.com/cloudwego/kitex/pkg/discovery"
 	"github.com/cloudwego/kitex/pkg/klog"
+	kitexregistry "github.com/cloudwego/kitex/pkg/registry"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
-	"github.com/google/uuid"
 	"github.com/kitex-contrib/obs-opentelemetry/tracing"
 	backservice "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/back/backservice"
 	backbon "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backbon"
 	backbonservice "github.com/rhp-QE/roc-foundation-service/long_connection_service/kitex_gen/backbon/backbonservice"
 	"github.com/rhp-QE/roc-foundation-util-go/log/otel"
 	"github.com/rhp-QE/roc-foundation-util-go/network"
-	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
-	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
+	"github.com/rhp-QE/roc-im-server/src/common/kitexinfra"
 	consts "github.com/rhp-QE/roc-im-server/src/const"
-	"github.com/rhp-QE/roc-im-server/src/rpc/backservice/api"
-	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/backservice/servicecontext"
+	deps "github.com/rhp-QE/roc-im-server/src/rpc/backservice/infrastructure/deps"
+	rpcadapter "github.com/rhp-QE/roc-im-server/src/rpc/backservice/interfaces/rpc"
 )
 
 const (
@@ -45,16 +45,15 @@ func Start() {
 	port := getServicePort()
 	localIP := getLocalIP()
 
-	// 创建 Etcd Registry
-	registry := createEtcdRegistry()
-	defer registry.Close()
+	// Kitex resolver 负责下游服务发现；服务端注册由 Kitex server 管理。
+	resolver, err := kitexinfra.NewEtcdResolverFromEnv()
+	if err != nil {
+		klog.Fatalf("Failed to create kitex etcd resolver: %v", err)
+	}
 
 	// 创建服务上下文
-	serviceCtx := servicecontext.NewServiceContext(registry)
+	serviceCtx := deps.NewServiceContext(resolver)
 	defer serviceCtx.Close()
-
-	// 创建服务实例
-	instance := createServiceInstance(localIP, port)
 
 	// 创建服务器
 	svr := createBackServiceServer(localIP, port, serviceCtx)
@@ -62,16 +61,17 @@ func Start() {
 	// 启动服务器
 	startServer(svr)
 
-	// 注册服务到 etcd
-	registerService(registry, instance)
+	// 注册业务路由到 backbon-service；这不是服务发现基础能力，保留业务注册语义。
+	go registerToBackbonServiceWithRetry(context.Background(), resolver)
 
-	// 设置优雅关闭处理
-	defer setupGracefulShutdown(registry, instance)
-
-	klog.Infof("BackService starting - instance_id: %s, address: %s:%d", instance.InstanceID, localIP, port)
+	klog.Infof("BackService started, address: %s:%d", localIP, port)
 
 	// 等待关闭信号
 	waitForShutdown()
+
+	if err := svr.Stop(); err != nil {
+		klog.Errorf("BackService stop failed: %v", err)
+	}
 }
 
 // initOTEL 初始化 OTEL 并设置日志级别
@@ -109,41 +109,25 @@ func getLocalIP() string {
 	return localIP
 }
 
-// createEtcdRegistry 创建 Etcd Registry
-func createEtcdRegistry() foundationregistry.Registry {
-	registry, err := etcd.NewEtcdRegistry(
-		etcd.WithEndpoints([]string{"localhost:2379"}),
-		etcd.WithDialTimeout(5*time.Second),
-	)
-	if err != nil {
-		klog.Fatalf("Failed to create etcd registry: %v", err)
-	}
-	return registry
-}
-
-// createServiceInstance 创建服务实例信息
-func createServiceInstance(host string, port int) *foundationregistry.ServiceInstance {
-	instanceID := fmt.Sprintf("backservice-%s", uuid.New().String()[:8])
-	return &foundationregistry.ServiceInstance{
-		ServiceName: consts.BackserviceIMName,
-		InstanceID:  instanceID,
-		Host:        host,
-		Port:        port,
-		Weight:      1,
-		Status:      foundationregistry.StatusHealthy,
-		Metadata: map[string]string{
-			"version": "1.0.0",
-		},
-	}
-}
-
 // createBackServiceServer 创建 BackService 服务器
-func createBackServiceServer(host string, port int, serviceCtx servicecontext.ServiceContext) server.Server {
+func createBackServiceServer(host string, port int, serviceCtx deps.ServiceContext) server.Server {
+	kitexRegistry, err := kitexinfra.NewEtcdRegistryFromEnv()
+	if err != nil {
+		log.Fatalf("Failed to create kitex etcd registry: %v", err)
+	}
+
 	return backservice.NewServer(
-		api.NewBackServiceImpl(serviceCtx),
+		rpcadapter.NewBackHandler(serviceCtx),
 		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP(host), Port: port}),
 		server.WithSuite(tracing.NewServerSuite()),
-		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "backservice"}),
+		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: consts.BackserviceIMName}),
+		server.WithRegistry(kitexRegistry),
+		server.WithRegistryInfo(&kitexregistry.Info{
+			Weight: 1,
+			Tags: map[string]string{
+				"version": "1.0.0",
+			},
+		}),
 	)
 }
 
@@ -161,26 +145,6 @@ func startServer(svr server.Server) {
 	time.Sleep(1 * time.Second)
 }
 
-// registerService 注册服务到 etcd
-func registerService(registry foundationregistry.Registry, instance *foundationregistry.ServiceInstance) {
-	// 服务启动后再注册到 etcd，避免保活机制在服务未就绪时删除注册
-	if err := registry.Register(context.Background(), instance); err != nil {
-		klog.Fatalf("Failed to register service instance: %v", err)
-	}
-	klog.Infof("Successfully registered backservice-im to etcd")
-
-	// 异步注册到 backbonservice。all-services 内多服务并发启动时，backbon-service
-	// 可能已经监听但尚未完成 etcd 注册，因此这里需要重试避免长链路由缺失。
-	go registerToBackbonServiceWithRetry(context.Background(), registry, instance)
-}
-
-// setupGracefulShutdown 设置优雅关闭处理
-func setupGracefulShutdown(registry foundationregistry.Registry, instance *foundationregistry.ServiceInstance) {
-	if err := registry.Deregister(context.Background(), instance); err != nil {
-		klog.Errorf("Failed to deregister service instance: %v", err)
-	}
-}
-
 // waitForShutdown 等待关闭信号
 func waitForShutdown() {
 	sigChan := make(chan os.Signal, 1)
@@ -189,10 +153,10 @@ func waitForShutdown() {
 	klog.Info("Shutting down...")
 }
 
-func registerToBackbonServiceWithRetry(ctx context.Context, registry foundationregistry.Registry, instance *foundationregistry.ServiceInstance) {
+func registerToBackbonServiceWithRetry(ctx context.Context, resolver kitexdiscovery.Resolver) {
 	for attempt := 1; attempt <= backbonRegisterMaxAttempts; attempt++ {
 		attemptCtx, cancel := context.WithTimeout(ctx, backbonRegisterTimeout)
-		err := registerToBackbonService(attemptCtx, registry, instance)
+		err := registerToBackbonService(attemptCtx, resolver)
 		cancel()
 		if err == nil {
 			return
@@ -215,24 +179,19 @@ func registerToBackbonServiceWithRetry(ctx context.Context, registry foundationr
 }
 
 // registerToBackbonService 向 backbonservice 注册服务
-func registerToBackbonService(ctx context.Context, registry foundationregistry.Registry, instance *foundationregistry.ServiceInstance) error {
-	// 创建服务上下文（用于服务发现）
-	serviceCtx := servicecontext.NewServiceContext(registry)
-
-	// 获取 backbon-service 实例
-	backbonInstance, err := serviceCtx.GetDiscovery().GetInstance(ctx, "backbon-service")
-	if err != nil {
-		return fmt.Errorf("no available instance (backbon-service may not be started yet): %w", err)
+func registerToBackbonService(ctx context.Context, resolver kitexdiscovery.Resolver) error {
+	opts := []client.Option{
+		client.WithSuite(tracing.NewClientSuite()),
+		client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: consts.BackserviceIMName}),
+		client.WithRPCTimeout(10 * time.Second),
+	}
+	if resolver != nil {
+		opts = append(opts, client.WithResolver(resolver))
 	}
 
-	// 创建 backbonservice 客户端
-	hostPort := fmt.Sprintf("%s:%d", backbonInstance.Host, backbonInstance.Port)
 	backbonClient, err := backbonservice.NewClient(
-		"backbon-service",
-		client.WithHostPorts(hostPort),
-		client.WithSuite(tracing.NewClientSuite()),
-		client.WithClientBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "backbon-service"}),
-		client.WithRPCTimeout(10*time.Second), // 设置 RPC 超时时间为 10 秒
+		consts.BackbonServiceName,
+		opts...,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create backbonservice client: %w", err)
@@ -259,6 +218,6 @@ func registerToBackbonService(ctx context.Context, registry foundationregistry.R
 		return fmt.Errorf("RegisterService failed: %s", registerResp.GetError())
 	}
 
-	klog.Infof("Successfully registered service 'backservice' with all methods to backbonservice")
+	klog.Infof("Successfully registered service %q with all methods to backbonservice", consts.BackserviceIMName)
 	return nil
 }

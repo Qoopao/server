@@ -2,7 +2,6 @@ package messageservice
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -12,25 +11,25 @@ import (
 	"time"
 
 	"github.com/cloudwego/kitex/pkg/klog"
+	kitexregistry "github.com/cloudwego/kitex/pkg/registry"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
-	"github.com/google/uuid"
 	"github.com/kitex-contrib/obs-opentelemetry/tracing"
 	"github.com/rhp-QE/roc-foundation-util-go/log/otel"
 	"github.com/rhp-QE/roc-foundation-util-go/mq"
 	"github.com/rhp-QE/roc-foundation-util-go/mq/kafka"
 	"github.com/rhp-QE/roc-foundation-util-go/network"
-	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
-	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
 	foundationstorage "github.com/rhp-QE/roc-foundation-util-go/storage"
 	mongodb "github.com/rhp-QE/roc-foundation-util-go/storage/mongodb"
 	message "github.com/rhp-QE/roc-im-server/kitex_gen/message/messageservice"
+	"github.com/rhp-QE/roc-im-server/src/common/kitexinfra"
 	"github.com/rhp-QE/roc-im-server/src/common/orm"
 	consts "github.com/rhp-QE/roc-im-server/src/const"
-	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/api"
-	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/service"
-	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/message_service/service_context"
-	msgstorage "github.com/rhp-QE/roc-im-server/src/rpc/message_service/storage"
+	"github.com/rhp-QE/roc-im-server/src/rpc/message_service/application"
+	deps "github.com/rhp-QE/roc-im-server/src/rpc/message_service/infrastructure/deps"
+	persistence "github.com/rhp-QE/roc-im-server/src/rpc/message_service/infrastructure/persistence"
+	rpcadapter "github.com/rhp-QE/roc-im-server/src/rpc/message_service/interfaces/rpc"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // Start 启动 message_service
@@ -41,24 +40,22 @@ func Start() error {
 
 	// 创建 MQ Producer
 	producer := createMQProducer()
-	defer producer.Close()
 
 	// 创建 MongoDB 存储
 	store := createMongoStorage()
-	defer store.Close()
 
-	// 创建 Etcd Registry
-	registry := createRegistry()
+	// Kitex 通过 resolver 完成服务发现，业务层不再持有注册发现抽象。
+	sequenceResolver, err := kitexinfra.NewEtcdResolverFromEnv()
+	if err != nil {
+		log.Fatalf("Failed to create kitex etcd resolver: %v", err)
+	}
 
 	// 创建 ServiceContext
-	serviceCtx := servicecontext.NewServiceContext(registry, producer, store)
+	serviceCtx := deps.NewServiceContext(producer, store, sequenceResolver)
 	defer serviceCtx.Close()
 
 	// 获取本机地址
 	host := getLocalIP()
-
-	// 创建服务实例信息
-	instance := createServiceInstance(host)
 
 	// 创建服务器
 	svr := createServer(serviceCtx, host)
@@ -66,16 +63,14 @@ func Start() error {
 	// 启动服务器
 	startServer(svr)
 
-	// 注册服务到 etcd（服务启动后再注册）
-	registerService(serviceCtx, instance)
-
-	// 设置优雅关闭处理
-	defer setupGracefulShutdown(serviceCtx, instance)
-
-	klog.Infof("Message service starting - instance_id: %s, address: %s:%d", instance.InstanceID, host, getServicePort())
+	klog.Infof("Message service started, address: %s:%d", host, getServicePort())
 
 	// 等待关闭信号
 	waitForShutdown()
+
+	if err := svr.Stop(); err != nil {
+		klog.Errorf("Message service stop failed: %v", err)
+	}
 
 	return nil
 }
@@ -130,24 +125,27 @@ func createMongoStorage() foundationstorage.Storage {
 	if err != nil {
 		log.Fatalf("Failed to create mongo storage: %v", err)
 	}
+	ensureMessageIndexes(store)
 	return store
 }
 
-// createRegistry 创建 Etcd Registry
-func createRegistry() foundationregistry.Registry {
-	endpoints := []string{"localhost:2379"}
-	if addr := os.Getenv("ETCD_ENDPOINTS"); addr != "" {
-		endpoints = []string{addr}
+func ensureMessageIndexes(store foundationstorage.Storage) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := store.CreateIndex(ctx, orm.CollectionMessages, bson.D{
+		{Key: "conv_id", Value: 1},
+		{Key: "seq", Value: 1},
+	}, false); err != nil {
+		log.Printf("Message service create index conv_id+seq failed: %v", err)
 	}
 
-	registry, err := etcd.NewEtcdRegistry(
-		etcd.WithEndpoints(endpoints),
-		etcd.WithDialTimeout(5*time.Second),
-	)
-	if err != nil {
-		log.Fatalf("Failed to create etcd registry: %v", err)
+	if err := store.CreateIndex(ctx, orm.CollectionMessages, bson.D{
+		{Key: "send_id", Value: 1},
+		{Key: "client_msg_id", Value: 1},
+	}, false); err != nil {
+		log.Printf("Message service create index send_id+client_msg_id failed: %v", err)
 	}
-	return registry
 }
 
 // getLocalIP 获取本机 IP
@@ -170,36 +168,30 @@ func getServicePort() int {
 	return port
 }
 
-// createServiceInstance 创建服务实例信息
-func createServiceInstance(host string) *foundationregistry.ServiceInstance {
-	instanceID := fmt.Sprintf("%s-%s", consts.MessageServiceName, uuid.New().String()[:8])
-	return &foundationregistry.ServiceInstance{
-		ServiceName: consts.MessageServiceName,
-		InstanceID:  instanceID,
-		Host:        host,
-		Port:        getServicePort(),
-		Status:      foundationregistry.StatusHealthy,
-		Weight:      1,
-		Metadata: map[string]string{
-			"version": "1.0.0",
-		},
-	}
-}
-
 // createServer 创建 kitex 服务器
-func createServer(serviceCtx servicecontext.ServiceContext, host string) server.Server {
-	// 创建存储层
-	msgStorage := msgstorage.NewMessageStorage(serviceCtx)
-	// 创建逻辑层
-	msgService := service.NewMessageService(msgStorage, serviceCtx)
-	// 创建接口层（API）
-	msgHandler := api.NewMessageAPI(msgService)
+func createServer(serviceCtx deps.ServiceContext, host string) server.Server {
+	kitexRegistry, err := kitexinfra.NewEtcdRegistryFromEnv()
+	if err != nil {
+		log.Fatalf("Failed to create kitex etcd registry: %v", err)
+	}
+
+	// 创建基础设施、应用、RPC 适配层。
+	msgRepository := persistence.NewMessageRepository(serviceCtx)
+	msgService := application.NewMessageService(msgRepository, serviceCtx)
+	msgHandler := rpcadapter.NewMessageHandler(msgService)
 
 	return message.NewServer(
 		msgHandler,
 		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP(host), Port: getServicePort()}),
 		server.WithSuite(tracing.NewServerSuite()),
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: consts.MessageServiceName}),
+		server.WithRegistry(kitexRegistry),
+		server.WithRegistryInfo(&kitexregistry.Info{
+			Weight: 1,
+			Tags: map[string]string{
+				"version": "1.0.0",
+			},
+		}),
 	)
 }
 
@@ -214,21 +206,6 @@ func startServer(svr server.Server) {
 	}()
 
 	time.Sleep(1 * time.Second)
-}
-
-// registerService 将服务注册到 etcd
-func registerService(serviceCtx servicecontext.ServiceContext, instance *foundationregistry.ServiceInstance) {
-	if err := serviceCtx.GetRegistry().Register(context.Background(), instance); err != nil {
-		klog.Fatalf("Failed to register message-service instance: %v", err)
-	}
-	klog.Infof("Successfully registered message-service to etcd")
-}
-
-// setupGracefulShutdown 反注册服务实例
-func setupGracefulShutdown(serviceCtx servicecontext.ServiceContext, instance *foundationregistry.ServiceInstance) {
-	if err := serviceCtx.GetRegistry().Deregister(context.Background(), instance); err != nil {
-		klog.Errorf("Failed to deregister message-service instance: %v", err)
-	}
 }
 
 // waitForShutdown 等待关闭信号

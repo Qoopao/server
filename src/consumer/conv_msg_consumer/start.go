@@ -10,15 +10,14 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	foundationmq "github.com/rhp-QE/roc-foundation-util-go/mq"
 	"github.com/rhp-QE/roc-foundation-util-go/mq/kafka"
-	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
-	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
-	"github.com/rhp-QE/roc-foundation-util-go/storage"
+	foundationstorage "github.com/rhp-QE/roc-foundation-util-go/storage"
 	mongodb "github.com/rhp-QE/roc-foundation-util-go/storage/mongodb"
+	"github.com/rhp-QE/roc-im-server/src/common/kitexinfra"
 	"github.com/rhp-QE/roc-im-server/src/common/orm"
-	convapi "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/api"
-	"github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/service"
-	servicecontext "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/service_context"
-	convstorage "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/storage"
+	"github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/application"
+	deps "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/infrastructure/deps"
+	"github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/infrastructure/persistence"
+	mqadapter "github.com/rhp-QE/roc-im-server/src/consumer/conv_msg_consumer/interfaces/mq"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -31,22 +30,24 @@ func Start() error {
 	store := createMongoStorage()
 	// 创建 MQ Consumer
 	consumer := createMQConsumer()
-	// 创建 Etcd Registry
-	registry := createEtcdRegistry()
-	defer registry.Close()
+	// Kitex resolver 负责下游 sequence/backbon 服务发现。
+	resolver, err := kitexinfra.NewEtcdResolverFromEnv()
+	if err != nil {
+		log.Fatalf("[ConvMsgConsumer] failed to create kitex etcd resolver: %v", err)
+	}
 
 	// 创建 ServiceContext
-	svcCtx := servicecontext.NewServiceContext(store, consumer, registry)
+	svcCtx := deps.NewServiceContext(store, consumer, resolver)
 	defer svcCtx.Close()
 
-	// 组装各层：storage → service → api
-	convStorage := convstorage.NewConvMsgStorage(svcCtx)
-	convService := service.NewConvMsgConsumerService(convStorage, svcCtx)
-	convAPI := convapi.NewConvMsgConsumerAPI(convService)
+	// 组装各层：persistence → application → MQ handler。
+	convRepo := persistence.NewConvMsgRepository(svcCtx)
+	consumerUsecase := application.NewConsumerUsecase(convRepo, svcCtx)
+	consumerHandler := mqadapter.NewConsumerHandler(consumerUsecase)
 
-	// 启动消费循环（api 层负责订阅消息队列）
+	// 启动消费循环（MQ handler 负责订阅消息队列）
 	go func() {
-		if err := convAPI.Subscribe(ctx, svcCtx.GetConsumer()); err != nil {
+		if err := consumerHandler.Subscribe(ctx, svcCtx.GetConsumer()); err != nil {
 			klog.CtxErrorf(ctx, "[ConvMsgConsumer] subscribe failed", "error", err.Error())
 			cancel()
 		}
@@ -71,7 +72,7 @@ func Start() error {
 }
 
 // createMongoStorage 创建 MongoDB 存储实例
-func createMongoStorage() storage.Storage {
+func createMongoStorage() foundationstorage.Storage {
 	uri := os.Getenv("CONV_MONGODB_URI")
 	if uri == "" {
 		uri = "mongodb://localhost:27017"
@@ -88,7 +89,7 @@ func createMongoStorage() storage.Storage {
 		},
 	)
 	if err != nil {
-		log.Fatalf("[ConvMsgConsumer] failed to create mongo storage: %v", err)
+		log.Fatalf("[ConvMsgConsumer] failed to create mongo repo: %v", err)
 	}
 
 	// 为集合创建必要索引
@@ -146,21 +147,4 @@ func createMQConsumer() foundationmq.Consumer {
 		log.Fatalf("[ConvMsgConsumer] failed to create kafka consumer: %v", err)
 	}
 	return consumer
-}
-
-// createEtcdRegistry 创建 Etcd Registry
-func createEtcdRegistry() foundationregistry.Registry {
-	endpoints := []string{"localhost:2379"}
-	if v := os.Getenv("ETCD_ENDPOINTS"); v != "" {
-		endpoints = []string{v}
-	}
-
-	registry, err := etcd.NewEtcdRegistry(
-		etcd.WithEndpoints(endpoints),
-		etcd.WithDialTimeout(5*time.Second),
-	)
-	if err != nil {
-		log.Fatalf("[ConvMsgConsumer] failed to create etcd registry: %v", err)
-	}
-	return registry
 }

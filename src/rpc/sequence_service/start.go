@@ -2,7 +2,6 @@ package sequenceservice
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -12,21 +11,20 @@ import (
 	"time"
 
 	"github.com/cloudwego/kitex/pkg/klog"
+	kitexregistry "github.com/cloudwego/kitex/pkg/registry"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
-	"github.com/google/uuid"
 	"github.com/kitex-contrib/obs-opentelemetry/tracing"
 	"github.com/redis/go-redis/v9"
 	"github.com/rhp-QE/roc-foundation-util-go/log/otel"
 	"github.com/rhp-QE/roc-foundation-util-go/network"
-	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
-	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
 	sequence "github.com/rhp-QE/roc-im-server/kitex_gen/sequence/sequenceservice"
+	"github.com/rhp-QE/roc-im-server/src/common/kitexinfra"
 	consts "github.com/rhp-QE/roc-im-server/src/const"
-	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/api"
-	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/service"
-	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/service_context"
-	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/storage"
+	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/application"
+	deps "github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/infrastructure/deps"
+	"github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/infrastructure/persistence"
+	rpcadapter "github.com/rhp-QE/roc-im-server/src/rpc/sequence_service/interfaces/rpc"
 )
 
 // Start 启动sequence服务
@@ -38,15 +36,12 @@ func Start() error {
 	// 创建 Redis 客户端
 	redisClient := createRedisClient()
 
-	// 创建服务上下文（托管 Redis 和注册中心）
+	// 创建服务上下文（只托管 Redis，服务注册由 Kitex server 托管）
 	serviceCtx := createServiceContext(redisClient)
 	defer serviceCtx.Close()
 
 	// 获取本机地址
 	host := getLocalIP()
-
-	// 创建服务实例
-	instance := createServiceInstance(host)
 
 	// 创建服务器
 	svr := createServer(serviceCtx, host)
@@ -54,16 +49,14 @@ func Start() error {
 	// 启动服务器
 	startServer(svr)
 
-	// 注册服务到 etcd
-	registerService(serviceCtx, instance)
-
-	// 设置优雅关闭处理
-	defer setupGracefulShutdown(serviceCtx, instance)
-
-	klog.Infof("Sequence service starting - instance_id: %s, address: %s:%d", instance.InstanceID, host, getServicePort())
+	klog.Infof("Sequence service started, address: %s:%d", host, getServicePort())
 
 	// 等待关闭信号
 	waitForShutdown()
+
+	if err := svr.Stop(); err != nil {
+		klog.Errorf("Sequence service stop failed: %v", err)
+	}
 
 	return nil
 }
@@ -116,21 +109,8 @@ func createRedisClient() *redis.Client {
 }
 
 // createServiceContext 创建服务上下文
-func createServiceContext(redisClient *redis.Client) servicecontext.ServiceContext {
-	etcdEndpoints := []string{"localhost:2379"}
-	if endpoints := os.Getenv("ETCD_ENDPOINTS"); endpoints != "" {
-		etcdEndpoints = []string{endpoints}
-	}
-
-	registry, err := etcd.NewEtcdRegistry(
-		etcd.WithEndpoints(etcdEndpoints),
-		etcd.WithDialTimeout(5*time.Second),
-	)
-	if err != nil {
-		log.Fatalf("Failed to create etcd registry: %v", err)
-	}
-
-	return servicecontext.NewServiceContext(registry, redisClient)
+func createServiceContext(redisClient *redis.Client) deps.ServiceContext {
+	return deps.NewServiceContext(redisClient)
 }
 
 // getLocalIP 获取本机IP
@@ -153,35 +133,30 @@ func getServicePort() int {
 	return port
 }
 
-// createServiceInstance 创建服务实例信息
-func createServiceInstance(host string) *foundationregistry.ServiceInstance {
-	instanceID := fmt.Sprintf("%s-%s", consts.SequenceServiceName, uuid.New().String()[:8])
-	return &foundationregistry.ServiceInstance{
-		ServiceName: consts.SequenceServiceName,
-		InstanceID:  instanceID,
-		Host:        host,
-		Port:        getServicePort(),
-		Weight:      1,
-		Status:      foundationregistry.StatusHealthy,
-		Metadata: map[string]string{
-			"version": "1.0.0",
-		},
-	}
-}
-
 // createServer 创建服务器
-func createServer(serviceCtx servicecontext.ServiceContext, host string) server.Server {
+func createServer(serviceCtx deps.ServiceContext, host string) server.Server {
+	kitexRegistry, err := kitexinfra.NewEtcdRegistryFromEnv()
+	if err != nil {
+		log.Fatalf("Failed to create kitex etcd registry: %v", err)
+	}
+
 	// 创建存储层和服务层
-	seqStorage := storage.NewSequenceStorage(serviceCtx)
-	seqService := service.NewSequenceService(seqStorage)
-	// 创建接口层（API）
-	seqHandler := api.NewSequenceAPI(seqService)
+	seqRepo := persistence.NewSequenceRepository(serviceCtx)
+	seqUsecase := application.NewSequenceUsecase(seqRepo)
+	seqHandler := rpcadapter.NewSequenceHandler(seqUsecase)
 
 	return sequence.NewServer(
 		seqHandler,
 		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP(host), Port: getServicePort()}),
 		server.WithSuite(tracing.NewServerSuite()),
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: consts.SequenceServiceName}),
+		server.WithRegistry(kitexRegistry),
+		server.WithRegistryInfo(&kitexregistry.Info{
+			Weight: 1,
+			Tags: map[string]string{
+				"version": "1.0.0",
+			},
+		}),
 	)
 }
 
@@ -197,22 +172,6 @@ func startServer(svr server.Server) {
 
 	// 等待 1 秒确保服务已经启动并监听端口
 	time.Sleep(1 * time.Second)
-}
-
-// registerService 注册服务到 etcd
-func registerService(serviceCtx servicecontext.ServiceContext, instance *foundationregistry.ServiceInstance) {
-	// 服务启动后再注册到 etcd，避免保活机制在服务未就绪时删除注册
-	if err := serviceCtx.GetRegistry().Register(context.Background(), instance); err != nil {
-		klog.Fatalf("Failed to register service instance: %v", err)
-	}
-	klog.Infof("Successfully registered sequence-service to etcd")
-}
-
-// setupGracefulShutdown 设置优雅关闭处理
-func setupGracefulShutdown(serviceCtx servicecontext.ServiceContext, instance *foundationregistry.ServiceInstance) {
-	if err := serviceCtx.GetRegistry().Deregister(context.Background(), instance); err != nil {
-		klog.Errorf("Failed to deregister service instance: %v", err)
-	}
 }
 
 // waitForShutdown 等待关闭信号

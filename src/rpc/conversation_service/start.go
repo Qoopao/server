@@ -2,7 +2,6 @@ package conversationservice
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -12,23 +11,22 @@ import (
 	"time"
 
 	"github.com/cloudwego/kitex/pkg/klog"
+	kitexregistry "github.com/cloudwego/kitex/pkg/registry"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
-	"github.com/google/uuid"
 	"github.com/kitex-contrib/obs-opentelemetry/tracing"
 	"github.com/rhp-QE/roc-foundation-util-go/log/otel"
 	"github.com/rhp-QE/roc-foundation-util-go/network"
-	foundationregistry "github.com/rhp-QE/roc-foundation-util-go/service_registry/registry"
-	"github.com/rhp-QE/roc-foundation-util-go/service_registry/registry/etcd"
 	foundationstorage "github.com/rhp-QE/roc-foundation-util-go/storage"
 	mongodb "github.com/rhp-QE/roc-foundation-util-go/storage/mongodb"
 	conversation "github.com/rhp-QE/roc-im-server/kitex_gen/conversation/conversationservice"
+	"github.com/rhp-QE/roc-im-server/src/common/kitexinfra"
 	"github.com/rhp-QE/roc-im-server/src/common/orm"
 	consts "github.com/rhp-QE/roc-im-server/src/const"
-	"github.com/rhp-QE/roc-im-server/src/rpc/conversation_service/api"
-	"github.com/rhp-QE/roc-im-server/src/rpc/conversation_service/service"
-	servicecontext "github.com/rhp-QE/roc-im-server/src/rpc/conversation_service/service_context"
-	convstorage "github.com/rhp-QE/roc-im-server/src/rpc/conversation_service/storage"
+	"github.com/rhp-QE/roc-im-server/src/rpc/conversation_service/application"
+	deps "github.com/rhp-QE/roc-im-server/src/rpc/conversation_service/infrastructure/deps"
+	"github.com/rhp-QE/roc-im-server/src/rpc/conversation_service/infrastructure/persistence"
+	rpcadapter "github.com/rhp-QE/roc-im-server/src/rpc/conversation_service/interfaces/rpc"
 )
 
 // Start 启动 conversation_service
@@ -39,20 +37,19 @@ func Start() error {
 
 	// 创建 MongoDB 存储
 	store := createMongoStorage()
-	defer store.Close()
 
-	// 创建 Etcd Registry
-	registry := createRegistry()
+	// Kitex resolver 负责下游 message/backbon 服务发现。
+	resolver, err := kitexinfra.NewEtcdResolverFromEnv()
+	if err != nil {
+		log.Fatalf("Failed to create kitex etcd resolver: %v", err)
+	}
 
 	// 创建 ServiceContext
-	serviceCtx := servicecontext.NewServiceContext(registry, store)
+	serviceCtx := deps.NewServiceContext(store, resolver)
 	defer serviceCtx.Close()
 
 	// 获取本机地址
 	host := getLocalIP()
-
-	// 创建服务实例信息
-	instance := createServiceInstance(host)
 
 	// 创建服务器
 	svr := createServer(serviceCtx, host)
@@ -60,16 +57,14 @@ func Start() error {
 	// 启动服务器
 	startServer(svr)
 
-	// 注册服务到 etcd（服务启动后再注册）
-	registerService(serviceCtx, instance)
-
-	// 设置优雅关闭处理
-	defer setupGracefulShutdown(serviceCtx, instance)
-
-	klog.Infof("Conversation service starting - instance_id: %s, address: %s:%d", instance.InstanceID, host, getServicePort())
+	klog.Infof("Conversation service started, address: %s:%d", host, getServicePort())
 
 	// 等待关闭信号
 	waitForShutdown()
+
+	if err := svr.Stop(); err != nil {
+		klog.Errorf("Conversation service stop failed: %v", err)
+	}
 
 	return nil
 }
@@ -106,26 +101,9 @@ func createMongoStorage() foundationstorage.Storage {
 		},
 	)
 	if err != nil {
-		log.Fatalf("Failed to create mongo storage: %v", err)
+		log.Fatalf("Failed to create mongo repo: %v", err)
 	}
 	return store
-}
-
-// createRegistry 创建 Etcd Registry
-func createRegistry() foundationregistry.Registry {
-	endpoints := []string{"localhost:2379"}
-	if addr := os.Getenv("ETCD_ENDPOINTS"); addr != "" {
-		endpoints = []string{addr}
-	}
-
-	registry, err := etcd.NewEtcdRegistry(
-		etcd.WithEndpoints(endpoints),
-		etcd.WithDialTimeout(5*time.Second),
-	)
-	if err != nil {
-		log.Fatalf("Failed to create etcd registry: %v", err)
-	}
-	return registry
 }
 
 // getLocalIP 获取本机 IP
@@ -148,36 +126,30 @@ func getServicePort() int {
 	return port
 }
 
-// createServiceInstance 创建服务实例信息
-func createServiceInstance(host string) *foundationregistry.ServiceInstance {
-	instanceID := fmt.Sprintf("%s-%s", consts.ConversationServiceName, uuid.New().String()[:8])
-	return &foundationregistry.ServiceInstance{
-		ServiceName: consts.ConversationServiceName,
-		InstanceID:  instanceID,
-		Host:        host,
-		Port:        getServicePort(),
-		Status:      foundationregistry.StatusHealthy,
-		Weight:      1,
-		Metadata: map[string]string{
-			"version": "1.0.0",
-		},
-	}
-}
-
 // createServer 创建 kitex 服务器
-func createServer(serviceCtx servicecontext.ServiceContext, host string) server.Server {
+func createServer(serviceCtx deps.ServiceContext, host string) server.Server {
+	kitexRegistry, err := kitexinfra.NewEtcdRegistryFromEnv()
+	if err != nil {
+		log.Fatalf("Failed to create kitex etcd registry: %v", err)
+	}
+
 	// 创建存储层
-	convStorage := convstorage.NewConversationStorage(serviceCtx)
-	// 创建逻辑层
-	convService := service.NewConversationService(convStorage, serviceCtx)
-	// 创建接口层（API）
-	convHandler := api.NewConversationAPI(convService)
+	convRepo := persistence.NewConversationRepository(serviceCtx)
+	convUsecase := application.NewConversationUsecase(convRepo, serviceCtx)
+	convHandler := rpcadapter.NewConversationHandler(convUsecase)
 
 	return conversation.NewServer(
 		convHandler,
 		server.WithServiceAddr(&net.TCPAddr{IP: net.ParseIP(host), Port: getServicePort()}),
 		server.WithSuite(tracing.NewServerSuite()),
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: consts.ConversationServiceName}),
+		server.WithRegistry(kitexRegistry),
+		server.WithRegistryInfo(&kitexregistry.Info{
+			Weight: 1,
+			Tags: map[string]string{
+				"version": "1.0.0",
+			},
+		}),
 	)
 }
 
@@ -192,21 +164,6 @@ func startServer(svr server.Server) {
 	}()
 
 	time.Sleep(1 * time.Second)
-}
-
-// registerService 将服务注册到 etcd
-func registerService(serviceCtx servicecontext.ServiceContext, instance *foundationregistry.ServiceInstance) {
-	if err := serviceCtx.GetRegistry().Register(context.Background(), instance); err != nil {
-		klog.Fatalf("Failed to register conversation-service instance: %v", err)
-	}
-	klog.Infof("Successfully registered conversation-service to etcd")
-}
-
-// setupGracefulShutdown 反注册服务实例
-func setupGracefulShutdown(serviceCtx servicecontext.ServiceContext, instance *foundationregistry.ServiceInstance) {
-	if err := serviceCtx.GetRegistry().Deregister(context.Background(), instance); err != nil {
-		klog.Errorf("Failed to deregister conversation-service instance: %v", err)
-	}
 }
 
 // waitForShutdown 等待关闭信号
